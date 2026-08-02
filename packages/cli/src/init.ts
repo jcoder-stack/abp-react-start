@@ -4,13 +4,14 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type AddResult, findAddConflicts, parseJsonc, resolveRegistryDir, runAdd } from "./add";
 
@@ -36,6 +37,18 @@ const MENU_NO_ADMIN_TEMPLATE_PATH = fileURLToPath(
 
 /** app-shell's distributed src/menu.tsx references admin routes (/identity/users etc.); --no-admin overwrites it with this minimal (home-only) template so the app doesn't dead-link/fail typecheck on routes it never installed. */
 const MENU_TARGET = "src/menu.tsx";
+
+const ROOT_TEMPLATE_PATH = fileURLToPath(new URL("../templates/root.tsx.tpl", import.meta.url));
+const ROUTER_TEMPLATE_PATH = fileURLToPath(new URL("../templates/router.tsx.tpl", import.meta.url));
+
+/**
+ * 脚手架的 __root.tsx 与 router.tsx 不接线，应用一行都跑不起来：块里的组件都要
+ * AppConfigProvider/SessionProvider，路由守卫要 context.identity，react-query 要 QueryClient。
+ * 这两处以前靠打印指引让用户手抄近六十行，抄漏一处就是编译不过。改为直接写模板，脚手架原版
+ * 备份成 .bak——与 src/routes/index.tsx、主题 css 用的是同一套让位机制。
+ */
+const ROOT_TARGET = "src/routes/__root.tsx";
+const ROUTER_TARGET = "src/router.tsx";
 
 /** shadcn init 本该播种、但被 seedOrRequireComponentsJson 绕开后遗留的两样东西：cn() helper 与主题 CSS 变量。 */
 const LIB_UTILS_TARGET = "src/lib/utils.ts";
@@ -160,6 +173,9 @@ export interface InitResult {
   menuRewrittenForNoAdmin: boolean;
   tsrConfigSeeded: boolean;
   routeTreeGenerated: boolean;
+  /** __root.tsx / router.tsx 是否已写入接线模板（脚手架原版备份到同名 .bak）。 */
+  rootWired: boolean;
+  routerWired: boolean;
 }
 
 function errorMessage(error: unknown): string {
@@ -260,6 +276,10 @@ function seedThemeCss(cwd: string, cssRelPath: string | undefined, completed: st
  *  manifest is missing. */
 const LIB_UTILS_RUNTIME_DEPS = ["clsx", "tailwind-merge"];
 const THEME_CSS_RUNTIME_DEPS = ["tw-animate-css"];
+
+/** 生成的 src/router.tsx 用它把 QueryClient 接进 SSR 的 dehydrate/hydrate。没有任何块声明它
+ *  （react-query 由 abp-crud 等块带进来，这个只有根接线用得到），所以由 init 自己装。 */
+const ROOT_WIRING_RUNTIME_DEPS = ["@tanstack/react-router-ssr-query"];
 
 const BUN_LOCKFILES = ["bun.lock", "bun.lockb"];
 
@@ -422,6 +442,7 @@ async function installSeededDependencies(
   const packages = [
     ...(needsLibUtilsDeps ? LIB_UTILS_RUNTIME_DEPS : []),
     ...(needsThemeCssDeps ? THEME_CSS_RUNTIME_DEPS : []),
+    ...ROOT_WIRING_RUNTIME_DEPS,
   ].filter((name) => !existing.has(name));
   if (packages.length === 0) return;
 
@@ -446,6 +467,66 @@ async function installSeededDependencies(
  * Loose match: existence alone is sufficient, since the scaffold is the only thing at this path before app-shell.
  * Returns whether it actually renamed anything.
  */
+/** `layout-messages.json` → `layoutMessages`；供 __root 模板生成 import 标识符。 */
+function messagesIdentifier(fileName: string): string {
+  return fileName
+    .replace(/\.json$/, "")
+    .split("-")
+    .map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join("");
+}
+
+/** src 下所有块词条文件，`@/` 别名路径，按路径排序保证同一组块每次生成的结果一致。 */
+function findMessageCatalogs(cwd: string): { alias: string; identifier: string }[] {
+  const srcDir = resolve(cwd, "src");
+  if (!existsSync(srcDir)) return [];
+  const found: { alias: string; identifier: string }[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith("-messages.json")) {
+        const rel = full
+          .slice(srcDir.length + 1)
+          .split(sep)
+          .join("/");
+        found.push({ alias: `@/${rel}`, identifier: messagesIdentifier(entry.name) });
+      }
+    }
+  };
+  walk(srcDir);
+  return found.sort((a, b) => a.alias.localeCompare(b.alias));
+}
+
+/**
+ * 写 __root.tsx 与 router.tsx，脚手架原版备份成 .bak。词条 import 按 src 下实际存在的
+ * `*-messages.json` 生成，所以 --no-admin 或任何块子集都自然正确，不必维护一份块→词条的映射表。
+ */
+function seedRootWiring(cwd: string, completed: string[]): { root: boolean; router: boolean } {
+  const catalogs = findMessageCatalogs(cwd);
+  const imports = catalogs.map((c) => `import ${c.identifier} from "${c.alias}";`).join("\n");
+  const args = catalogs.map((c) => c.identifier).join(", ");
+
+  const written = { root: false, router: false };
+  for (const [target, templatePath, render] of [
+    [ROOT_TARGET, ROOT_TEMPLATE_PATH, true],
+    [ROUTER_TARGET, ROUTER_TEMPLATE_PATH, false],
+  ] as const) {
+    const targetPath = resolve(cwd, target);
+    if (existsSync(targetPath)) copyFileSync(targetPath, `${targetPath}.bak`);
+    else mkdirSync(dirname(targetPath), { recursive: true });
+    let content = readFileSync(templatePath, "utf8");
+    if (render) {
+      content = content.replace("__MESSAGE_IMPORTS__", imports).replace("__MESSAGE_ARGS__", args);
+    }
+    writeFileSync(targetPath, content);
+    if (target === ROOT_TARGET) written.root = true;
+    else written.router = true;
+    completed.push(`${target}（已接线，脚手架原版备份到 ${target}.bak）`);
+  }
+  return written;
+}
+
 function renameConflictingScaffoldIndex(cwd: string, completed: string[]): boolean {
   const scaffoldIndexPath = resolve(cwd, "src/routes/index.tsx");
   if (!existsSync(scaffoldIndexPath)) return false;
@@ -619,6 +700,8 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     completed.push("src/menu.tsx（--no-admin 覆写为最小菜单）");
   }
 
+  const rootWiring = seedRootWiring(opts.cwd, completed);
+
   const tsrConfigPath = resolve(opts.cwd, "tsr.config.json");
   const tsrConfigSeeded = !existsSync(tsrConfigPath);
   if (tsrConfigSeeded) {
@@ -652,5 +735,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     menuRewrittenForNoAdmin,
     tsrConfigSeeded,
     routeTreeGenerated,
+    rootWired: rootWiring.root,
+    routerWired: rootWiring.router,
   };
 }

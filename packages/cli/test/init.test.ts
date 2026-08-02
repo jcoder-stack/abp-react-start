@@ -126,8 +126,8 @@ describe("runInit", () => {
     // one `shadcn add` per block (+ admin-pages), then a trailing `tsr generate`. Derived from
     // the list rather than hardcoded so adding a block does not require editing a magic number.
     const expectedCalls = SHADCN_BLOCKS.length + 2;
-    expect(calls).toHaveLength(expectedCalls);
-    expect(calls.map((c) => c.cmd)).toEqual(Array(expectedCalls).fill("npx"));
+    // 只数 npx：依赖安装走 npm/bun，与「每块一次 add + 一次 generate」这条断言无关。
+    expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(expectedCalls);
     // 锁定到已验证的 minor：@latest 会把 shadcn/router-cli 的行为前提悄悄换掉。
     expect(calls.at(-1)?.args).toEqual([
       expect.stringMatching(/^@tanstack\/router-cli@\d/),
@@ -140,7 +140,7 @@ describe("runInit", () => {
       "--yes",
       "--overwrite",
     ]);
-    expect(calls[0]?.args).toEqual([
+    expect(calls.filter((c) => c.cmd === "npx")[0]?.args).toEqual([
       expect.stringMatching(/^shadcn@\d/),
       "add",
       join(registryDir, "public", "r", "abp-layout.json"),
@@ -159,7 +159,7 @@ describe("runInit", () => {
 
     expect(result.shadcnBlocks).toEqual(SHADCN_BLOCKS);
     // one `shadcn add` per block, then a trailing `tsr generate`; admin-pages is skipped.
-    expect(calls).toHaveLength(SHADCN_BLOCKS.length + 1);
+    expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(SHADCN_BLOCKS.length + 1);
     expect(calls.some((c) => c.args.some((a) => a.includes("admin-pages")))).toBe(false);
   });
 
@@ -180,11 +180,12 @@ describe("runInit", () => {
       caught = error;
     }
     // abp-layout, abp-login, app-shell, data-table (the failing attempt), and nothing after it.
-    expect(calls).toHaveLength(4);
+    expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(4);
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
     expect(initError.message).toContain('shadcn 块 "data-table" 安装失败');
     expect(initError.completedSteps).toEqual([
+      "已安装播种文件运行期依赖（npm）: @tanstack/react-router-ssr-query",
       "auth 外壳（jc-abp add auth）",
       "shadcn 块 abp-layout",
       "shadcn 块 abp-login",
@@ -316,12 +317,13 @@ describe("runInit", () => {
     // abp-layout, abp-login, and app-shell declare no files (their fixture json is "{}"), so they pass
     // verification trivially and land in completedSteps; data-table is where it stops.
     expect(initError.completedSteps).toEqual([
+      "已安装播种文件运行期依赖（npm）: @tanstack/react-router-ssr-query",
       "auth 外壳（jc-abp add auth）",
       "shadcn 块 abp-layout",
       "shadcn 块 abp-login",
       "shadcn 块 app-shell",
     ]);
-    expect(calls).toHaveLength(4);
+    expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(4);
   });
 
   it("passes verification when the runner actually writes the declared target files (mirrors real shadcn --overwrite behavior)", async () => {
@@ -455,7 +457,13 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "npm",
-      args: ["install", "clsx", "tailwind-merge", "tw-animate-css"],
+      args: [
+        "install",
+        "clsx",
+        "tailwind-merge",
+        "tw-animate-css",
+        "@tanstack/react-router-ssr-query",
+      ],
       cwd: app,
     });
   });
@@ -474,7 +482,7 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "bun",
-      args: ["add", "clsx", "tailwind-merge", "tw-animate-css"],
+      args: ["add", "clsx", "tailwind-merge", "tw-animate-css", "@tanstack/react-router-ssr-query"],
       cwd: paths.app,
     });
   });
@@ -494,7 +502,7 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "npm",
-      args: ["install", "clsx", "tailwind-merge"],
+      args: ["install", "clsx", "tailwind-merge", "@tanstack/react-router-ssr-query"],
       cwd: app,
     });
   });
@@ -512,7 +520,13 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "npm",
-      args: ["install", "clsx", "tailwind-merge", "tw-animate-css"],
+      args: [
+        "install",
+        "clsx",
+        "tailwind-merge",
+        "tw-animate-css",
+        "@tanstack/react-router-ssr-query",
+      ],
       cwd: app,
     });
   });
