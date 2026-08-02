@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { Column, RowData } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import type { ReactNode } from "react";

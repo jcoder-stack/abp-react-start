@@ -1,4 +1,4 @@
-import { handleCallback } from "@jcoder/abp-react/proxy";
+import { handleCallback } from "@jcoder-stack/abp-react/proxy";
 import { createFileRoute } from "@tanstack/react-router";
 import { getAuthRuntime } from "@/auth/runtime";
 

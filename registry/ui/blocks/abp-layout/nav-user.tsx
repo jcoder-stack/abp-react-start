@@ -1,4 +1,4 @@
-import { useLocalization, useSession } from "@jcoder/abp-react/react";
+import { useLocalization, useSession } from "@jcoder-stack/abp-react/react";
 import { Link } from "@tanstack/react-router";
 import { ChevronsUpDown, LogIn, LogOut } from "lucide-react";
 import type { ReactNode } from "react";

@@ -1,12 +1,12 @@
 # starter — jc-abp 参照应用
 
-`jc-abp init` 全流程跑完后的最终形态：`@jcoder/*` 内核 + registry 认证外壳 + shadcn 管理台 block 拼出的一个可跑的 ABP 前端（TanStack Start）。用作活文档、CLI 回归基准，也是联调冒烟环境。架构细节见根 [`README.md`](../../README.md)（尤其[「初始化后的项目结构」](../../README.md#初始化后的项目结构)一节）与 [`docs/`](../../docs)，本文档只讲这个应用本身怎么跑、有哪些页面。
+`jc-abp init` 全流程跑完后的最终形态：`@jcoder-stack/*` 内核 + registry 认证外壳 + shadcn 管理台 block 拼出的一个可跑的 ABP 前端（TanStack Start）。用作活文档、CLI 回归基准，也是联调冒烟环境。架构细节见根 [`README.md`](../../README.md)（尤其[「初始化后的项目结构」](../../README.md#初始化后的项目结构)一节）与 [`docs/`](../../docs)，本文档只讲这个应用本身怎么跑、有哪些页面。
 
 ## 这个目录是生成出来的
 
 本应用**不手工演进**，而是 [`scripts/regenerate-example.sh`](../../scripts/regenerate-example.sh) 的产物：
 
-    @tanstack/cli create → 装 @jcoder 包 → jc-abp init → jc-abp gen  ＋  一份清单化的手写增量
+    @tanstack/cli create → 装 @jcoder-stack 包 → jc-abp init → jc-abp gen  ＋  一份清单化的手写增量
 
 这样脚手架/CLI/registry 有毛病能在重放里当场暴露，产物结构也跟真实开发者拿到的一致。由此有两条纪律：
 
@@ -23,7 +23,7 @@ scripts/regenerate-example.sh         # 就地重放 examples/starter
 scripts/regenerate-example.sh --target /tmp/demo --preserve-from examples/starter --backend https://your-abp:44300
 ```
 
-`--target` 指到 `examples/*` 之外（如上面的 `/tmp/demo`）时，`workspace:*` 依赖与 registry 目录都没法在仓库内解析——这条路径只对拿已发布 `@jcoder` 包重放的场景成立，仓库内自测请留在 `examples/*` 下。
+`--target` 指到 `examples/*` 之外（如上面的 `/tmp/demo`）时，`workspace:*` 依赖与 registry 目录都没法在仓库内解析——这条路径只对拿已发布 `@jcoder-stack` 包重放的场景成立，仓库内自测请留在 `examples/*` 下。
 
 ## 先决条件
 

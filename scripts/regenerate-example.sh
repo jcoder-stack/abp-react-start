@@ -3,7 +3,7 @@
 # 重放「真实开发者装上本框架后的初始化流程」，产出 examples/starter。
 #
 # 约定：examples/starter 不是手工演进的示例应用，而是**本脚本的产物**——
-#   脚手架（@tanstack/cli create）→ 装 @jcoder 包 → jc-abp init → jc-abp gen
+#   脚手架（@tanstack/cli create）→ 装 @jcoder-stack 包 → jc-abp init → jc-abp gen
 # 加上一份清单化的「手写增量」（Book CRUD 示范页与它自带的 mock 后端、菜单项、App 词条、test/、
 # monorepo 适配的 package.json/tsconfig 与 __root/router 接线）。
 #
@@ -63,7 +63,7 @@ case "$TARGET_DIR" in
   *)
     echo "警告: --target ($TARGET_DIR) 不在仓库的 examples/* workspace 下——" \
       "仓库内重放（workspace:* 依赖解析、registry 目录定位）要求目标落在 examples/* 里；" \
-      "指到别处仅在你拿的是已发布的 @jcoder 包（而非本仓库 workspace 源码）重放时才行得通。" >&2
+      "指到别处仅在你拿的是已发布的 @jcoder-stack 包（而非本仓库 workspace 源码）重放时才行得通。" >&2
     ;;
 esac
 
@@ -89,10 +89,10 @@ HANDWRITTEN_PATHS=(
 )
 
 # monorepo 适配补丁：真实开发者这里是
-#   bun add @jcoder/abp-react && bun add -D @jcoder/cli @jcoder/registry
+#   bun add @jcoder-stack/abp-react && bun add -D @jcoder-stack/cli @jcoder-stack/registry
 # starter 身在本仓库，所以写 workspace:*。测试/类型工具链由仓库根统一持有，
 # 从成员 package.json 里摘掉，避免与根上的 typescript/vitest 版本打架。
-# init 之前先跑一次（让 @jcoder 包与 registry 可解析），init/gen 之后再跑一次
+# init 之前先跑一次（让 @jcoder-stack 包与 registry 可解析），init/gen 之后再跑一次
 # （把 shadcn 追加的依赖留下、同时确保这些覆盖没被冲掉）。
 patch_package_json() {
   node -e '
@@ -101,7 +101,7 @@ const [path, appName] = process.argv.slice(1);
 const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
 pkg.name = appName;
 pkg.private = true;
-pkg.dependencies["@jcoder/abp-react"] = "workspace:*";
+pkg.dependencies["@jcoder-stack/abp-react"] = "workspace:*";
 pkg.dependencies["@tanstack/react-query"] = "^5.0.0";
 pkg.dependencies["zod"] = "^4.0.0";
 // 新版 @tanstack/cli 脚手架把部分依赖写成 "latest"、并不再带 SSR/router 周边包；
@@ -120,8 +120,8 @@ Object.assign(pkg.devDependencies, {
   "@tailwindcss/typography": "^0.5.16",
   "@tanstack/devtools-vite": "^0.8.1",
 });
-pkg.devDependencies["@jcoder/cli"] = "workspace:*";
-pkg.devDependencies["@jcoder/registry"] = "workspace:*";
+pkg.devDependencies["@jcoder-stack/cli"] = "workspace:*";
+pkg.devDependencies["@jcoder-stack/registry"] = "workspace:*";
 for (const owned of ["typescript", "vitest", "jsdom", "@testing-library/dom", "@testing-library/react", "@types/node", "@types/react", "@types/react-dom"]) {
   delete pkg.devDependencies[owned];
 }
@@ -256,7 +256,7 @@ guard_untracked_files
 # ---------------------------------------------------------------------------
 # `bun run typecheck` 的 tsc -b 会向 packages/*/dist emit 无扩展名 import 的 JS，覆盖 tsup
 # 产物后 node 直接跑不动 CLI——重放前必须重建，否则 init 步骤在 rm -rf 之后才崩，starter 只剩半成品。
-step "0/5 重建 @jcoder 包 dist（防 tsc -b 污染产物）"
+step "0/5 重建 @jcoder-stack 包 dist（防 tsc -b 污染产物）"
 (cd "$REPO_ROOT" && bun run build)
 
 step "1/5 清空并用 @tanstack/cli 建 TanStack Start 脚手架"
@@ -267,7 +267,7 @@ npx --yes @tanstack/cli@latest create "$APP_NAME" \
   --package-manager bun \
   --no-git --no-examples --no-toolchain --no-intent --no-install --non-interactive
 
-step "2/5 把 @jcoder 包接成 workspace 依赖并安装"
+step "2/5 把 @jcoder-stack 包接成 workspace 依赖并安装"
 patch_package_json
 (cd "$REPO_ROOT" && bun install)
 

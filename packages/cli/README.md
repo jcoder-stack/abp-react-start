@@ -1,4 +1,4 @@
-# @jcoder/cli
+# @jcoder-stack/cli
 
 `jc-abp` CLI：`gen`（orval 预设生成 react-query 客户端）+ `add`（拉取 registry 外壳）+ `init`（一站式初始化）。
 
@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-bun add -D @jcoder/cli @jcoder/registry
+bun add -D @jcoder-stack/cli @jcoder-stack/registry
 ```
 
-`add` 与 `init` 从 `@jcoder/registry` 取外壳源码，两者要一起装。
+`add` 与 `init` 从 `@jcoder-stack/registry` 取外壳源码，两者要一起装。
 
 ## 命令
 
@@ -26,7 +26,7 @@ bun add -D @jcoder/cli @jcoder/registry
 
 ```ts
 // abp.api.config.ts
-import { defineApiConfig } from "@jcoder/cli";
+import { defineApiConfig } from "@jcoder-stack/cli";
 
 export default defineApiConfig({
   input: "https://localhost:44300/swagger/v1/swagger.json",

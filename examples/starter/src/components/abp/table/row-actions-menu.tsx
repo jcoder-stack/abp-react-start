@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";

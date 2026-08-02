@@ -1,4 +1,4 @@
-import { type Localize, useLocalization } from "@jcoder/abp-react/react";
+import { type Localize, useLocalization } from "@jcoder-stack/abp-react/react";
 import {
   type RowData,
   type RowSelectionState,

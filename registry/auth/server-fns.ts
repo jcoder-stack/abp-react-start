@@ -3,14 +3,14 @@ import {
   type AuthErrorCode,
   parseCookieHeader,
   parseCultureCookie,
-} from "@jcoder/abp-react/auth";
+} from "@jcoder-stack/abp-react/auth";
 import {
   AbpProxyError,
   CULTURE_COOKIE,
   callAbpWithSession,
   loadAppState,
   TENANT_COOKIE,
-} from "@jcoder/abp-react/proxy";
+} from "@jcoder-stack/abp-react/proxy";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";

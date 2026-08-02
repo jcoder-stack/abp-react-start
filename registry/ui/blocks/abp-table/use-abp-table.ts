@@ -1,5 +1,5 @@
-import { toAbpListParams, toPagedResult } from "@jcoder/abp-react/core";
-import { useLocalization, usePermissionChecker } from "@jcoder/abp-react/react";
+import { toAbpListParams, toPagedResult } from "@jcoder-stack/abp-react/core";
+import { useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import {
   type FormAsyncValidateOrFn,
   type FormValidateOrFn,

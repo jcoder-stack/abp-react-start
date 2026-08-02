@@ -7,7 +7,7 @@
       "name": "abp-layout",
       "type": "registry:block",
       "title": "ABP Admin Layout",
-      "description": "sidebar-08-style ABP admin layout wired to @jcoder/abp-react/react (menu, breadcrumb, user, locale, tenant, theme).",
+      "description": "sidebar-08-style ABP admin layout wired to @jcoder-stack/abp-react/react (menu, breadcrumb, user, locale, tenant, theme).",
       "registryDependencies": [
         "sidebar",
         "breadcrumb",
@@ -24,7 +24,7 @@
       ],
       "dependencies": [
         "lucide-react",
-        "@jcoder/abp-react"
+        "@jcoder-stack/abp-react"
       ],
       "files": [
         {
@@ -97,7 +97,7 @@
         "alert"
       ],
       "dependencies": [
-        "@jcoder/abp-react"
+        "@jcoder-stack/abp-react"
       ],
       "files": [
         {
@@ -124,11 +124,11 @@
         "button",
         "tooltip",
         "separator",
-        "./node_modules/@jcoder/registry/public/r/abp-layout.json",
-        "./node_modules/@jcoder/registry/public/r/abp-login.json"
+        "./node_modules/@jcoder-stack/registry/public/r/abp-layout.json",
+        "./node_modules/@jcoder-stack/registry/public/r/abp-login.json"
       ],
       "dependencies": [
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "lucide-react",
         "zod"
       ],
@@ -234,7 +234,7 @@
       ],
       "dependencies": [
         "@tanstack/react-table@9.0.0-beta.59",
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "lucide-react"
       ],
       "files": [
@@ -310,12 +310,12 @@
         "select",
         "badge",
         "skeleton",
-        "./node_modules/@jcoder/registry/public/r/combobox.json",
-        "./node_modules/@jcoder/registry/public/r/date-picker.json"
+        "./node_modules/@jcoder-stack/registry/public/r/combobox.json",
+        "./node_modules/@jcoder-stack/registry/public/r/date-picker.json"
       ],
       "dependencies": [
         "@tanstack/react-form",
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "lucide-react"
       ],
       "files": [
@@ -368,7 +368,7 @@
       "description": "ABP CRUD service protocol (createCrudService, AbpTableSource), ABP-flavored form options/error mapping, and the bound-components factory shared by the abp-table and abp-sheet blocks.",
       "registryDependencies": [],
       "dependencies": [
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "@tanstack/react-query",
         "@tanstack/react-form"
       ],
@@ -420,13 +420,13 @@
         "separator",
         "field",
         "skeleton",
-        "./node_modules/@jcoder/registry/public/r/data-table.json",
-        "./node_modules/@jcoder/registry/public/r/form.json",
-        "./node_modules/@jcoder/registry/public/r/abp-crud.json",
-        "./node_modules/@jcoder/registry/public/r/date-picker.json"
+        "./node_modules/@jcoder-stack/registry/public/r/data-table.json",
+        "./node_modules/@jcoder-stack/registry/public/r/form.json",
+        "./node_modules/@jcoder-stack/registry/public/r/abp-crud.json",
+        "./node_modules/@jcoder-stack/registry/public/r/date-picker.json"
       ],
       "dependencies": [
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "@tanstack/react-query",
         "@tanstack/react-table@9.0.0-beta.59",
         "@tanstack/react-form",
@@ -482,11 +482,11 @@
       "title": "ABP CRUD Sheet",
       "description": "useAbpSheet: create/update drawer state machine wired to concurrencyStamp handling and abpSubmitValidator, on top of the form and abp-crud blocks.",
       "registryDependencies": [
-        "./node_modules/@jcoder/registry/public/r/form.json",
-        "./node_modules/@jcoder/registry/public/r/abp-crud.json"
+        "./node_modules/@jcoder-stack/registry/public/r/form.json",
+        "./node_modules/@jcoder-stack/registry/public/r/abp-crud.json"
       ],
       "dependencies": [
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "@tanstack/react-form",
         "@tanstack/react-query",
         "sonner"
@@ -509,7 +509,7 @@
       ],
       "dependencies": [
         "lucide-react",
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "radix-ui"
       ],
       "files": [
@@ -544,7 +544,7 @@
         "combobox"
       ],
       "dependencies": [
-        "@jcoder/abp-react"
+        "@jcoder-stack/abp-react"
       ],
       "files": [
         {
@@ -583,7 +583,7 @@
       "dependencies": [
         "date-fns",
         "react-day-picker",
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "lucide-react"
       ],
       "files": [
@@ -626,11 +626,11 @@
         "button",
         "skeleton",
         "sonner",
-        "./node_modules/@jcoder/registry/public/r/tree.json",
-        "./node_modules/@jcoder/registry/public/r/form.json"
+        "./node_modules/@jcoder-stack/registry/public/r/tree.json",
+        "./node_modules/@jcoder-stack/registry/public/r/form.json"
       ],
       "dependencies": [
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "sonner",
         "@tanstack/react-query"
       ],
@@ -672,13 +672,13 @@
         "tooltip",
         "sonner",
         "dropdown-menu",
-        "./node_modules/@jcoder/registry/public/r/app-shell.json",
-        "./node_modules/@jcoder/registry/public/r/abp-table.json",
-        "./node_modules/@jcoder/registry/public/r/abp-sheet.json",
-        "./node_modules/@jcoder/registry/public/r/abp-permission-sheet.json"
+        "./node_modules/@jcoder-stack/registry/public/r/app-shell.json",
+        "./node_modules/@jcoder-stack/registry/public/r/abp-table.json",
+        "./node_modules/@jcoder-stack/registry/public/r/abp-sheet.json",
+        "./node_modules/@jcoder-stack/registry/public/r/abp-permission-sheet.json"
       ],
       "dependencies": [
-        "@jcoder/abp-react",
+        "@jcoder-stack/abp-react",
         "@tanstack/react-form",
         "@tanstack/react-query",
         "@tanstack/react-table@9.0.0-beta.59",

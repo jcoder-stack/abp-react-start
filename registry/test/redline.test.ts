@@ -1,5 +1,5 @@
-import { createLogger, createMemorySink, resolveConfig } from "@jcoder/abp-react/logger";
-import { createAbpAuthRuntime, handleCallback, handleLogin } from "@jcoder/abp-react/proxy";
+import { createLogger, createMemorySink, resolveConfig } from "@jcoder-stack/abp-react/logger";
+import { createAbpAuthRuntime, handleCallback, handleLogin } from "@jcoder-stack/abp-react/proxy";
 import { describe, expect, it } from "vitest";
 
 const ENV = {

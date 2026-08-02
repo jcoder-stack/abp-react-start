@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/abp/table/status-badge";

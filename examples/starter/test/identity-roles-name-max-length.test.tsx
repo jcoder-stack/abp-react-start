@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";

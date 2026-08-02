@@ -1,4 +1,4 @@
-import { type MenuItem, useBreadcrumbs, useLocalization } from "@jcoder/abp-react/react";
+import { type MenuItem, useBreadcrumbs, useLocalization } from "@jcoder-stack/abp-react/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Fragment } from "react";
 import {

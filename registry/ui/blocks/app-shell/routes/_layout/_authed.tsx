@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { requireAuth } from "@/auth";
 

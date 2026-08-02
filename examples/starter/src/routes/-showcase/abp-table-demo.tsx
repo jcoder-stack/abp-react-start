@@ -1,5 +1,5 @@
-import type { PagedResult } from "@jcoder/abp-react/core";
-import { useLocalization } from "@jcoder/abp-react/react";
+import type { PagedResult } from "@jcoder-stack/abp-react/core";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { type keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { z } from "zod";

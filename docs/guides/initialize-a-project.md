@@ -36,13 +36,13 @@ cd my-app
 
 ```bash
 # 运行时
-bun add @jcoder/abp-react
+bun add @jcoder-stack/abp-react
 
 # 开发期：CLI 与 registry（外壳与块的源，装完就靠 init 落位）
-bun add -D @jcoder/cli @jcoder/registry
+bun add -D @jcoder-stack/cli @jcoder-stack/registry
 ```
 
-`@jcoder/registry` **必须装成 devDependency**——CLI 会从 `node_modules/@jcoder/registry` 找 copy-in 源，装成运行时依赖它也找得到，但那些文件不该进生产包。
+`@jcoder-stack/registry` **必须装成 devDependency**——CLI 会从 `node_modules/@jcoder-stack/registry` 找 copy-in 源，装成运行时依赖它也找得到，但那些文件不该进生产包。
 
 各包职责：`react` 提供 Provider 与 hooks，`auth` 是登录策略与加密 cookie 会话，`abp-proxy` 是 ABP 代理网关与登录/回调/登出/文化/租户 handler，`http` 是带超时与重试的 fetch client，`abp-core` 归一 ABP 的配置与分页类型，`i18n` 做两层词条合并，`permissions` 提供 `isGranted`，`router` 提供路由守卫，`logger` 是同构日志。
 
@@ -89,7 +89,7 @@ css 入口的探测顺序是 `src/styles/app.css` → `src/styles.css` → `src/
 只想更新某一个块，不必走 init：
 
 ```bash
-npx shadcn add node_modules/@jcoder/registry/public/r/<块名>.json --overwrite
+npx shadcn add node_modules/@jcoder-stack/registry/public/r/<块名>.json --overwrite
 ```
 
 ### 确认装对了

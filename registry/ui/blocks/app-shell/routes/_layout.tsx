@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { User } from "lucide-react";
 import { useMemo } from "react";

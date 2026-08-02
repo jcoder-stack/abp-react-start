@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { FrontendCatalog } from "@jcoder/abp-react/i18n";
+import type { FrontendCatalog } from "@jcoder-stack/abp-react/i18n";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "./test-utils";

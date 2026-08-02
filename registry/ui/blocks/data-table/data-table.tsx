@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { flexRender, type PaginationState, type RowData } from "@tanstack/react-table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { type ReactNode, useId } from "react";

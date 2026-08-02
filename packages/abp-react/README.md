@@ -1,4 +1,4 @@
-# @jcoder/abp-react
+# @jcoder-stack/abp-react
 
 `abp-react-start` 的运行时内核——从零自研的纯 React ABP 前端框架，总览见仓库根 README。
 
@@ -6,22 +6,22 @@
 
 | 子路径 | 职责 |
 | --- | --- |
-| `@jcoder/abp-react/logger` | 同构日志：作用域、字段绑定、默认脱敏、env 开关 |
-| `@jcoder/abp-react/core` | ABP 线上格式归一：application-configuration 的类型 + zod（容错解析）、`PagedResult<T>`、错误信封（`HttpError`/`toHttpError`） |
-| `@jcoder/abp-react/auth` | 授权认证核心：登录策略层（OIDC/password）+ 会话层（加密分块 cookie、刷新、登出）；宿主无关、后端无关 |
-| `@jcoder/abp-react/proxy` | ABP 代理网关与调用层：贴 Bearer 转发、401→刷新→重放、幂等重试、超时；策略头组装、会话代调、身份派生；ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler |
-| `@jcoder/abp-react/permissions` | 权限判定原语 `isGranted` + 变参 checker |
-| `@jcoder/abp-react/i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库），可注入 interpolate/plural |
-| `@jcoder/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks（用户/权限/设置/特性/本地化/菜单）+ `<PermissionGuard>`/`<FeatureGuard>` |
-| `@jcoder/abp-react/router` | TanStack Router beforeLoad 路由守卫 `requireAuth` / `requirePermission` |
+| `@jcoder-stack/abp-react/logger` | 同构日志：作用域、字段绑定、默认脱敏、env 开关 |
+| `@jcoder-stack/abp-react/core` | ABP 线上格式归一：application-configuration 的类型 + zod（容错解析）、`PagedResult<T>`、错误信封（`HttpError`/`toHttpError`） |
+| `@jcoder-stack/abp-react/auth` | 授权认证核心：登录策略层（OIDC/password）+ 会话层（加密分块 cookie、刷新、登出）；宿主无关、后端无关 |
+| `@jcoder-stack/abp-react/proxy` | ABP 代理网关与调用层：贴 Bearer 转发、401→刷新→重放、幂等重试、超时；策略头组装、会话代调、身份派生；ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler |
+| `@jcoder-stack/abp-react/permissions` | 权限判定原语 `isGranted` + 变参 checker |
+| `@jcoder-stack/abp-react/i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库），可注入 interpolate/plural |
+| `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks（用户/权限/设置/特性/本地化/菜单）+ `<PermissionGuard>`/`<FeatureGuard>` |
+| `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad 路由守卫 `requireAuth` / `requirePermission` |
 
 ## 安装
 
 ```bash
-bun add @jcoder/abp-react
+bun add @jcoder-stack/abp-react
 ```
 
-多数项目是配合 `@jcoder/cli` 使用的——`jc-abp init` 会把接线代码落进你的项目，之后这些文件归你维护。手工接线见下。
+多数项目是配合 `@jcoder-stack/cli` 使用的——`jc-abp init` 会把接线代码落进你的项目，之后这些文件归你维护。手工接线见下。
 
 ## peerDependencies
 
@@ -34,7 +34,7 @@ bun add @jcoder/abp-react
 `createAbpAuthRuntime` 从环境变量读配置（`AUTH_ISSUER`、`AUTH_CLIENT_ID`、`AUTH_SESSION_SECRET`、`AUTH_REDIRECT_URI`、`AUTH_ABP_BASE_URL`），返回登录/回调/登出所需的一切。每个覆盖项都有默认值：
 
 ```ts
-import { createAbpAuthRuntime } from "@jcoder/abp-react/proxy";
+import { createAbpAuthRuntime } from "@jcoder-stack/abp-react/proxy";
 
 export const createRuntime = () =>
   createAbpAuthRuntime(process.env, {
@@ -52,7 +52,7 @@ export const createRuntime = () =>
 两个 Provider 分开挂：配置（本地化/设置/特性）与身份的失效时机不同，合成一个会让身份刷新连带重建 translator。
 
 ```tsx
-import { AppConfigProvider, SessionProvider } from "@jcoder/abp-react/react";
+import { AppConfigProvider, SessionProvider } from "@jcoder-stack/abp-react/react";
 
 <AppConfigProvider config={appState.config} messages={messages} fallbackCulture="en">
   <SessionProvider identity={appState.identity} fetchIdentity={fetchIdentity}>
@@ -66,7 +66,7 @@ import { AppConfigProvider, SessionProvider } from "@jcoder/abp-react/react";
 ### 路由守卫
 
 ```ts
-import { requireAuth, requirePermission } from "@jcoder/abp-react/router";
+import { requireAuth, requirePermission } from "@jcoder-stack/abp-react/router";
 
 export const Route = createFileRoute("/_layout/_authed")({
   beforeLoad: requireAuth(),

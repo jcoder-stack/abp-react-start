@@ -21,8 +21,8 @@ export function resolveRegistryDir(startDir: string, explicit?: string): string 
   }
   let dir = resolve(startDir);
   while (true) {
-    // Published: an installed @jcoder/registry. Dev monorepo: a top-level registry/ dir.
-    const published = join(dir, "node_modules", "@jcoder", "registry");
+    // Published: an installed @jcoder-stack/registry. Dev monorepo: a top-level registry/ dir.
+    const published = join(dir, "node_modules", "@jcoder-stack", "registry");
     if (existsSync(published) && statSync(published).isDirectory()) return published;
     const local = join(dir, "registry");
     if (existsSync(local) && statSync(local).isDirectory()) return local;
@@ -30,7 +30,7 @@ export function resolveRegistryDir(startDir: string, explicit?: string): string 
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error("registry dir not found; install @jcoder/registry or pass --from <path>");
+  throw new Error("registry dir not found; install @jcoder-stack/registry or pass --from <path>");
 }
 
 /** Relative file paths under `dir`, sorted, always `/`-separated. Windows readdir emits `\`,

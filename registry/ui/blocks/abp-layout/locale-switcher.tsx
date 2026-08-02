@@ -1,4 +1,4 @@
-import { useAppConfig, useCulture, useLocalization } from "@jcoder/abp-react/react";
+import { useAppConfig, useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import { useRouterState } from "@tanstack/react-router";
 import { Check, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";

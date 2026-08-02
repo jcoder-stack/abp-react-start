@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { PaginationState, RowData } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type ReactNode, useMemo } from "react";

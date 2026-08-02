@@ -1,4 +1,4 @@
-import type { MenuItem } from "@jcoder/abp-react/react";
+import type { MenuItem } from "@jcoder-stack/abp-react/react";
 import { AbpBreadcrumb } from "@/components/abp/layout/abp-breadcrumb";
 import { LocaleSwitcher } from "@/components/abp/layout/locale-switcher";
 import { TenantSwitcher } from "@/components/abp/layout/tenant-switcher";

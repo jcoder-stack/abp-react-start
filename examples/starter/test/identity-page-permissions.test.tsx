@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { Identity } from "@jcoder/abp-react/auth";
-import { useLocalization, usePermissionChecker } from "@jcoder/abp-react/react";
+import type { Identity } from "@jcoder-stack/abp-react/auth";
+import { useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

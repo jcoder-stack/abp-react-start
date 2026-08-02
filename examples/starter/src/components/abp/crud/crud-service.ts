@@ -1,4 +1,4 @@
-import type { AbpListParams, PagedResult } from "@jcoder/abp-react/core";
+import type { AbpListParams, PagedResult } from "@jcoder-stack/abp-react/core";
 import type { keepPreviousData } from "@tanstack/react-query";
 
 export interface PagedResultLike<T> {

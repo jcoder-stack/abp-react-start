@@ -1,4 +1,4 @@
-import { useAppConfig, useLocalization, useSession } from "@jcoder/abp-react/react";
+import { useAppConfig, useLocalization, useSession } from "@jcoder-stack/abp-react/react";
 import { useRouterState } from "@tanstack/react-router";
 import { Building2 } from "lucide-react";
 import { useState } from "react";

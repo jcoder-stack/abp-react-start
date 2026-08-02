@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { revalidateLogic } from "@tanstack/react-form";
 import { useState } from "react";
 import { z } from "zod";

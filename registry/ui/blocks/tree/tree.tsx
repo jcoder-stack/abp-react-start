@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { ChevronRightIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { cn } from "@/lib/utils";

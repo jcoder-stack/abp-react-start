@@ -1,4 +1,4 @@
-import { useLocalization, useSession } from "@jcoder/abp-react/react";
+import { useLocalization, useSession } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowRight,

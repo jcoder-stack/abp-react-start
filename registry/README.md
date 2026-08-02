@@ -1,8 +1,8 @@
-# @jcoder/registry
+# @jcoder-stack/registry
 
 认证外壳的 copy-in 源，工厂化到极简：**`auth.config.ts` 是你唯一要看的文件**——一句 `createAbpAuthRuntime(process.env, {…覆盖项})`，默认即现行为，每个覆盖项（cookie 名/寿命、策略启停、登出回跳、身份解析器…）都带默认值，取消注释即生效。其余是薄接线：`runtime.ts`（进程单例）、`server-fns.ts` / `middleware.ts`（TanStack 接线，编译约束必留 copy-in）、`index.ts`（barrel）。
 
-装配与机制全部下沉包：ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler → `@jcoder/abp-react/proxy`；路由守卫 `requireAuth`/`requirePermission` → `@jcoder/abp-react/router`（TanStack Router beforeLoad，经 `@/auth` barrel 重导出）；ABP 代理调用、身份读取、returnUrl/culture 纯函数 → `@jcoder/abp-react/proxy` / `@jcoder/abp-react/auth`。
+装配与机制全部下沉包：ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler → `@jcoder-stack/abp-react/proxy`；路由守卫 `requireAuth`/`requirePermission` → `@jcoder-stack/abp-react/router`（TanStack Router beforeLoad，经 `@/auth` barrel 重导出）；ABP 代理调用、身份读取、returnUrl/culture 纯函数 → `@jcoder-stack/abp-react/proxy` / `@jcoder-stack/abp-react/auth`。
 
 由 `jc-abp add auth` 按 manifest 落位到应用 `src/`；属 ABP React Start 框架，总览见仓库根 README。
 

@@ -59,9 +59,9 @@ for (const item of registry.items) {
 
 // ④ 兄弟块只能用安装路径引用，不能写裸名字。shadcn 把裸名字当作官方 registry 的条目，去
 // ui.shadcn.com 找同名 item，找不到就整块安装失败退出（实测 abp-sheet 声明 abp-crud 后 404 直接崩）。
-// 路径形式则按消费项目的根解析，指向装好的 @jcoder/registry，shadcn 会自动把前置块一并装上。
+// 路径形式则按消费项目的根解析，指向装好的 @jcoder-stack/registry，shadcn 会自动把前置块一并装上。
 // 自指例外：本仓库 combobox 块建于官方同名原语之上，那个名字确实指向 shadcn 的 item。
-const SIBLING_PREFIX = "./node_modules/@jcoder/registry/public/r/";
+const SIBLING_PREFIX = "./node_modules/@jcoder-stack/registry/public/r/";
 const ownNames = new Set(registry.items.map((item) => item.name));
 for (const item of registry.items) {
   const deps = item.registryDependencies ?? [];

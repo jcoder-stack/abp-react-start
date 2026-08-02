@@ -1,4 +1,4 @@
-import type { AuthRuntime } from "@jcoder/abp-react/proxy";
+import type { AuthRuntime } from "@jcoder-stack/abp-react/proxy";
 import { createRuntime } from "./auth.config";
 
 let runtime: AuthRuntime | undefined;

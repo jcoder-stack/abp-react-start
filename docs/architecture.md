@@ -12,7 +12,7 @@ ABP 后端 + 纯 React 前端（TanStack Start），token 全程不进浏览器�
 
 | 形态 | 是什么 | 为什么是这个形态 |
 | --- | --- | --- |
-| **npm 包**（`@jcoder/*`） | 协议、加解密、重试、判定这些无分歧的机制 | 谁都不想 fork 一份 OIDC 握手。升级靠 `bun update`，行为由测试锁住 |
+| **npm 包**（`@jcoder-stack/*`） | 协议、加解密、重试、判定这些无分歧的机制 | 谁都不想 fork 一份 OIDC 握手。升级靠 `bun update`，行为由测试锁住 |
 | **copy-in 外壳**（`registry/auth/**`，`jc-abp add auth`） | server functions、请求中间件、API 路由、`auth.config.ts` | 这些是**编译期构造**，见下 |
 | **shadcn block**（`registry/ui/blocks/**`，`npx shadcn add`） | 全部 UI | 组件的宿命就是被改。装进你的仓库，改它天经地义 |
 
@@ -33,7 +33,7 @@ middleware.ts      authMiddleware（取会话、过期就刷新并回写 cookie�
 
 ## 包的分层
 
-依赖只朝一个方向流，下层不知道上层存在。运行时是单个包 `@jcoder/abp-react`，下面的 `/xxx` 都是它的子路径导出：
+依赖只朝一个方向流，下层不知道上层存在。运行时是单个包 `@jcoder-stack/abp-react`，下面的 `/xxx` 都是它的子路径导出：
 
 ```
         ┌─────────────────────────────────────────────┐
@@ -79,7 +79,7 @@ src/api/abp-fetch.ts        （app-shell 块分发的桥接）
 src/auth/server-fns.ts      ← 编译边界，往下都在服务端
   │  ③ authMiddleware 取会话，过期就刷新并回写 Set-Cookie
   ▼
-@jcoder/abp-react/proxy
+@jcoder-stack/abp-react/proxy
   │  ④ 贴 Bearer、装 __tenant / .AspNetCore.Culture 策略头
   │  ⑤ 401 → 刷新 → 重放一次；幂等方法按需重试；超时
   ▼
@@ -110,7 +110,7 @@ ABP 后端
 UI 全部经 shadcn registry 分发源码，没有组件库依赖。由此带来两条约束：
 
 - **不 fork shadcn 原语**。要改原语的观感（圆角、焦点环、暗色质感）写进主题层的 `[data-slot="…"]` 规则——这样以后 `shadcn add` 装进来的新组件自动继承。改了原语文件，下次装新组件就会出现两套观感。
-- **块之间的依赖写成安装路径，不写名字**。shadcn 把裸名字当官方 registry 的条目，`abp-crud` 会被解析成 `ui.shadcn.com` 上的同名 item 并 404、整块失败；写成 `./node_modules/@jcoder/registry/public/r/<名字>.json` 则按消费项目的根解析，装一个块就能把整条依赖链带上。npm / yarn classic 的 workspace 会把包提升到根 `node_modules`，那里这个相对路径解析不到，需要自己排顺序逐块装。详见 [`guides/install-blocks.md`](guides/install-blocks.md)。
+- **块之间的依赖写成安装路径，不写名字**。shadcn 把裸名字当官方 registry 的条目，`abp-crud` 会被解析成 `ui.shadcn.com` 上的同名 item 并 404、整块失败；写成 `./node_modules/@jcoder-stack/registry/public/r/<名字>.json` 则按消费项目的根解析，装一个块就能把整条依赖链带上。npm / yarn classic 的 workspace 会把包提升到根 `node_modules`，那里这个相对路径解析不到，需要自己排顺序逐块装。详见 [`guides/install-blocks.md`](guides/install-blocks.md)。
 
 块自己也分层，`abp-` 前缀是分界线：`data-table` / `form` / `combobox` / `date-picker` / `tree` **零 ABP 依赖**，换后端能直接复用；`abp-crud` / `abp-table` / `abp-sheet` / `abp-permission-sheet` 才认识 ABP 协议。表单体系把这条线画得最细（四层，[`guides/forms.md`](guides/forms.md)），换后端只需替换最上面那层的 `mapError`。
 
@@ -140,9 +140,9 @@ UI 全部经 shadcn registry 分发源码，没有组件库依赖。由此带来
 
 包的 `main`/`exports` 在仓库内指向 `src`：workspace 里直接吃 TS 源码，改包不用先 build。发布出去的 tarball 显然不能这样，于是 `prepack` 在打包前临时改写 `package.json`、`postpack` 还原。`npm pack` / `npm publish` 与 `bun pm pack` 都会触发（除非显式 `--ignore-scripts`）。
 
-`scripts/apply-publish-config.mjs` 把 `publishConfig` 里的 `main`/`types`/`exports` 覆盖字段提到顶层，完成 `src` → `dist` 重定向（npm 原生只认 `publishConfig` 里少数几个键，其余得自己搬）。`@jcoder/abp-react` 与 `@jcoder/cli` 需要它，`@jcoder/registry` 分发的是源码文件、没有 dist，所以对它是空操作。
+`scripts/apply-publish-config.mjs` 把 `publishConfig` 里的 `main`/`types`/`exports` 覆盖字段提到顶层，完成 `src` → `dist` 重定向（npm 原生只认 `publishConfig` 里少数几个键，其余得自己搬）。`@jcoder-stack/abp-react` 与 `@jcoder-stack/cli` 需要它，`@jcoder-stack/registry` 分发的是源码文件、没有 dist，所以对它是空操作。
 
-**包间依赖不走这条路**：提交态的 `package.json` 里直接写真实版本区间（`@jcoder/registry` 依赖 `@jcoder/abp-react@^0.1.0`），不用 `workspace:*` 再由 prepack 改写。bun 靠版本匹配照样把仓库内的包链过去，开发体验不变。
+**包间依赖不走这条路**：提交态的 `package.json` 里直接写真实版本区间（`@jcoder-stack/registry` 依赖 `@jcoder-stack/abp-react@^0.1.0`），不用 `workspace:*` 再由 prepack 改写。bun 靠版本匹配照样把仓库内的包链过去，开发体验不变。
 
 原因是 prepack 改不动 registry 元数据：**npm 在跑 prepack 之前就把 manifest 快照下来当 packument 了**，tarball 是 prepack 之后打的所以干净，元数据里却留着 `workspace:*`。而依赖解析读的正是元数据——包发得出去、装不下来（实测于 verdaccio）。`exports`/`main` 不受影响，那些是从装好的 tarball 里读的，所以同一套改写对它们有效。`scripts/publish-smoke.sh` 因此除了检查 tarball，还断言提交态的 manifest 里没有 `workspace:` 区间。
 

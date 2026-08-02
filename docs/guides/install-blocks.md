@@ -10,22 +10,22 @@
 
 ```bash
 jc-abp add auth   # 认证外壳，abp-login/app-shell 依赖它，不随 registry 分发
-npx shadcn@4.13 add node_modules/@jcoder/registry/public/r/admin-pages.json
+npx shadcn@4.13 add node_modules/@jcoder-stack/registry/public/r/admin-pages.json
 ```
 
 这条命令会装齐 13 个块的全部 85 个文件，外加它们用到的 shadcn 原语。想要更小的子集就换成对应的块，例如只要表格：
 
 ```bash
-npx shadcn@4.13 add node_modules/@jcoder/registry/public/r/abp-table.json
+npx shadcn@4.13 add node_modules/@jcoder-stack/registry/public/r/abp-table.json
 ```
 
 它会自动带上 `data-table`、`form`、`combobox`、`date-picker`、`abp-crud`。
 
 ### 兄弟块为什么写成路径而不是名字
 
-shadcn 把**裸名字**当作官方 registry 的条目，`abp-crud` 会被解析成 `ui.shadcn.com/r/.../abp-crud.json`，404，然后整块安装失败退出。所以兄弟块一律写成 `./node_modules/@jcoder/registry/public/r/<名字>.json`——这个路径按**消费项目的根目录**解析，指向你装好的 `@jcoder/registry`。`registry/scripts/check-registry-deps.mjs` 两头都管：裸名字直接拒绝，路径形式则校验它确实指向存在的兄弟块。
+shadcn 把**裸名字**当作官方 registry 的条目，`abp-crud` 会被解析成 `ui.shadcn.com/r/.../abp-crud.json`，404，然后整块安装失败退出。所以兄弟块一律写成 `./node_modules/@jcoder-stack/registry/public/r/<名字>.json`——这个路径按**消费项目的根目录**解析，指向你装好的 `@jcoder-stack/registry`。`registry/scripts/check-registry-deps.mjs` 两头都管：裸名字直接拒绝，路径形式则校验它确实指向存在的兄弟块。
 
-> **npm / yarn classic 的 workspace 里不适用。** 那两个包管理器会把 `@jcoder/registry` 提升到 workspace 根的 `node_modules`，成员目录下没有它，上面那个相对路径解析不到。这种项目请按下面「各块前置」的表自己排顺序逐块装；`jc-abp init` 不受影响，它自己解析真实路径，任何布局下都能用。bun 与 pnpm 会在成员目录建符号链接，不受此限。
+> **npm / yarn classic 的 workspace 里不适用。** 那两个包管理器会把 `@jcoder-stack/registry` 提升到 workspace 根的 `node_modules`，成员目录下没有它，上面那个相对路径解析不到。这种项目请按下面「各块前置」的表自己排顺序逐块装；`jc-abp init` 不受影响，它自己解析真实路径，任何布局下都能用。bun 与 pnpm 会在成员目录建符号链接，不受此限。
 
 ## 各块前置
 
@@ -80,7 +80,7 @@ shadcn 把**裸名字**当作官方 registry 的条目，`abp-crud` 会被解析
 改某一块的最新版，不必重跑 init：
 
 ```bash
-npx shadcn@4.13 add node_modules/@jcoder/registry/public/r/<块>.json --overwrite
+npx shadcn@4.13 add node_modules/@jcoder-stack/registry/public/r/<块>.json --overwrite
 ```
 
 `--overwrite` 会覆盖你在该块文件里的本地改动。块的定制点是主题层（`styles.css` 的 `data-slot` 规则）与 `cn()` 合并类，不是改块源码——见 [`../../DESIGN.md`](../../DESIGN.md)。

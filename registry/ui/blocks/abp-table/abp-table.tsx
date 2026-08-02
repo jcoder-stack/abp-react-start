@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { Plus } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import type { AbpTableSource } from "@/components/abp/crud/abp-table-source";

@@ -1,4 +1,4 @@
-import { useCulture, useLocalization } from "@jcoder/abp-react/react";
+import { useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";

@@ -1,4 +1,4 @@
-import { handleLogin } from "@jcoder/abp-react/proxy";
+import { handleLogin } from "@jcoder-stack/abp-react/proxy";
 import { createFileRoute } from "@tanstack/react-router";
 import { getAuthRuntime } from "@/auth/runtime";
 

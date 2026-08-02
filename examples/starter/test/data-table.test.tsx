@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { SortingState } from "@tanstack/react-table";
 import { fireEvent, screen } from "@testing-library/react";
 import { act, type ReactNode, useState } from "react";

@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 /** 403 page. Permission guards redirect an authenticated but unauthorized user here. */

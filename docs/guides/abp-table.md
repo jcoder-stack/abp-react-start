@@ -234,7 +234,7 @@ const roleSchema = buildRoleSchema(L);
 - **UI 必填与词条消息用 `extend` 覆盖**：生成侧的 `min(0)` 只表示「非负长度」，不等于 ABP 的 `[Required]`（会放行空串）；真正的必填语义、`trim`、以及要走 `L()` 的本地化消息都在 `extend` 里针对该字段重新声明。
 - **表单值域与生成侧冲突的键，`omit` 后重声明**：像 `books` 的 `type`——`SelectField` 的值域是字符串，生成侧是 number literal union，两者类型不兼容，先 `.omit({ type: true })` 摘掉这个键，再在 `extend` 里补一个 `z.string()`。
 
-**schema 工厂要具名导出，护栏才能挂真实产物**：校验规则（尤其 `max` 这类边界值）是页面对外行为的一部分，组件测试如果只在挂具里复刻同一套 `.extend(...)` 调用，页面代码将来悄悄改回手写 schema、漏掉 `max`，测试仍然全绿——护栏名存实亡。因此把 schema 构造提成具名导出的工厂函数，测试直接 `import` 它来搭挂具。`roles.tsx` 本身经 `@/auth` 引入了 `@tanstack/react-start` 的 server fn，在没有接 `tanstackStart` vite 插件的纯 `vitest` 环境下无法被测试文件直接 import（`Missing "#tanstack-router-entry" specifier`）——遇到这种情况，把 schema 工厂拆到同目录的 `-` 前缀文件（如 `identity/-role-schema.ts`，路由生成器按前缀跳过，不会被误当路由），只依赖 `zod`/生成的 body schema/`@jcoder/abp-react/react` 的 `Localize` 类型，页面与测试各自 `import` 同一份实现。
+**schema 工厂要具名导出，护栏才能挂真实产物**：校验规则（尤其 `max` 这类边界值）是页面对外行为的一部分，组件测试如果只在挂具里复刻同一套 `.extend(...)` 调用，页面代码将来悄悄改回手写 schema、漏掉 `max`，测试仍然全绿——护栏名存实亡。因此把 schema 构造提成具名导出的工厂函数，测试直接 `import` 它来搭挂具。`roles.tsx` 本身经 `@/auth` 引入了 `@tanstack/react-start` 的 server fn，在没有接 `tanstackStart` vite 插件的纯 `vitest` 环境下无法被测试文件直接 import（`Missing "#tanstack-router-entry" specifier`）——遇到这种情况，把 schema 工厂拆到同目录的 `-` 前缀文件（如 `identity/-role-schema.ts`，路由生成器按前缀跳过，不会被误当路由），只依赖 `zod`/生成的 body schema/`@jcoder-stack/abp-react/react` 的 `Localize` 类型，页面与测试各自 `import` 同一份实现。
 
 ## ④ 列定义
 

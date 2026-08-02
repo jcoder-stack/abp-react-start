@@ -1,4 +1,4 @@
-import type { Localize } from "@jcoder/abp-react/react";
+import type { Localize } from "@jcoder-stack/abp-react/react";
 import { z } from "zod";
 import { postApiIdentityRolesBody, postApiIdentityRolesBodyNameMax } from "@/api/schemas/role/role";
 

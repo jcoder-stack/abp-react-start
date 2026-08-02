@@ -1,4 +1,4 @@
-import type { MenuItem } from "@jcoder/abp-react/react";
+import type { MenuItem } from "@jcoder-stack/abp-react/react";
 import { Home } from "lucide-react";
 import type { FileRouteTypes } from "@/routeTree.gen";
 

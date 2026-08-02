@@ -5,7 +5,7 @@
   "description": "Sheet-based form shell with server field-error mapping, wired to @tanstack/react-form.",
   "dependencies": [
     "@tanstack/react-form",
-    "@jcoder/abp-react",
+    "@jcoder-stack/abp-react",
     "lucide-react"
   ],
   "registryDependencies": [
@@ -18,8 +18,8 @@
     "select",
     "badge",
     "skeleton",
-    "./node_modules/@jcoder/registry/public/r/combobox.json",
-    "./node_modules/@jcoder/registry/public/r/date-picker.json"
+    "./node_modules/@jcoder-stack/registry/public/r/combobox.json",
+    "./node_modules/@jcoder-stack/registry/public/r/date-picker.json"
   ],
   "files": [
     {
@@ -30,7 +30,7 @@
     },
     {
       "path": "ui/blocks/form/sheet-form.tsx",
-      "content": "import { useLocalization } from \"@jcoder/abp-react/react\";\nimport { Pencil } from \"lucide-react\";\nimport type { ReactNode } from \"react\";\nimport { SubmitButton } from \"@/components/form/submit-button\";\nimport { Button } from \"@/components/ui/button\";\nimport { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from \"@/components/ui/sheet\";\n\nexport type SheetFormMode = \"create\" | \"edit\" | \"view\";\n\nexport interface SheetFormProps {\n  mode: SheetFormMode;\n  open: boolean;\n  onOpenChange: (open: boolean) => void;\n  title: string;\n  onSubmit?: () => void;\n  canEdit?: boolean;\n  onEdit?: () => void;\n  pending?: boolean;\n  children: ReactNode;\n}\n\n/** 三态侧滑表单容器（对标 DrawerForm）。 */\nexport function SheetForm(props: SheetFormProps) {\n  const L = useLocalization();\n  const editable = props.mode !== \"view\";\n  return (\n    <Sheet open={props.open} onOpenChange={props.onOpenChange}>\n      <SheetContent className=\"flex w-full flex-col gap-0 sm:max-w-md\">\n        <SheetHeader className=\"flex-row items-center justify-between gap-2 pr-12\">\n          <SheetTitle>{props.title}</SheetTitle>\n          {!editable && props.canEdit === true && (\n            <Button\n              type=\"button\"\n              variant=\"ghost\"\n              size=\"icon\"\n              className=\"size-8\"\n              aria-label={L(\"Form:Edit\")}\n              onClick={props.onEdit}\n            >\n              <Pencil />\n            </Button>\n          )}\n        </SheetHeader>\n        <form\n          className=\"flex flex-1 flex-col overflow-y-auto\"\n          onSubmit={(event) => {\n            event.preventDefault();\n            props.onSubmit?.();\n          }}\n        >\n          <div className=\"flex-1 space-y-4 px-4 py-2\">{props.children}</div>\n          {editable && (\n            <SheetFooter>\n              <SubmitButton pending={props.pending} />\n              <Button type=\"button\" variant=\"outline\" onClick={() => props.onOpenChange(false)}>\n                {L(\"Form:Cancel\")}\n              </Button>\n            </SheetFooter>\n          )}\n        </form>\n      </SheetContent>\n    </Sheet>\n  );\n}\n",
+      "content": "import { useLocalization } from \"@jcoder-stack/abp-react/react\";\nimport { Pencil } from \"lucide-react\";\nimport type { ReactNode } from \"react\";\nimport { SubmitButton } from \"@/components/form/submit-button\";\nimport { Button } from \"@/components/ui/button\";\nimport { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from \"@/components/ui/sheet\";\n\nexport type SheetFormMode = \"create\" | \"edit\" | \"view\";\n\nexport interface SheetFormProps {\n  mode: SheetFormMode;\n  open: boolean;\n  onOpenChange: (open: boolean) => void;\n  title: string;\n  onSubmit?: () => void;\n  canEdit?: boolean;\n  onEdit?: () => void;\n  pending?: boolean;\n  children: ReactNode;\n}\n\n/** 三态侧滑表单容器（对标 DrawerForm）。 */\nexport function SheetForm(props: SheetFormProps) {\n  const L = useLocalization();\n  const editable = props.mode !== \"view\";\n  return (\n    <Sheet open={props.open} onOpenChange={props.onOpenChange}>\n      <SheetContent className=\"flex w-full flex-col gap-0 sm:max-w-md\">\n        <SheetHeader className=\"flex-row items-center justify-between gap-2 pr-12\">\n          <SheetTitle>{props.title}</SheetTitle>\n          {!editable && props.canEdit === true && (\n            <Button\n              type=\"button\"\n              variant=\"ghost\"\n              size=\"icon\"\n              className=\"size-8\"\n              aria-label={L(\"Form:Edit\")}\n              onClick={props.onEdit}\n            >\n              <Pencil />\n            </Button>\n          )}\n        </SheetHeader>\n        <form\n          className=\"flex flex-1 flex-col overflow-y-auto\"\n          onSubmit={(event) => {\n            event.preventDefault();\n            props.onSubmit?.();\n          }}\n        >\n          <div className=\"flex-1 space-y-4 px-4 py-2\">{props.children}</div>\n          {editable && (\n            <SheetFooter>\n              <SubmitButton pending={props.pending} />\n              <Button type=\"button\" variant=\"outline\" onClick={() => props.onOpenChange(false)}>\n                {L(\"Form:Cancel\")}\n              </Button>\n            </SheetFooter>\n          )}\n        </form>\n      </SheetContent>\n    </Sheet>\n  );\n}\n",
       "type": "registry:component",
       "target": "components/form/sheet-form.tsx"
     },
@@ -54,13 +54,13 @@
     },
     {
       "path": "ui/blocks/form/submit-button.tsx",
-      "content": "import { useLocalization } from \"@jcoder/abp-react/react\";\nimport { Loader2 } from \"lucide-react\";\nimport type { ReactNode } from \"react\";\nimport { Button } from \"@/components/ui/button\";\n\nexport function SubmitButton({ pending, children }: { pending?: boolean; children?: ReactNode }) {\n  const L = useLocalization();\n  return (\n    <Button type=\"submit\" disabled={pending}>\n      {pending === true && <Loader2 className=\"animate-spin\" />}\n      {children ?? L(\"Form:Save\")}\n    </Button>\n  );\n}\n",
+      "content": "import { useLocalization } from \"@jcoder-stack/abp-react/react\";\nimport { Loader2 } from \"lucide-react\";\nimport type { ReactNode } from \"react\";\nimport { Button } from \"@/components/ui/button\";\n\nexport function SubmitButton({ pending, children }: { pending?: boolean; children?: ReactNode }) {\n  const L = useLocalization();\n  return (\n    <Button type=\"submit\" disabled={pending}>\n      {pending === true && <Loader2 className=\"animate-spin\" />}\n      {children ?? L(\"Form:Save\")}\n    </Button>\n  );\n}\n",
       "type": "registry:component",
       "target": "components/form/submit-button.tsx"
     },
     {
       "path": "ui/blocks/form/form-error-summary.tsx",
-      "content": "import { useLocalization } from \"@jcoder/abp-react/react\";\nimport { Alert, AlertDescription, AlertTitle } from \"@/components/ui/alert\";\n\nexport function FormErrorSummary({ errors }: { errors: string[] }) {\n  const L = useLocalization();\n  if (errors.length === 0) return null;\n  return (\n    <Alert variant=\"destructive\">\n      <AlertTitle>{L(\"Form:SubmitFailed\")}</AlertTitle>\n      <AlertDescription>\n        {errors.map((message) => (\n          <p key={message}>{message}</p>\n        ))}\n      </AlertDescription>\n    </Alert>\n  );\n}\n",
+      "content": "import { useLocalization } from \"@jcoder-stack/abp-react/react\";\nimport { Alert, AlertDescription, AlertTitle } from \"@/components/ui/alert\";\n\nexport function FormErrorSummary({ errors }: { errors: string[] }) {\n  const L = useLocalization();\n  if (errors.length === 0) return null;\n  return (\n    <Alert variant=\"destructive\">\n      <AlertTitle>{L(\"Form:SubmitFailed\")}</AlertTitle>\n      <AlertDescription>\n        {errors.map((message) => (\n          <p key={message}>{message}</p>\n        ))}\n      </AlertDescription>\n    </Alert>\n  );\n}\n",
       "type": "registry:component",
       "target": "components/form/form-error-summary.tsx"
     },

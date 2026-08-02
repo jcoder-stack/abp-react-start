@@ -1,4 +1,4 @@
-import type { PagedResult } from "@jcoder/abp-react/core";
+import type { PagedResult } from "@jcoder-stack/abp-react/core";
 
 /**
  * `useAbpTable` 的数据源契约。不绑定 `CrudService`，非 ABP 后端或测试替身满足这个形状就能接。

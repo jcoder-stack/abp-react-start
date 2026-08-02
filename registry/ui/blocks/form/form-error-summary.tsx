@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function FormErrorSummary({ errors }: { errors: string[] }) {

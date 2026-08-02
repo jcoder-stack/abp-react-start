@@ -1,4 +1,4 @@
-import type { MenuItem } from "@jcoder/abp-react/react";
+import type { MenuItem } from "@jcoder-stack/abp-react/react";
 import { type ComponentProps, memo, type ReactNode } from "react";
 import { BrandMark } from "@/components/abp/layout/brand-mark";
 import { NavMain } from "@/components/abp/layout/nav-main";

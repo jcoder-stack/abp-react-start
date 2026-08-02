@@ -35,33 +35,33 @@ token 全程不进浏览器——所有请求经服务端代理，会话是一�
 
 ### npm 包（运行时）
 
-运行时全部收在**一个** npm 包 `@jcoder/abp-react` 里，按子路径分域导出——刻意不提供根导出，避免纯前端 bundle 拖进 `proxy`/`auth` 这类服务端代码。
+运行时全部收在**一个** npm 包 `@jcoder-stack/abp-react` 里，按子路径分域导出——刻意不提供根导出，避免纯前端 bundle 拖进 `proxy`/`auth` 这类服务端代码。
 
 | 子路径 | 作用 |
 |---|---|
-| `@jcoder/abp-react/logger` | 同构日志：作用域、字段绑定、默认脱敏、env 开关 |
-| `@jcoder/abp-react/core` | ABP 线上格式归一：application-configuration 的类型 + zod（容错解析）、`PagedResult<T>`、错误信封（`HttpError`/`toHttpError`） |
-| `@jcoder/abp-react/proxy` | ABP 代理网关与调用层：贴 Bearer 转发、401→刷新→重放、幂等重试、超时；策略头组装、会话代调、身份派生；ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler——宿主只在 copy-in 传覆盖项 |
-| `@jcoder/abp-react/auth` | 授权认证核心：登录策略层（OIDC/password）+ 会话层（加密分块 cookie、刷新、登出）；宿主无关、后端无关 |
-| `@jcoder/abp-react/permissions` | 权限判定原语 `isGranted` + 变参 checker |
-| `@jcoder/abp-react/router` | TanStack Router beforeLoad 路由守卫 `requireAuth` / `requirePermission`（`@tanstack/react-router` 作 peerDep，不用 TanStack 的消费者不受牵连） |
-| `@jcoder/abp-react/i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库），可注入 interpolate/plural |
-| `@jcoder/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks（用户/权限/设置/特性/本地化/菜单）+ `<PermissionGuard>`/`<FeatureGuard>` |
+| `@jcoder-stack/abp-react/logger` | 同构日志：作用域、字段绑定、默认脱敏、env 开关 |
+| `@jcoder-stack/abp-react/core` | ABP 线上格式归一：application-configuration 的类型 + zod（容错解析）、`PagedResult<T>`、错误信封（`HttpError`/`toHttpError`） |
+| `@jcoder-stack/abp-react/proxy` | ABP 代理网关与调用层：贴 Bearer 转发、401→刷新→重放、幂等重试、超时；策略头组装、会话代调、身份派生；ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler——宿主只在 copy-in 传覆盖项 |
+| `@jcoder-stack/abp-react/auth` | 授权认证核心：登录策略层（OIDC/password）+ 会话层（加密分块 cookie、刷新、登出）；宿主无关、后端无关 |
+| `@jcoder-stack/abp-react/permissions` | 权限判定原语 `isGranted` + 变参 checker |
+| `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad 路由守卫 `requireAuth` / `requirePermission`（`@tanstack/react-router` 作 peerDep，不用 TanStack 的消费者不受牵连） |
+| `@jcoder-stack/abp-react/i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库），可注入 interpolate/plural |
+| `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks（用户/权限/设置/特性/本地化/菜单）+ `<PermissionGuard>`/`<FeatureGuard>` |
 
 `react` / `@tanstack/react-router` / `zod` 都是 **optional peerDependency**：只写 BFF 的消费者不必装 React 与 router，只写前端的也不必装 zod。
 
 | 包 | 作用 |
 |---|---|
-| `@jcoder/cli` | `jc-abp` CLI：`gen`（orval 预设生成 react-query 客户端）+ `add`（拉取 registry 外壳）+ `init`（一站式初始化） |
+| `@jcoder-stack/cli` | `jc-abp` CLI：`gen`（orval 预设生成 react-query 客户端）+ `add`（拉取 registry 外壳）+ `init`（一站式初始化） |
 
 ### 源码分发（装进你的仓库）
 
-`@jcoder/registry` 里装的是**源码而非编译产物**，由 `jc-abp init` / `jc-abp add auth` / `npx shadcn add` 按 manifest 落位，落下之后归你维护：
+`@jcoder-stack/registry` 里装的是**源码而非编译产物**，由 `jc-abp init` / `jc-abp add auth` / `npx shadcn add` 按 manifest 落位，落下之后归你维护：
 
 - **认证外壳** → `src/auth/`：server functions、请求中间件、五条 API 路由、`auth.config.ts`。这几个文件必须 copy-in 而不能进 npm 包——[原因见架构文档](docs/architecture.md#为什么-server-fn-和中间件必须-copy-in)。
 - **UI blocks** → `src/components/`、`src/routes/`：侧栏布局、登录页、表格、表单、树、日期选择器、五个管理页。
 
-它和 `@jcoder/cli` 一起装作 devDependency——落位完就没它的事了。
+它和 `@jcoder-stack/cli` 一起装作 devDependency——落位完就没它的事了。
 
 ## 快速开始
 
@@ -70,8 +70,8 @@ token 全程不进浏览器——所有请求经服务端代理，会话是一�
 npx @tanstack/cli create my-app && cd my-app
 
 # 2. 装运行时包 + 开发期的 CLI 与 registry
-bun add @jcoder/abp-react
-bun add -D @jcoder/cli @jcoder/registry
+bun add @jcoder-stack/abp-react
+bun add -D @jcoder-stack/cli @jcoder-stack/registry
 
 # 3. 一站式初始化：播种基线配置与主题，落认证外壳，装齐所有块，并接好 __root.tsx / router.tsx
 npx jc-abp init          # --no-admin 可跳过管理后台五页

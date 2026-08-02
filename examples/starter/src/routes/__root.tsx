@@ -1,7 +1,7 @@
 // 副作用：注册生成 API 客户端的 fetchFn，全应用只接线这一次。
 import "@/api/abp-fetch";
-import type { FrontendCatalog } from "@jcoder/abp-react/i18n";
-import { AppConfigProvider, SessionProvider } from "@jcoder/abp-react/react";
+import type { FrontendCatalog } from "@jcoder-stack/abp-react/i18n";
+import { AppConfigProvider, SessionProvider } from "@jcoder-stack/abp-react/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import type { ReactNode } from "react";

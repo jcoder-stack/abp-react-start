@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useState } from "react";
 import { DatePicker } from "@/components/date-picker/date-picker";
 import { type DateRange, DateRangePicker } from "@/components/date-picker/date-range-picker";

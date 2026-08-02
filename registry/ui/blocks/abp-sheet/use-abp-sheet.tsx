@@ -1,4 +1,4 @@
-import { useLocalization, usePermissionChecker } from "@jcoder/abp-react/react";
+import { useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import { type FormValidateOrFn, useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useRef, useState } from "react";

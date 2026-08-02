@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useMemo, useState } from "react";
 import { Tree } from "@/components/tree/tree";
 import {

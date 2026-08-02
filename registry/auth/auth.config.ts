@@ -1,4 +1,4 @@
-import { createAbpAuthRuntime } from "@jcoder/abp-react/proxy";
+import { createAbpAuthRuntime } from "@jcoder-stack/abp-react/proxy";
 
 /**
  * auth 策略声明。本目录你唯一需要改的文件。

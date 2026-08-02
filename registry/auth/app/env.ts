@@ -1,7 +1,7 @@
 import { createServerOnlyFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// AUTH_* 必需 env 由 @jcoder/abp-react/proxy 的 resolveAbpAuthEnv 校验，勿在此重复。
+// AUTH_* 必需 env 由 @jcoder-stack/abp-react/proxy 的 resolveAbpAuthEnv 校验，勿在此重复。
 const serverEnvSchema = z.object({
   // 按需加应用自己的 server 变量，例：STRIPE_SECRET_KEY: z.string().min(1),
 });

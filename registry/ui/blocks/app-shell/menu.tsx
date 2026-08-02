@@ -1,4 +1,4 @@
-import type { MenuItem } from "@jcoder/abp-react/react";
+import type { MenuItem } from "@jcoder-stack/abp-react/react";
 import { Building2, Home, IdCard, Settings, Shield, Users, Wrench } from "lucide-react";
 import {
   IdentityPermissions,

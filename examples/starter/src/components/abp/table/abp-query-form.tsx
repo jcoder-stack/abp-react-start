@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { ListFilter } from "lucide-react";
 import { Children, Fragment, isValidElement, type KeyboardEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { type FormEvent, useState } from "react";
 import { loginWithPasswordFn } from "@/auth/server-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";

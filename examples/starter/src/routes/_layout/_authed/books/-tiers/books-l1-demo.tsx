@@ -1,5 +1,5 @@
-import { toPagedResult } from "@jcoder/abp-react/core";
-import { useLocalization } from "@jcoder/abp-react/react";
+import { toPagedResult } from "@jcoder-stack/abp-react/core";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";

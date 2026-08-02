@@ -1,4 +1,4 @@
-import { type MenuItem, useLocalization, useMenu } from "@jcoder/abp-react/react";
+import { type MenuItem, useLocalization, useMenu } from "@jcoder-stack/abp-react/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";

@@ -1,5 +1,5 @@
-import { formatPersonName } from "@jcoder/abp-react/i18n";
-import { useCulture, useLocalization, usePermissionChecker } from "@jcoder/abp-react/react";
+import { formatPersonName } from "@jcoder-stack/abp-react/i18n";
+import { useCulture, useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";

@@ -1,4 +1,4 @@
-import { type MenuItem, useLocalization, useMenu } from "@jcoder/abp-react/react";
+import { type MenuItem, useLocalization, useMenu } from "@jcoder-stack/abp-react/react";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";

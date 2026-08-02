@@ -1,5 +1,5 @@
-import { toAbpListParams } from "@jcoder/abp-react/core";
-import { useLocalization } from "@jcoder/abp-react/react";
+import { toAbpListParams } from "@jcoder-stack/abp-react/core";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { keepPreviousData } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { DataTable } from "@/components/data-table/data-table";

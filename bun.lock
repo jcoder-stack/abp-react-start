@@ -25,7 +25,7 @@
       "name": "starter",
       "dependencies": {
         "@base-ui/react": "^1.6.0",
-        "@jcoder/abp-react": "workspace:*",
+        "@jcoder-stack/abp-react": "workspace:*",
         "@tailwindcss/vite": "^4.1.18",
         "@tanstack/react-devtools": "^0.10.8",
         "@tanstack/react-form": "^1.33.2",
@@ -53,8 +53,8 @@
         "zod": "^4.0.0",
       },
       "devDependencies": {
-        "@jcoder/cli": "workspace:*",
-        "@jcoder/registry": "workspace:*",
+        "@jcoder-stack/cli": "workspace:*",
+        "@jcoder-stack/registry": "workspace:*",
         "@tailwindcss/typography": "^0.5.16",
         "@tanstack/devtools-vite": "^0.8.1",
         "@tanstack/router-cli": "^1.132.0",
@@ -63,7 +63,7 @@
       },
     },
     "packages/abp-react": {
-      "name": "@jcoder/abp-react",
+      "name": "@jcoder-stack/abp-react",
       "version": "0.1.0",
       "devDependencies": {
         "@tanstack/react-router": "^1.0.0",
@@ -81,7 +81,7 @@
       ],
     },
     "packages/cli": {
-      "name": "@jcoder/cli",
+      "name": "@jcoder-stack/cli",
       "version": "0.1.0",
       "bin": {
         "jc-abp": "./bin/jc-abp.js",
@@ -103,10 +103,10 @@
       ],
     },
     "registry": {
-      "name": "@jcoder/registry",
+      "name": "@jcoder-stack/registry",
       "version": "0.1.0",
       "dependencies": {
-        "@jcoder/abp-react": "workspace:*",
+        "@jcoder-stack/abp-react": "workspace:*",
         "@tanstack/react-router": "^1.0.0",
         "@tanstack/react-start": "^1.0.0",
         "zod": "^4.0.0",
@@ -279,11 +279,11 @@
 
     "@ibm-cloud/openapi-ruleset-utilities": ["@ibm-cloud/openapi-ruleset-utilities@1.9.2", "", {}, "sha512-q9ZFdbtfxhaSeN6AykhVYk/EgkgV99dIW7ua15Wzy3s5BTH6tH1MZJA743QE9BQ+Iul/u1+XYNSaJm2/jiMQig=="],
 
-    "@jcoder/abp-react": ["@jcoder/abp-react@workspace:packages/abp-react"],
+    "@jcoder-stack/abp-react": ["@jcoder-stack/abp-react@workspace:packages/abp-react"],
 
-    "@jcoder/cli": ["@jcoder/cli@workspace:packages/cli"],
+    "@jcoder-stack/cli": ["@jcoder-stack/cli@workspace:packages/cli"],
 
-    "@jcoder/registry": ["@jcoder/registry@workspace:registry"],
+    "@jcoder-stack/registry": ["@jcoder-stack/registry@workspace:registry"],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 

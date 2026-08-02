@@ -1,4 +1,4 @@
-import { useLocalization, usePermissionChecker } from "@jcoder/abp-react/react";
+import { useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";

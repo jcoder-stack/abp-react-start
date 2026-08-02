@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useMemo, useState } from "react";
 import { Combobox } from "@/components/combobox/combobox";
 import { MultiCombobox } from "@/components/combobox/multi-combobox";

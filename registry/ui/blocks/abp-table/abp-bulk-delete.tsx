@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder/abp-react/react";
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

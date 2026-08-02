@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { MenuItem } from "@jcoder/abp-react/react";
+import type { MenuItem } from "@jcoder-stack/abp-react/react";
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { NavMain } from "@/components/abp/layout/nav-main";

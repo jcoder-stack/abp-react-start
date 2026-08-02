@@ -7,7 +7,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-// 包名与目录名并不总能互推（@jcoder/abp-react 在 packages/ 下，@jcoder/registry 在仓库根下），
+// 包名与目录名并不总能互推（@jcoder-stack/abp-react 在 packages/ 下，@jcoder-stack/registry 在仓库根下），
 // 所以按根 package.json 的 workspaces 逐个读 name 匹配，而不是从包名反推路径。
 function findWorkspacePackage(depName) {
   let dir = process.cwd();

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { AppConfigProvider } from "@jcoder/abp-react/react";
+import { AppConfigProvider } from "@jcoder-stack/abp-react/react";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";

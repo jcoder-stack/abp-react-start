@@ -1,7 +1,7 @@
-import type { Identity } from "@jcoder/abp-react/auth";
-import type { ApplicationConfiguration } from "@jcoder/abp-react/core";
-import type { FrontendCatalog } from "@jcoder/abp-react/i18n";
-import { AppConfigProvider, SessionProvider } from "@jcoder/abp-react/react";
+import type { Identity } from "@jcoder-stack/abp-react/auth";
+import type { ApplicationConfiguration } from "@jcoder-stack/abp-react/core";
+import type { FrontendCatalog } from "@jcoder-stack/abp-react/i18n";
+import { AppConfigProvider, SessionProvider } from "@jcoder-stack/abp-react/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,

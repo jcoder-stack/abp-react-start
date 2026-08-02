@@ -1,4 +1,4 @@
-import { useCulture, useLocalization } from "@jcoder/abp-react/react";
+import { useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import type { Locale } from "date-fns";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
