@@ -1,0 +1,14 @@
+{
+  "en": {
+    "": {
+      "Tree:Expand": "Expand",
+      "Tree:Collapse": "Collapse"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Tree:Expand": "展开",
+      "Tree:Collapse": "收起"
+    }
+  }
+}

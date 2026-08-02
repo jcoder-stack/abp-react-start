@@ -1,0 +1,26 @@
+{
+  "en": {
+    "": {
+      "Form:Save": "Save",
+      "Form:Cancel": "Cancel",
+      "Form:Edit": "Edit",
+      "Form:Close": "Close",
+      "Form:SubmitFailed": "Submission failed",
+      "Form:Required": "This field is required",
+      "Form:InvalidEmail": "Enter a valid email address",
+      "Form:MaxLength": "Up to {0} characters"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Form:Save": "保存",
+      "Form:Cancel": "取消",
+      "Form:Edit": "编辑",
+      "Form:Close": "关闭",
+      "Form:SubmitFailed": "提交失败",
+      "Form:Required": "此项为必填",
+      "Form:InvalidEmail": "请输入有效的邮箱地址",
+      "Form:MaxLength": "最多 {0} 个字符"
+    }
+  }
+}

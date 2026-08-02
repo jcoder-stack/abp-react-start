@@ -1,0 +1,20 @@
+{
+  "en": {
+    "": {
+      "Combobox:Empty": "No results found",
+      "Combobox:Loading": "Loading…",
+      "Combobox:Placeholder": "Select…",
+      "Combobox:Search": "Search…",
+      "Combobox:Truncated": "{0} more matches — keep typing to narrow down"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Combobox:Empty": "未找到匹配项",
+      "Combobox:Loading": "加载中…",
+      "Combobox:Placeholder": "请选择…",
+      "Combobox:Search": "搜索…",
+      "Combobox:Truncated": "还有 {0} 项，继续输入以缩小范围"
+    }
+  }
+}

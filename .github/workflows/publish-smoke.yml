@@ -1,0 +1,19 @@
+name: publish-smoke
+# 发布链路（prepublishOnly 的可执行文件解析、prepack 的 workspace: 改写、tarball 内容）只有真跑一遍
+# 打包才会暴露问题。只在推发版标签时自动跑——那是唯一真正需要它把关的时刻；平时可手动触发。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bash scripts/publish-smoke.sh

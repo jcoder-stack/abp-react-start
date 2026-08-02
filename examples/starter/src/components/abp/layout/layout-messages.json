@@ -1,0 +1,44 @@
+{
+  "en": {
+    "": {
+      "Layout:Login": "Sign in",
+      "Layout:Logout": "Sign out",
+      "Layout:Language": "Language",
+      "Layout:Tenant": "Tenant",
+      "Layout:SwitchTenant": "Switch tenant",
+      "Layout:Host": "Host",
+      "Layout:TenantName": "Tenant name",
+      "Layout:TenantSwitchHint": "Leave empty to switch back to the host",
+      "Layout:Confirm": "Confirm",
+      "Layout:Cancel": "Cancel",
+      "Layout:Theme": "Theme",
+      "Layout:ThemeLight": "Light",
+      "Layout:ThemeDark": "Dark",
+      "Layout:ThemeSystem": "System",
+      "Layout:Search": "Search",
+      "Layout:SearchPlaceholder": "Type to search the menu...",
+      "Layout:SearchEmpty": "No results found."
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Layout:Login": "登录",
+      "Layout:Logout": "退出登录",
+      "Layout:Language": "语言",
+      "Layout:Tenant": "租户",
+      "Layout:SwitchTenant": "切换租户",
+      "Layout:Host": "宿主",
+      "Layout:TenantName": "租户名",
+      "Layout:TenantSwitchHint": "留空则切回宿主",
+      "Layout:Confirm": "确定",
+      "Layout:Cancel": "取消",
+      "Layout:Theme": "主题",
+      "Layout:ThemeLight": "浅色",
+      "Layout:ThemeDark": "深色",
+      "Layout:ThemeSystem": "跟随系统",
+      "Layout:Search": "搜索",
+      "Layout:SearchPlaceholder": "输入以搜索菜单…",
+      "Layout:SearchEmpty": "未找到匹配项。"
+    }
+  }
+}

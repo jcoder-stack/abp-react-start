@@ -1,0 +1,9 @@
+{
+  "base": "src/auth",
+  "relocate": [
+    { "dir": "routes", "to": "src/routes" },
+    { "dir": "app", "to": "src" },
+    { "dir": "root", "to": ".", "skipIfExists": true }
+  ],
+  "requiresPathAlias": "@/*"
+}

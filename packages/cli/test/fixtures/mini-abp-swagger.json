@@ -1,0 +1,85 @@
+{
+  "openapi": "3.0.4",
+  "info": { "title": "MiniAbp", "version": "1.0.0" },
+  "paths": {
+    "/api/identity/users": {
+      "get": {
+        "tags": ["Users"],
+        "operationId": "GetUsers",
+        "parameters": [
+          { "name": "SkipCount", "in": "query", "schema": { "type": "integer", "format": "int32" } },
+          { "name": "MaxResultCount", "in": "query", "schema": { "type": "integer", "format": "int32" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/PagedResultOfUser" } }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "operationId": "CreateUser",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/CreateUserInput" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UserDto" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "operationId": "GetUserById",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UserDto" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userName": { "type": "string" },
+          "email": { "type": "string", "nullable": true }
+        }
+      },
+      "CreateUserInput": {
+        "type": "object",
+        "required": ["userName"],
+        "properties": {
+          "userName": { "type": "string" },
+          "email": { "type": "string", "nullable": true }
+        }
+      },
+      "PagedResultOfUser": {
+        "type": "object",
+        "properties": {
+          "totalCount": { "type": "integer", "format": "int64" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/UserDto" }, "nullable": true }
+        }
+      }
+    }
+  }
+}

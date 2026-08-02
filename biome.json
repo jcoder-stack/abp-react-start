@@ -1,0 +1,27 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "files": {
+    "includes": [
+      "packages/**/*.ts",
+      "packages/**/*.tsx",
+      "examples/**/*.ts",
+      "examples/**/*.tsx",
+      "registry/**/*.ts",
+      "registry/**/*.tsx",
+      "!**/dist",
+      "!**/.tsc-out",
+      "!**/node_modules",
+      "!**/routeTree.gen.ts",
+      "!examples/starter/src/api",
+      "!examples/starter/src/components/ui",
+      "!examples/starter/src/hooks/use-mobile.ts",
+      "!registry/ui/blocks/app-shell/api"
+    ]
+  },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "linter": {
+    "enabled": true,
+    "rules": { "preset": "recommended" },
+    "domains": { "react": "recommended" }
+  }
+}

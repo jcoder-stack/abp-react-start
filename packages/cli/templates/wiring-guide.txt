@@ -1,0 +1,58 @@
+接下来:
+  1. 接线 src/routes/__root.tsx（AppConfigProvider/SessionProvider + 合并各块 messages）。当前 @tanstack/cli 脚手架生成的 __root.tsx 用 shellComponent 承载整份 html 文档（自带占位 <Header/>/<Footer/>），需要改成 component + 显式 RootDocument 包装才能插入两个 Provider：
+
+     import "../api/abp-fetch"; // 副作用：注册生成 API 客户端的 fetchFn，全应用只接线这一次
+     import { AppConfigProvider, SessionProvider } from "@jcoder/abp-react/react";
+     // 脚手架自带的 @tanstack/react-router 导入里补一个 Outlet（其余 HeadContent/Scripts/createRootRouteWithContext 已在）：
+     import { Outlet } from "@tanstack/react-router";
+     import { getAppStateFn, getIdentityFn } from "../auth/server-fns";
+     // app-shell 自带的根错误/404 边界（i18n、Provider 无关）与首页/边界共用的 shell 词条：
+     import { RouteError, RouteNotFound } from "./shell-boundary";
+     import shellMessages from "./_layout/shell-messages.json";
+     import layoutMessages from "../components/abp/layout/layout-messages.json";
+     import loginMessages from "../components/abp/login/login-messages.json";
+     // 按你实际装的块追加：tableMessages / formMessages / treeMessages / crudMessages / comboboxMessages / datePickerMessages / adminMessages
+     // 删掉脚手架自带的 ../components/Header、../components/Footer 两个导入及其用法——
+     // 页面布局已由 app-shell 块的 src/routes/_layout.tsx（侧栏）接管。
+
+     const messages = mergeCatalogs(layoutMessages, loginMessages, shellMessages /* , ... */); // shellMessages 提供首页文案，别漏
+
+     export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+       beforeLoad: async () => {
+         const appState = await getAppStateFn();
+         return { appState, identity: appState.identity };
+       },
+       head: () => ({ /* 保留脚手架原有 head() 不动 */ }),
+       errorComponent: RouteError, // app-shell 的 shell-boundary.tsx 提供
+       notFoundComponent: RouteNotFound,
+       component: RootComponent, // 替换掉原来的 shellComponent: RootDocument
+     });
+
+     function RootComponent() {
+       const { appState } = Route.useRouteContext();
+       return (
+         <RootDocument>
+           <AppConfigProvider config={appState.config} messages={messages} fallbackCulture="en">
+             <SessionProvider identity={appState.identity} fetchIdentity={() => getIdentityFn()}>
+               <Outlet />
+             </SessionProvider>
+           </AppConfigProvider>
+         </RootDocument>
+       );
+     }
+
+     // RootDocument 保留脚手架生成的原样（html/head/HeadContent/body/Scripts），只删掉里面的 <Header />/<Footer /> 两行；其余（THEME_INIT_SCRIPT、TanStackDevtools）都不用动。
+
+     完整参照 examples/starter/src/routes/__root.tsx（mergeCatalogs 是一个三层深合并 helper，同文件里有实现）。
+  2. 接线 src/router.tsx：脚手架建的 router 没有 QueryClient，而 abp-table/admin-pages 等块全靠 react-query 发请求，__root.tsx 的 createRootRouteWithContext<{ queryClient }> 也要求这个 context。给 getRouter() 补上：
+
+     import { QueryClient } from "@tanstack/react-query";
+     import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+
+     const queryClient = new QueryClient();
+     const router = createRouter({ routeTree, context: { queryClient } });
+     setupRouterSsrQueryIntegration({ router, queryClient });
+
+  3. 改 .env（参照 .env.example）
+  4. 改 abp.api.config.ts 指向你的后端 → jc-abp gen
+  5. bun run dev

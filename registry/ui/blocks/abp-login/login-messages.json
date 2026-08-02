@@ -1,0 +1,22 @@
+{
+  "en": {
+    "": {
+      "Login:Title": "Sign in",
+      "Login:UserName": "Username",
+      "Login:Password": "Password",
+      "Login:Submit": "Sign in",
+      "Login:Failed": "Sign-in failed",
+      "Login:WithOidc": "Continue with SSO (OIDC)"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Login:Title": "登录",
+      "Login:UserName": "用户名",
+      "Login:Password": "密码",
+      "Login:Submit": "登录",
+      "Login:Failed": "登录失败",
+      "Login:WithOidc": "使用统一登录（OIDC）"
+    }
+  }
+}

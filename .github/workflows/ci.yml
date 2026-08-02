@@ -1,0 +1,36 @@
+name: ci
+# 平时不自动跑：lint/typecheck/test/build 在本地每次改动后都会跑一遍，CI 再跑是重复消耗。
+# 但发版必跑——那是唯一「记错了代价最大」的时刻，而下面的 registry 漂移检查恰恰只在这里出现，
+# publish-smoke 不做这件事。想在别的时候要一份干净机器上的复核（换 Node/bun 版本、怀疑
+# lockfile 有问题），在 Actions 页面手动触发。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+
+      # registry/public 下的 JSON 是提交进仓库的分发物：块源码改了却忘了重建，用户 jc-abp add
+      # 装到的就是旧版本。这一类漂移对 lint/typecheck/test 完全隐形——仓库自己的代码是完整的，
+      # 只有装出来的项目才会拿到旧文件，所以只能靠重建后比对来发现。
+      - run: bun run build:registry
+      - name: registry 产物与块源码是否同步
+        run: |
+          if [ -n "$(git status --porcelain -- registry/public)" ]; then
+            echo "::error::registry 产物落后于源码：本地跑 bun run build:registry 并提交 registry/public 下的改动"
+            git status --porcelain -- registry/public
+            git --no-pager diff -- registry/public
+            exit 1
+          fi

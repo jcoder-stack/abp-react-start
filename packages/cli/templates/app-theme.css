@@ -1,0 +1,374 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Linear Slate 主题 —— token 值与仓库根 DESIGN.md 一一对应，改值先改 DESIGN.md 再同步到这里。 */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.978 0.001 286);
+  --foreground: oklch(0.19 0.004 286);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.004 286);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.004 286);
+  --primary: oklch(0.55 0.21 264);
+  --primary-hover: oklch(0.50 0.21 264);
+  --primary-bright: oklch(0.52 0.21 264);
+  --primary-focus: oklch(0.55 0.19 264);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.968 0.002 286);
+  --secondary-foreground: oklch(0.24 0.005 286);
+  --muted: oklch(0.968 0.002 286);
+  --muted-foreground: oklch(0.505 0.01 286);
+  --foreground-subtle: oklch(0.60 0.012 286);
+  --foreground-tertiary: oklch(0.68 0.010 286);
+  --accent: oklch(0.968 0.002 286);
+  --accent-foreground: oklch(0.24 0.005 286);
+  --destructive: oklch(0.505 0.2 25);
+  /* 品牌色 —— 刻意不并入语义色阶：换主题时 UI 跟着变，品牌标识不变。
+     brand-mark 与 primary 同色相同源，但**刻意不取同一个值**：标识里的三角实际只渲染到
+     8×9px，这个尺寸下面积效应（小色块显得更浅）叠上斜边抗锯齿的稀释，用 primary 的原值
+     看着会比按钮浅一档。所以做光学补偿，且两个主题方向相反——浅底把边缘冲淡成浅色，
+     标识就压深；暗底把边缘拉暗，标识就提亮。 */
+  --brand-ink: oklch(0.259 0.052 263);
+  --brand-mark: oklch(0.52 0.22 264);
+  --brand-spark: oklch(0.750 0.167 51);
+  --brand-ink-contrast: oklch(1 0 0);
+  --border: oklch(0.92 0.003 286);
+  --border-strong: oklch(0.86 0.004 286);
+  --border-subtle: oklch(0.955 0.002 286);
+  --surface-overlay: oklch(1 0 0);
+  --input: oklch(0.92 0.003 286);
+  --ring: oklch(0.55 0.19 264);
+  --status-success: oklch(0.55 0.13 155);
+  --status-warning: oklch(0.62 0.13 70);
+  --status-error: oklch(0.55 0.2 25);
+  --status-info: oklch(0.55 0.15 255);
+  --status-neutral: oklch(0.55 0.01 286);
+  --row-selected: oklch(0.955 0.014 264);
+  --sidebar: oklch(0.967 0.002 286);
+  --sidebar-foreground: oklch(0.3 0.005 286);
+  --sidebar-primary: oklch(0.55 0.21 264);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.94 0.004 286);
+  --sidebar-accent-foreground: oklch(0.19 0.004 286);
+  --sidebar-border: oklch(0.91 0.003 286);
+  --sidebar-ring: oklch(0.55 0.19 264);
+}
+
+.dark {
+  --background: oklch(0.145 0.004 286);
+  --foreground: oklch(0.96 0.003 286);
+  --card: oklch(0.174 0.005 286);
+  --card-foreground: oklch(0.96 0.003 286);
+  --popover: oklch(0.174 0.005 286);
+  --popover-foreground: oklch(0.96 0.003 286);
+  --primary: oklch(0.57 0.21 264);
+  --primary-hover: oklch(0.63 0.18 264);
+  --primary-bright: oklch(0.66 0.17 264);
+  --primary-focus: oklch(0.62 0.19 264);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.24 0.006 286);
+  --secondary-foreground: oklch(0.96 0.003 286);
+  --muted: oklch(0.21 0.006 286);
+  --muted-foreground: oklch(0.68 0.012 286);
+  --foreground-subtle: oklch(0.62 0.012 286);
+  --foreground-tertiary: oklch(0.50 0.010 286);
+  --accent: oklch(0.24 0.006 286);
+  --accent-foreground: oklch(0.96 0.003 286);
+  --destructive: oklch(0.62 0.2 25);
+  --brand-ink: oklch(1 0 0);
+  --brand-mark: oklch(0.62 0.20 264);
+  --brand-spark: oklch(0.750 0.167 51);
+  --brand-ink-contrast: oklch(0.259 0.052 263);
+  /* 暗色边框是半透明白，不是实色灰：实色读作"画在表面上的线"，半透明白读作
+     "表面边缘接住的光"，且压在任何一级底面上都成立。 */
+  --border: oklch(1 0 0 / 0.08);
+  --border-strong: oklch(1 0 0 / 0.14);
+  --border-subtle: oklch(1 0 0 / 0.05);
+  --surface-overlay: oklch(0.213 0.003 286);
+  --input: oklch(1 0 0 / 0.08);
+  --ring: oklch(0.62 0.19 264);
+  --status-success: oklch(0.72 0.15 155);
+  --status-warning: oklch(0.8 0.14 80);
+  --status-error: oklch(0.68 0.19 25);
+  --status-info: oklch(0.7 0.13 250);
+  --status-neutral: oklch(0.68 0.012 286);
+  --row-selected: oklch(0.22 0.024 264);
+  --sidebar: oklch(0.172 0.003 286);
+  --sidebar-foreground: oklch(0.74 0.01 286);
+  --sidebar-primary: oklch(0.57 0.21 264);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.22 0.006 286);
+  --sidebar-accent-foreground: oklch(0.96 0.003 286);
+  --sidebar-border: oklch(1 0 0 / 0.06);
+  --sidebar-ring: oklch(0.62 0.19 264);
+}
+
+/*
+ * 比例尺 —— 重定义 Tailwind 自带的刻度，而不是在组件上写死尺寸。shadcn 原语用的是
+ * text-sm / font-medium / rounded-md 这些类名，所以改这里等于改全站，且以后
+ * `shadcn add` 装进来的组件自动继承。详见 DESIGN.md。
+ */
+@theme {
+  /* 字号：密集后台的基线是 13px（text-sm），控件与正文 14px（text-base）。
+     行高随字号收紧：display 1.0 → 标题 1.13/1.33 → 正文 1.5。 */
+  --text-2xs: 0.6875rem;     /* 11px 徽标、角标 */
+  --text-2xs--line-height: 1.4;
+  --text-xs: 0.75rem;        /* 12px 表头、按钮内小字、工具栏 */
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.8125rem;      /* 13px 表格、导航、元信息 —— 密集 UI 基线 */
+  --text-sm--line-height: 1.5;
+  --text-sm--letter-spacing: -0.01em;
+  --text-base: 0.875rem;     /* 14px 控件与正文 */
+  --text-base--line-height: 1.5;
+  --text-base--letter-spacing: -0.013em;
+  --text-lg: 0.9375rem;      /* 15px 次要正文、描述 */
+  --text-lg--line-height: 1.6;
+  --text-lg--letter-spacing: -0.011em;
+  --text-xl: 1.25rem;        /* 20px h3 */
+  --text-xl--line-height: 1.33;
+  --text-xl--letter-spacing: -0.012em;
+  --text-2xl: 1.5rem;        /* 24px h2 */
+  --text-2xl--line-height: 1.33;
+  --text-2xl--letter-spacing: -0.012em;
+  --text-3xl: 2rem;          /* 32px h1 */
+  --text-3xl--line-height: 1.13;
+  --text-3xl--letter-spacing: -0.022em;
+  --text-4xl: 2.5rem;        /* 40px display */
+  --text-4xl--line-height: 1.05;
+  --text-4xl--letter-spacing: -0.026em;
+  --text-5xl: 3.5rem;        /* 56px display-lg */
+  --text-5xl--line-height: 1;
+  --text-5xl--letter-spacing: -0.022em;
+  --text-6xl: 4.5rem;        /* 72px display-xl */
+  --text-6xl--line-height: 1;
+  --text-6xl--letter-spacing: -0.022em;
+
+  /* 字重：Inter Variable 的 510/590 —— 510 比 500 高一丝，能表达强调却不显粗，
+     是这套系统的主力；590 封顶，不用 700。 */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 510;
+  --font-weight-semibold: 590;
+  --font-weight-bold: 590;
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-error: var(--status-error);
+  --color-status-info: var(--status-info);
+  --color-status-neutral: var(--status-neutral);
+  --color-row-selected: var(--row-selected);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-primary-bright: var(--primary-bright);
+  --color-primary-focus: var(--primary-focus);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-foreground-tertiary: var(--foreground-tertiary);
+  --color-border-strong: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-mark: var(--brand-mark);
+  --color-brand-spark: var(--brand-spark);
+  --color-brand-ink-contrast: var(--brand-ink-contrast);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* cv01 单层小写 a、ss03 几何化字形——这两项是这套字体识别度的来源，不是可选装饰。 */
+    font-feature-settings: "cv01", "ss03";
+  }
+}
+
+/*
+ * 定制层 —— 全部靠 shadcn 原语自带的 data-slot / data-* 选中，组件文件保持官方原样，
+ * `shadcn add` 更新不冲突、新装的组件自动继承。刻意不进 cascade layer：要压过 utilities。
+ *
+ * 收录标准：只放**帮助信息传达**的规则（当前位置、状态、层次）。纯装饰（渐变、毛玻璃、
+ * 高光投影）一律不留——它们既要维护又不解决问题。
+ */
+
+/* 只有当前项加粗。全部导航项都上 510 会让侧栏比正文（400）更重，与"侧栏不该跟内容抢"
+   的原则相反——它已经靠更淡的前景色与更暗的底面退到后面，字重再往回拉就白退了。
+   一级项的 data-[active=true]:font-medium 由 shadcn 原语自带，二级项没有，这里补齐，
+   免得两级当前项一个 510 一个 400。 */
+[data-slot="sidebar-menu-sub-button"][data-active="true"] {
+  font-weight: var(--font-weight-medium);
+}
+
+/* 浮层标题统一 15px/590。此前三者尺寸靠的是巧合而非决定：dialog/alert-dialog 吃 text-lg
+   （Tailwind 默认 18px，本主题覆盖成 15px），sheet 的标题压根没写字号、吃的是浏览器默认
+   16px。定死在这里，`text-lg` 日后再调、或 shadcn 更新原语，都不会把它们带偏。
+   选 15px 而不是刻度里标着 h3 的 20px：密集后台的正文是 14px，20px 会让一个确认框
+   看起来像页面标题；15px + 590 与 14px/400 的正文已经拉得开。 */
+[data-slot="dialog-title"],
+[data-slot="alert-dialog-title"],
+[data-slot="sheet-title"] {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  letter-spacing: var(--text-lg--letter-spacing);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 侧栏当前项：左侧 2px 指示条 + 图标染 primary。shadcn 默认只有一块灰底，
+   在长导航里"我在哪"这个信号太弱。一级项与二级项是两个 slot，都要覆盖。 */
+[data-slot="sidebar-menu-button"][data-active="true"],
+[data-slot="sidebar-menu-sub-button"][data-active="true"] {
+  position: relative;
+}
+[data-slot="sidebar-menu-button"][data-active="true"]::before,
+[data-slot="sidebar-menu-sub-button"][data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.375rem;
+  left: -0.5rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--sidebar-primary);
+}
+[data-slot="sidebar-menu-button"][data-active="true"] > svg,
+[data-slot="sidebar-menu-sub-button"][data-active="true"] svg {
+  color: var(--sidebar-primary);
+}
+
+/* 焦点环：2px 强调色 @50%，压在控件边框之外。它是系统里唯一的彩色边缘，所以在任何一级
+   底面上都读得出来。 */
+[data-slot="input"]:focus-visible,
+[data-slot="textarea"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible,
+[data-slot="button"]:focus-visible {
+  border-color: var(--primary-focus);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary-focus) 50%, transparent);
+}
+
+/* 图标钮是圆的：圆没有方向，不会跟所在条的对齐打架。shadcn 用 size-8/size-9 表达
+   图标钮（没有可选属性可挂），所以按类匹配。 */
+[data-slot="button"][class*="size-8"],
+[data-slot="button"][class*="size-9"] {
+  border-radius: 9999px;
+}
+
+/* 工具栏里的小控件圆角 2px：这个尺寸下 6px 会吃掉大半条边，控件就不像"条上的一段"了。 */
+[data-slot="toolbar-control"] {
+  border-radius: 2px;
+  box-shadow: 0 1.2px 0 0 oklch(0 0 0 / 0.03);
+}
+
+/* 模态用五层近乎透明的堆叠而非一层大模糊——前者读作衰减，后者读作贴纸。 */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"],
+[data-slot="sheet-content"] {
+  box-shadow:
+    0 8px 2px oklch(0 0 0 / 0),
+    0 5px 2px oklch(0 0 0 / 0.01),
+    0 3px 2px oklch(0 0 0 / 0.04),
+    0 1px 1px oklch(0 0 0 / 0.07),
+    0 0 1px oklch(0 0 0 / 0.08);
+}
+
+/* 暗色：抬起的面用白色低 alpha 叠加，而不是不透明填充——这样卡片与它所在的任意底面
+   都保持同一种关系；低强调按钮近乎透明，实色填充在暗底上读起来是一块板不是控件。 */
+.dark [data-slot="card"],
+.dark [data-slot="popover-content"],
+.dark [data-slot="dropdown-menu-content"] {
+  background-image: linear-gradient(oklch(1 0 0 / 0.02), oklch(1 0 0 / 0.02));
+}
+.dark [data-slot="button"][data-variant="ghost"]:hover,
+.dark [data-slot="button"][data-variant="outline"] {
+  background-color: oklch(1 0 0 / 0.04);
+}
+.dark [data-slot="input"],
+.dark [data-slot="textarea"],
+.dark [data-slot="select-trigger"] {
+  background-color: oklch(1 0 0 / 0.02);
+}
+
+/* 只有当前项加粗。全部导航项都上 510 会让侧栏比正文（400）更重，与"侧栏不该跟内容抢"
+   的原则相反——它已经靠更淡的前景色与更暗的底面退到后面，字重再往回拉就白退了。
+   一级项的 data-[active=true]:font-medium 由 shadcn 原语自带，二级项没有，这里补齐，
+   免得两级当前项一个 510 一个 400。 */
+[data-slot="sidebar-menu-sub-button"][data-active="true"] {
+  font-weight: var(--font-weight-medium);
+}
+
+/* 侧栏当前项：左侧 2px 指示条 + 图标染 primary-bright（前景用的亮强调，
+   填充用的 primary 当文字色对比度不够）。 */
+[data-slot="sidebar-menu-button"][data-active="true"],
+[data-slot="sidebar-menu-sub-button"][data-active="true"] {
+  position: relative;
+}
+[data-slot="sidebar-menu-button"][data-active="true"]::before,
+[data-slot="sidebar-menu-sub-button"][data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.375rem;
+  left: -0.5rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--primary-bright);
+}
+[data-slot="sidebar-menu-button"][data-active="true"] > svg,
+[data-slot="sidebar-menu-sub-button"][data-active="true"] svg {
+  color: var(--primary-bright);
+}
+
+/* 链接与选中态同样走 primary-bright。 */
+[data-slot="pagination-link"][data-active="true"] {
+  background-color: var(--primary);
+}
+
+/* 表头的字号按文字系统分开给。
+ *
+ * 西文表头用 12px 全大写：大写字母的 cap-height 约为字号的 0.72，而混排文本的 x-height
+ * 只有 0.52 —— 大写变换补偿掉了这 1px 的字号差，12px 大写和 13px 混排在视觉上是齐平的。
+ * 这也是"11–12px 大写表头"这个西文惯例成立的前提。
+ *
+ * CJK 没有大小写变换，`uppercase` 是空转，那份补偿也就不存在：12px 汉字对着 13px 汉字
+ * 就是实打实小一号。所以中日韩回到 13px，区分改由字重与颜色承担。
+ */
+:lang(zh) [data-slot="table-head"],
+:lang(ja) [data-slot="table-head"],
+:lang(ko) [data-slot="table-head"] {
+  font-size: var(--text-sm);
+  letter-spacing: normal;
+  text-transform: none;
+}

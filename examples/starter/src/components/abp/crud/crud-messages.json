@@ -1,0 +1,36 @@
+{
+  "en": {
+    "": {
+      "Crud:Create": "Create",
+      "Crud:EditTitle": "Edit",
+      "Crud:ViewTitle": "Details",
+      "Crud:Delete": "Delete",
+      "Crud:DeleteConfirmTitle": "Confirm deletion",
+      "Crud:DeleteConfirmBody": "This action cannot be undone.",
+      "Crud:Saved": "Saved",
+      "Crud:Deleted": "Deleted",
+      "Crud:BulkDeletePartialFailure": "Deleted {0}, {1} failed",
+      "Crud:OperationFailed": "Operation failed",
+      "Crud:RangeFrom": "{0} from",
+      "Crud:RangeTo": "{0} to",
+      "Crud:Retry": "Retry"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Crud:Create": "新增",
+      "Crud:EditTitle": "编辑",
+      "Crud:ViewTitle": "详情",
+      "Crud:Delete": "删除",
+      "Crud:DeleteConfirmTitle": "确认删除",
+      "Crud:DeleteConfirmBody": "此操作不可撤销。",
+      "Crud:Saved": "已保存",
+      "Crud:Deleted": "已删除",
+      "Crud:BulkDeletePartialFailure": "已删除 {0} 项，{1} 项失败",
+      "Crud:OperationFailed": "操作失败",
+      "Crud:RangeFrom": "{0}起",
+      "Crud:RangeTo": "{0}止",
+      "Crud:Retry": "重试"
+    }
+  }
+}

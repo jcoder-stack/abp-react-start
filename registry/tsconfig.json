@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": { "rootDir": ".", "outDir": ".tsc-out", "jsx": "react-jsx" },
+  "include": ["auth"],
+  "exclude": ["auth/routes"]
+}

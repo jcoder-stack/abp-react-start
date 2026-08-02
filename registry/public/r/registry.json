@@ -1,0 +1,723 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "jc-abp",
+  "homepage": "https://github.com/jcoder-stack/abp-react-start",
+  "items": [
+    {
+      "name": "abp-layout",
+      "type": "registry:block",
+      "title": "ABP Admin Layout",
+      "description": "sidebar-08-style ABP admin layout wired to @jcoder/abp-react/react (menu, breadcrumb, user, locale, tenant, theme).",
+      "registryDependencies": [
+        "sidebar",
+        "breadcrumb",
+        "separator",
+        "collapsible",
+        "command",
+        "tooltip",
+        "dropdown-menu",
+        "avatar",
+        "dialog",
+        "input",
+        "button",
+        "label"
+      ],
+      "dependencies": [
+        "lucide-react",
+        "@jcoder/abp-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/abp-layout/app-sidebar.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/app-sidebar.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/brand-mark.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/brand-mark.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/nav-main.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/nav-main.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/nav-search.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/nav-search.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/nav-user.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/nav-user.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/site-header.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/site-header.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/abp-breadcrumb.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/abp-breadcrumb.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/locale-switcher.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/locale-switcher.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/tenant-switcher.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/tenant-switcher.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/theme-toggle.tsx",
+          "type": "registry:component",
+          "target": "components/abp/layout/theme-toggle.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-layout/layout-messages.json",
+          "type": "registry:file",
+          "target": "components/abp/layout/layout-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "abp-login",
+      "type": "registry:block",
+      "title": "ABP Login Card",
+      "description": "Password sign-in card (ROPC) with an SSO (OIDC) entry, wired to the jc-abp auth server functions.",
+      "registryDependencies": [
+        "card",
+        "input",
+        "button",
+        "label",
+        "alert"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/abp-login/login-form.tsx",
+          "type": "registry:component",
+          "target": "components/abp/login/login-form.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-login/login-messages.json",
+          "type": "registry:file",
+          "target": "components/abp/login/login-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "app-shell",
+      "type": "registry:block",
+      "title": "App Shell Glue",
+      "description": "The wiring that turns the abp-layout/abp-login blocks into a running app: sidebar shell route, authed-guard layout route, a framework-intro home page, root error/not-found boundary, login route, generated-client fetchFn glue, and a clean starter menu.",
+      "registryDependencies": [
+        "dropdown-menu",
+        "sidebar",
+        "card",
+        "button",
+        "tooltip",
+        "separator",
+        "./node_modules/@jcoder/registry/public/r/abp-layout.json",
+        "./node_modules/@jcoder/registry/public/r/abp-login.json"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react",
+        "lucide-react",
+        "zod"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/app-shell/routes/_layout.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/_layout/_authed.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/index.tsx",
+          "type": "registry:file",
+          "target": "src/routes/index.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/_layout/shell-messages.json",
+          "type": "registry:file",
+          "target": "src/routes/_layout/shell-messages.json"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/feature-row.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/feature-row.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/data-table-demo.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/data-table-demo.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/date-picker-demo.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/date-picker-demo.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/abp-table-demo.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/abp-table-demo.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/form-demo.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/form-demo.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/tree-demo.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/tree-demo.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/-showcase/combobox-demo.tsx",
+          "type": "registry:file",
+          "target": "src/routes/-showcase/combobox-demo.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/shell-boundary.tsx",
+          "type": "registry:file",
+          "target": "src/routes/shell-boundary.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/login.tsx",
+          "type": "registry:file",
+          "target": "src/routes/login.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/api/abp-fetch.ts",
+          "type": "registry:file",
+          "target": "src/api/abp-fetch.ts"
+        },
+        {
+          "path": "ui/blocks/app-shell/menu.tsx",
+          "type": "registry:file",
+          "target": "src/menu.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/permissions.ts",
+          "type": "registry:file",
+          "target": "src/permissions.ts"
+        }
+      ]
+    },
+    {
+      "name": "data-table",
+      "type": "registry:block",
+      "title": "Server-side Data Table",
+      "description": "Generic paginated/sortable/searchable data table with debounced search, driven by @tanstack/react-table state.",
+      "registryDependencies": [
+        "table",
+        "select",
+        "button",
+        "input",
+        "skeleton",
+        "pagination",
+        "checkbox",
+        "dropdown-menu",
+        "label",
+        "separator"
+      ],
+      "dependencies": [
+        "@tanstack/react-table",
+        "@jcoder/abp-react",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/data-table/dev-warn.ts",
+          "type": "registry:component",
+          "target": "components/data-table/dev-warn.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/table-core.ts",
+          "type": "registry:component",
+          "target": "components/data-table/table-core.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/use-data-table-state.ts",
+          "type": "registry:component",
+          "target": "components/data-table/use-data-table-state.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/use-data-table.ts",
+          "type": "registry:component",
+          "target": "components/data-table/use-data-table.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/data-table.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table.tsx"
+        },
+        {
+          "path": "ui/blocks/data-table/data-table-footer.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-footer.tsx"
+        },
+        {
+          "path": "ui/blocks/data-table/data-table-toolbar.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-toolbar.tsx"
+        },
+        {
+          "path": "ui/blocks/data-table/column-label.ts",
+          "type": "registry:component",
+          "target": "components/data-table/column-label.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/data-table-columns-menu.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-columns-menu.tsx"
+        },
+        {
+          "path": "ui/blocks/data-table/data-table-sort-menu.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-sort-menu.tsx"
+        },
+        {
+          "path": "ui/blocks/data-table/table-messages.json",
+          "type": "registry:file",
+          "target": "components/data-table/table-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "form",
+      "type": "registry:block",
+      "title": "Sheet Form",
+      "description": "Sheet-based form shell with server field-error mapping, wired to @tanstack/react-form.",
+      "registryDependencies": [
+        "sheet",
+        "button",
+        "alert",
+        "field",
+        "input",
+        "switch",
+        "select",
+        "badge",
+        "skeleton",
+        "./node_modules/@jcoder/registry/public/r/combobox.json",
+        "./node_modules/@jcoder/registry/public/r/date-picker.json"
+      ],
+      "dependencies": [
+        "@tanstack/react-form",
+        "@jcoder/abp-react",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/form/form-hook.tsx",
+          "type": "registry:component",
+          "target": "components/form/form-hook.tsx"
+        },
+        {
+          "path": "ui/blocks/form/sheet-form.tsx",
+          "type": "registry:component",
+          "target": "components/form/sheet-form.tsx"
+        },
+        {
+          "path": "ui/blocks/form/form-section.tsx",
+          "type": "registry:component",
+          "target": "components/form/form-section.tsx"
+        },
+        {
+          "path": "ui/blocks/form/required-mark.tsx",
+          "type": "registry:component",
+          "target": "components/form/required-mark.tsx"
+        },
+        {
+          "path": "ui/blocks/form/server-errors.ts",
+          "type": "registry:component",
+          "target": "components/form/server-errors.ts"
+        },
+        {
+          "path": "ui/blocks/form/submit-button.tsx",
+          "type": "registry:component",
+          "target": "components/form/submit-button.tsx"
+        },
+        {
+          "path": "ui/blocks/form/form-error-summary.tsx",
+          "type": "registry:component",
+          "target": "components/form/form-error-summary.tsx"
+        },
+        {
+          "path": "ui/blocks/form/form-messages.json",
+          "type": "registry:file",
+          "target": "components/form/form-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "abp-crud",
+      "type": "registry:block",
+      "title": "ABP CRUD Protocol",
+      "description": "ABP CRUD service protocol (createCrudService, AbpTableSource), ABP-flavored form options/error mapping, and the bound-components factory shared by the abp-table and abp-sheet blocks.",
+      "registryDependencies": [],
+      "dependencies": [
+        "@jcoder/abp-react",
+        "@tanstack/react-query",
+        "@tanstack/react-form"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/abp-crud/crud-service.ts",
+          "type": "registry:component",
+          "target": "components/abp/crud/crud-service.ts"
+        },
+        {
+          "path": "ui/blocks/abp-crud/abp-table-source.ts",
+          "type": "registry:component",
+          "target": "components/abp/crud/abp-table-source.ts"
+        },
+        {
+          "path": "ui/blocks/abp-crud/create-bound-components.ts",
+          "type": "registry:component",
+          "target": "components/abp/crud/create-bound-components.ts"
+        },
+        {
+          "path": "ui/blocks/abp-crud/abp-form-errors.ts",
+          "type": "registry:component",
+          "target": "components/abp/crud/abp-form-errors.ts"
+        },
+        {
+          "path": "ui/blocks/abp-crud/abp-form-options.ts",
+          "type": "registry:component",
+          "target": "components/abp/crud/abp-form-options.ts"
+        },
+        {
+          "path": "ui/blocks/abp-crud/crud-messages.json",
+          "type": "registry:file",
+          "target": "components/abp/crud/crud-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "abp-table",
+      "type": "registry:block",
+      "title": "ABP CRUD Table",
+      "description": "useAbpTable and AbpTable composition (query form, bulk bar, row actions, status badge) on top of the data-table, form, and abp-crud blocks.",
+      "registryDependencies": [
+        "alert-dialog",
+        "badge",
+        "button",
+        "tooltip",
+        "sonner",
+        "dropdown-menu",
+        "separator",
+        "field",
+        "skeleton",
+        "./node_modules/@jcoder/registry/public/r/data-table.json",
+        "./node_modules/@jcoder/registry/public/r/form.json",
+        "./node_modules/@jcoder/registry/public/r/abp-crud.json",
+        "./node_modules/@jcoder/registry/public/r/date-picker.json"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react",
+        "@tanstack/react-query",
+        "@tanstack/react-table",
+        "@tanstack/react-form",
+        "sonner",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/abp-table/use-abp-table.ts",
+          "type": "registry:component",
+          "target": "components/abp/table/use-abp-table.ts"
+        },
+        {
+          "path": "ui/blocks/abp-table/abp-table.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/abp-table.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/abp-query-form.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/abp-query-form.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/abp-bulk-bar.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/abp-bulk-bar.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/abp-bulk-delete.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/abp-bulk-delete.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/query-date-range.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/query-date-range.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/row-actions-menu.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/row-actions-menu.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/status-badge.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/status-badge.tsx"
+        }
+      ]
+    },
+    {
+      "name": "abp-sheet",
+      "type": "registry:block",
+      "title": "ABP CRUD Sheet",
+      "description": "useAbpSheet: create/update drawer state machine wired to concurrencyStamp handling and abpSubmitValidator, on top of the form and abp-crud blocks.",
+      "registryDependencies": [
+        "./node_modules/@jcoder/registry/public/r/form.json",
+        "./node_modules/@jcoder/registry/public/r/abp-crud.json"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react",
+        "@tanstack/react-form",
+        "@tanstack/react-query",
+        "sonner"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/abp-sheet/use-abp-sheet.tsx",
+          "type": "registry:component",
+          "target": "components/abp/sheet/use-abp-sheet.tsx"
+        }
+      ]
+    },
+    {
+      "name": "tree",
+      "type": "registry:block",
+      "title": "Tree",
+      "description": "Generic hierarchical tree with expand/collapse and optional checkable rows; cascade logic is left to consumers via pure helper functions.",
+      "registryDependencies": [
+        "checkbox"
+      ],
+      "dependencies": [
+        "lucide-react",
+        "@jcoder/abp-react",
+        "radix-ui"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/tree/tree.tsx",
+          "type": "registry:component",
+          "target": "components/tree/tree.tsx"
+        },
+        {
+          "path": "ui/blocks/tree/tri-state-checkbox.tsx",
+          "type": "registry:component",
+          "target": "components/tree/tri-state-checkbox.tsx"
+        },
+        {
+          "path": "ui/blocks/tree/tree-helpers.ts",
+          "type": "registry:component",
+          "target": "components/tree/tree-helpers.ts"
+        },
+        {
+          "path": "ui/blocks/tree/tree-messages.json",
+          "type": "registry:file",
+          "target": "components/tree/tree-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "combobox",
+      "type": "registry:block",
+      "title": "Combobox",
+      "description": "Single- and multi-select combobox with local filtering or debounced remote loadOptions, built on the shadcn combobox primitive.",
+      "registryDependencies": [
+        "combobox"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/combobox/use-combobox-options.ts",
+          "type": "registry:component",
+          "target": "components/combobox/use-combobox-options.ts"
+        },
+        {
+          "path": "ui/blocks/combobox/combobox.tsx",
+          "type": "registry:component",
+          "target": "components/combobox/combobox.tsx"
+        },
+        {
+          "path": "ui/blocks/combobox/multi-combobox.tsx",
+          "type": "registry:component",
+          "target": "components/combobox/multi-combobox.tsx"
+        },
+        {
+          "path": "ui/blocks/combobox/combobox-messages.json",
+          "type": "registry:file",
+          "target": "components/combobox/combobox-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "date-picker",
+      "type": "registry:block",
+      "title": "Date Picker",
+      "description": "Date, date-range and date-time pickers built on Calendar + Popover, with ISO date-string helpers.",
+      "registryDependencies": [
+        "button",
+        "calendar",
+        "popover",
+        "input"
+      ],
+      "dependencies": [
+        "date-fns",
+        "react-day-picker",
+        "@jcoder/abp-react",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/date-picker/date-io.ts",
+          "type": "registry:component",
+          "target": "components/date-picker/date-io.ts"
+        },
+        {
+          "path": "ui/blocks/date-picker/date-picker.tsx",
+          "type": "registry:component",
+          "target": "components/date-picker/date-picker.tsx"
+        },
+        {
+          "path": "ui/blocks/date-picker/date-range-picker.tsx",
+          "type": "registry:component",
+          "target": "components/date-picker/date-range-picker.tsx"
+        },
+        {
+          "path": "ui/blocks/date-picker/date-time-picker.tsx",
+          "type": "registry:component",
+          "target": "components/date-picker/date-time-picker.tsx"
+        },
+        {
+          "path": "ui/blocks/date-picker/date-picker-messages.json",
+          "type": "registry:file",
+          "target": "components/date-picker/date-picker-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "abp-permission-sheet",
+      "type": "registry:block",
+      "title": "ABP Permission Sheet",
+      "description": "Permission-group accordion + tree sheet wired to the ABP Permission Management API, with lock/cascade rules for cross-provider grants.",
+      "registryDependencies": [
+        "sheet",
+        "accordion",
+        "checkbox",
+        "button",
+        "skeleton",
+        "sonner",
+        "./node_modules/@jcoder/registry/public/r/tree.json",
+        "./node_modules/@jcoder/registry/public/r/form.json"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react",
+        "sonner",
+        "@tanstack/react-query"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/abp-permission-sheet/permission-helpers.ts",
+          "type": "registry:component",
+          "target": "components/abp/permission/permission-helpers.ts"
+        },
+        {
+          "path": "ui/blocks/abp-permission-sheet/permission-sheet.tsx",
+          "type": "registry:component",
+          "target": "components/abp/permission/permission-sheet.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-permission-sheet/admin-messages.json",
+          "type": "registry:file",
+          "target": "components/abp/permission/admin-messages.json"
+        }
+      ]
+    },
+    {
+      "name": "admin-pages",
+      "type": "registry:block",
+      "title": "Admin Console Pages",
+      "description": "Identity users/roles, tenants, settings, and profile route pages composed from the data-table, form, abp-crud, abp-table, abp-sheet, tree, combobox, and abp-permission-sheet blocks.",
+      "registryDependencies": [
+        "card",
+        "tabs",
+        "dialog",
+        "alert-dialog",
+        "select",
+        "switch",
+        "badge",
+        "input",
+        "field",
+        "button",
+        "skeleton",
+        "tooltip",
+        "sonner",
+        "dropdown-menu",
+        "./node_modules/@jcoder/registry/public/r/app-shell.json",
+        "./node_modules/@jcoder/registry/public/r/abp-table.json",
+        "./node_modules/@jcoder/registry/public/r/abp-sheet.json",
+        "./node_modules/@jcoder/registry/public/r/abp-permission-sheet.json"
+      ],
+      "dependencies": [
+        "@jcoder/abp-react",
+        "@tanstack/react-form",
+        "@tanstack/react-query",
+        "@tanstack/react-table",
+        "sonner",
+        "lucide-react",
+        "zod"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/admin-pages/identity/users.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/identity/users.tsx"
+        },
+        {
+          "path": "ui/blocks/admin-pages/identity/roles.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/identity/roles.tsx"
+        },
+        {
+          "path": "ui/blocks/admin-pages/identity/-role-schema.ts",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/identity/-role-schema.ts"
+        },
+        {
+          "path": "ui/blocks/admin-pages/tenants/index.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/tenants/index.tsx"
+        },
+        {
+          "path": "ui/blocks/admin-pages/settings/index.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/settings/index.tsx"
+        },
+        {
+          "path": "ui/blocks/admin-pages/profile/index.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/profile/index.tsx"
+        }
+      ]
+    }
+  ]
+}

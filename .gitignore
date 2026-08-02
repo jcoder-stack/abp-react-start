@@ -1,0 +1,16 @@
+node_modules
+dist
+.tsc-out
+*.tsbuildinfo
+.env
+.env.bak*
+.DS_Store
+.output
+.nitro
+.tanstack
+
+# 本地编辑器与工具的产物，不属于仓库内容
+.claude/
+.superpowers/
+.playwright-mcp/
+docs/superpowers/

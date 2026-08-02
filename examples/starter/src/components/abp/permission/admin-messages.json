@@ -1,0 +1,34 @@
+{
+  "en": {
+    "": {
+      "Admin:SelectAll": "Select all",
+      "Admin:Permissions": "Permissions",
+      "Admin:FullName": "Full name",
+      "Admin:Yes": "Yes",
+      "Admin:No": "No",
+      "Admin:Profile": "Profile",
+      "Admin:ProfileInfo": "Profile information",
+      "Admin:SmtpSection": "SMTP server",
+      "Admin:SmtpSectionDesc": "Outgoing mail is delivered through this SMTP server.",
+      "Admin:SenderSection": "Sender",
+      "Admin:SenderSectionDesc": "Default from address, display name, and credential options.",
+      "Admin:LoadFailed": "Failed to load"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Admin:SelectAll": "全选",
+      "Admin:Permissions": "权限",
+      "Admin:FullName": "姓名",
+      "Admin:Yes": "是",
+      "Admin:No": "否",
+      "Admin:Profile": "个人中心",
+      "Admin:ProfileInfo": "个人资料",
+      "Admin:SmtpSection": "SMTP 服务器",
+      "Admin:SmtpSectionDesc": "外发邮件通过此 SMTP 服务器投递。",
+      "Admin:SenderSection": "发件人",
+      "Admin:SenderSectionDesc": "默认发件地址、显示名称与凭据选项。",
+      "Admin:LoadFailed": "加载失败"
+    }
+  }
+}

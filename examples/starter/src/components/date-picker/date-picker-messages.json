@@ -1,0 +1,16 @@
+{
+  "en": {
+    "": {
+      "DatePicker:Placeholder": "Pick a date",
+      "DatePicker:RangePlaceholder": "Pick a date range",
+      "DatePicker:Time": "Time"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "DatePicker:Placeholder": "选择日期",
+      "DatePicker:RangePlaceholder": "选择日期范围",
+      "DatePicker:Time": "时间"
+    }
+  }
+}

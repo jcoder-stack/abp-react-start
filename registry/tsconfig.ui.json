@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["../examples/starter/src/*"] }
+  },
+  "include": ["ui/blocks/**/*.ts", "ui/blocks/**/*.tsx", "../examples/starter/src/routeTree.gen.ts"]
+}
