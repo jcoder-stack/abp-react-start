@@ -40,6 +40,13 @@ const MENU_TARGET = "src/menu.tsx";
 
 const ROOT_TEMPLATE_PATH = fileURLToPath(new URL("../templates/root.tsx.tpl", import.meta.url));
 const ROUTER_TEMPLATE_PATH = fileURLToPath(new URL("../templates/router.tsx.tpl", import.meta.url));
+const APP_MESSAGES_TEMPLATE_PATH = fileURLToPath(
+  new URL("../templates/app-messages.json", import.meta.url),
+);
+
+/** app-shell 分发的 menu.tsx 引用 App::Home / App::System / App::Settings，而「App」桶是应用自己的，
+ *  没有任何块会提供它——不播种的话侧栏直接显示原始 key。播种后归应用所有，重跑 init 不覆盖。 */
+const APP_MESSAGES_TARGET = "src/i18n/app-messages.json";
 
 /**
  * 脚手架的 __root.tsx 与 router.tsx 不接线，应用一行都跑不起来：块里的组件都要
@@ -505,7 +512,10 @@ function findMessageCatalogs(cwd: string): { alias: string; identifier: string }
     }
   };
   walk(srcDir);
-  return found.sort((a, b) => a.alias.localeCompare(b.alias));
+  // 应用自己的词条（src/i18n）排最后：mergeCatalogs 同名 key 后到先赢，这样改一处 json 就能
+  // 覆盖块的默认文案，不必动块源码。
+  const rank = (alias: string) => (alias.startsWith("@/i18n/") ? 1 : 0);
+  return found.sort((a, b) => rank(a.alias) - rank(b.alias) || a.alias.localeCompare(b.alias));
 }
 
 /**
@@ -554,6 +564,13 @@ ${out}`;
  * 不必维护一份块→词条的映射表。
  */
 function seedRootWiring(cwd: string, completed: string[]): { root: boolean; router: boolean } {
+  const appMessagesPath = resolve(cwd, APP_MESSAGES_TARGET);
+  if (!existsSync(appMessagesPath)) {
+    mkdirSync(dirname(appMessagesPath), { recursive: true });
+    copyFileSync(APP_MESSAGES_TEMPLATE_PATH, appMessagesPath);
+    completed.push(`${APP_MESSAGES_TARGET}（播种应用自有词条）`);
+  }
+
   const catalogs = findMessageCatalogs(cwd);
   const imports = catalogs.map((c) => `import ${c.identifier} from "${c.alias}";`).join("\n");
   const args = catalogs.map((c) => c.identifier).join(", ");

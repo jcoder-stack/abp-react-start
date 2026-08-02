@@ -1,0 +1,16 @@
+{
+  "en": {
+    "App": {
+      "Home": "Home",
+      "System": "System",
+      "Settings": "Settings"
+    }
+  },
+  "zh-Hans": {
+    "App": {
+      "Home": "首页",
+      "System": "系统管理",
+      "Settings": "设置"
+    }
+  }
+}
