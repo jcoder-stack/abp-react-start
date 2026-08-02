@@ -160,8 +160,8 @@ export default defineApiConfig({
 
 ```bash
 npx jc-abp gen
-# 自签证书的本地后端：
-NODE_TLS_REJECT_UNAUTHORIZED=0 npx jc-abp gen
+# 后端是自签证书时见下面「自签证书的本地后端」：
+NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt npx jc-abp gen
 ```
 
 产出三个目录加一个文件：
@@ -193,6 +193,25 @@ bun run dev
 
 ---
 
+## 自签证书的本地后端
+
+本地 ABP 用的是 `dotnet dev-certs` 生成的自签证书，`--trust` 把它装进系统钥匙串，浏览器与 curl 因此放行。**Node 不读钥匙串**，只校验自己内置的那份 CA 列表——所以浏览器能打开 `https://localhost:44316`，服务端发出的请求照样被拒（`DEPTH_ZERO_SELF_SIGNED_CERT`）。`gen` 和 `dev` 都会撞上：前者报 `fetch failed`，后者是首页 500。
+
+导出证书，然后只放行这一张：
+
+```bash
+dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM
+
+NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt npx jc-abp gen
+NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt bun run dev
+```
+
+嫌每次都带就 `export` 进 shell profile。**它不能写进 `.env`**——Node 在进程启动时读这个变量，dotenv 加载时已经太晚，写了也不生效。
+
+`NODE_TLS_REJECT_UNAUTHORIZED=0` 同样能跑通，且写进 `.env` 就生效，但它关掉的是整个进程对所有主机的证书校验。临时试可以，别留在任何会被复制到服务器的文件里。
+
+---
+
 ## 排查
 
 | 现象 | 原因 | 处理 |
@@ -201,7 +220,8 @@ bun run dev
 | `init` 报 `EALLOWSCRIPTS` | npmrc 里的 `allow-scripts` 经 `npx` 注入子进程 | 见前置那节 |
 | `init` 说找不到 css 入口 | 你的 css 不在四个探测位置 | 先建好 css 入口，或手动放一份 `components.json` |
 | `gen` 报 endpoints 为空 | swagger 无效、地址错、或后端没起 | 浏览器直接打开 swagger 地址验证 |
-| `gen` 报 TLS 错误 | 本地后端自签证书 | 加 `NODE_TLS_REJECT_UNAUTHORIZED=0` |
+| `gen` 报 `fetch failed` | 本地后端自签证书 | 见上一节 |
+| 首页 500，只写着 `fetch failed` | 同上，服务端到后端那一跳被拒 | 见上一节 |
 | 页面白屏、控制台说 Provider 缺失 | `__root.tsx` 被改坏或被 `.bak` 覆盖回去了 | 对照第 4 节列的几项，或从 starter 那份取回 |
 | 登录后一直跳回登录页 | `.env` 的 client id / 密钥 / 回调地址对不上 | 核对 ABP 端的客户端配置 |
 | `jc-abp` 命令找不到 | monorepo 内直接跑需要先 build | `bun run build` 后再用 `node packages/cli/bin/jc-abp.js` |

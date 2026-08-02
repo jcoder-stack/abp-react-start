@@ -147,6 +147,33 @@ describe("createAbpProxy", () => {
     expect(calls).toHaveLength(3);
   });
 
+  it("does not retry an untrusted upstream certificate", async () => {
+    const tls = new TypeError("fetch failed", {
+      cause: Object.assign(new Error("self-signed certificate"), {
+        code: "DEPTH_ZERO_SELF_SIGNED_CERT",
+      }),
+    });
+    const { fetchFn, calls } = fakeFetch(tls, tls, tls);
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    await expect(proxy.send({ path: "/x" }, noRefresh)).rejects.toThrow(/NODE_EXTRA_CA_CERTS/);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("keeps the original certificate error as the cause of the explanation", async () => {
+    const cause = new TypeError("fetch failed", {
+      cause: Object.assign(new Error("self-signed certificate"), {
+        code: "DEPTH_ZERO_SELF_SIGNED_CERT",
+      }),
+    });
+    const { fetchFn } = fakeFetch(cause);
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const error = await proxy.send({ path: "/x" }, noRefresh).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Error);
+    if (!(error instanceof Error)) throw new Error("unreachable");
+    expect(error.message).toContain("https://abp.example");
+    expect(error.cause).toBe(cause);
+  });
+
   it("carries refreshed session cookies on the error when the replay fails", async () => {
     const cause = new TypeError("network down");
     const { fetchFn } = fakeFetch(new Response(null, { status: 401 }), cause);
