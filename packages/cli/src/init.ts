@@ -48,6 +48,16 @@ const ROUTER_TEMPLATE_PATH = fileURLToPath(new URL("../templates/router.tsx.tpl"
  * 备份成 .bak——与 src/routes/index.tsx、主题 css 用的是同一套让位机制。
  */
 const ROOT_TARGET = "src/routes/__root.tsx";
+
+/** 脚手架装了 devtools 时带回 __root 的两段，缺失时留空——没装 devtools 的脚手架硬写 import 会编译不过。 */
+const DEVTOOLS_IMPORTS = `import { TanStackDevtools } from "@tanstack/react-devtools";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+`;
+const DEVTOOLS_ELEMENT = `        <TanStackDevtools
+          config={{ position: "bottom-right" }}
+          plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
+        />
+`;
 const ROUTER_TARGET = "src/router.tsx";
 
 /** shadcn init 本该播种、但被 seedOrRequireComponentsJson 绕开后遗留的两样东西：cn() helper 与主题 CSS 变量。 */
@@ -499,32 +509,84 @@ function findMessageCatalogs(cwd: string): { alias: string; identifier: string }
 }
 
 /**
- * 写 __root.tsx 与 router.tsx，脚手架原版备份成 .bak。词条 import 按 src 下实际存在的
- * `*-messages.json` 生成，所以 --no-admin 或任何块子集都自然正确，不必维护一份块→词条的映射表。
+ * router.tsx 只差四处：两个 import、一个 QueryClient 实例、`context`、SSR 集成。这是真正的增量，
+ * 所以就地补而不整体覆写——调用方自己的引号风格、`createRouter` 别名、其它 createRouter 选项都留着。
+ * 返回 null 表示锚点没对上（脚手架换了形状），调用方退回整份模板。已接过线则原样返回，保证可重跑。
+ */
+export function patchRouterSource(source: string): string | null {
+  if (source.includes("setupRouterSsrQueryIntegration")) return source;
+
+  // `const router = createTanStackRouter({` —— 工厂名可能被 as 改过，连名字一起捕获。
+  const call = source.match(/(\n[ \t]*)(const\s+router\s*=\s*)([A-Za-z_$][\w$]*)\(\{/);
+  if (!call) return null;
+  const [callLine, indent, assignment, factory] = call;
+
+  // 选项对象里的 routeTree 那一行，context 插在它后面（同一层缩进）。
+  const routeTree = source.match(/(\n([ \t]*)routeTree,)/);
+  if (!routeTree) return null;
+
+  const ret = source.match(/\n[ \t]*return\s+router;?/);
+  if (!ret) return null;
+
+  let out = source;
+  out = out.replace(
+    callLine,
+    `${indent}const queryClient = new QueryClient();${indent}${assignment}${factory}({`,
+  );
+  out = out.replace(routeTree[0], `${routeTree[1]}\n${routeTree[2]}context: { queryClient },`);
+  out = out.replace(
+    ret[0],
+    `\n  setupRouterSsrQueryIntegration({ router, queryClient });${ret[0]}`,
+  );
+  return `import { QueryClient } from "@tanstack/react-query";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+${out}`;
+}
+
+/**
+ * 接线 __root.tsx 与 router.tsx，脚手架原版备份成 .bak。
+ *
+ * 两者处理方式不同，因为改动性质不同：router 是加四行，就地补；__root 得把 `createRootRoute` 换成
+ * `createRootRouteWithContext`、把 `shellComponent` 拆成 `component` + 文档壳，而两个 Provider 要包的
+ * `<Outlet/>` 在脚手架版本里压根不存在（它走的是 shellComponent 的 children），补不出来，只能整份替换。
+ *
+ * 词条 import 按 src 下实际存在的 `*-messages.json` 生成，所以 --no-admin 或任何块子集都自然正确，
+ * 不必维护一份块→词条的映射表。
  */
 function seedRootWiring(cwd: string, completed: string[]): { root: boolean; router: boolean } {
   const catalogs = findMessageCatalogs(cwd);
   const imports = catalogs.map((c) => `import ${c.identifier} from "${c.alias}";`).join("\n");
   const args = catalogs.map((c) => c.identifier).join(", ");
 
-  const written = { root: false, router: false };
-  for (const [target, templatePath, render] of [
-    [ROOT_TARGET, ROOT_TEMPLATE_PATH, true],
-    [ROUTER_TARGET, ROUTER_TEMPLATE_PATH, false],
-  ] as const) {
-    const targetPath = resolve(cwd, target);
-    if (existsSync(targetPath)) copyFileSync(targetPath, `${targetPath}.bak`);
-    else mkdirSync(dirname(targetPath), { recursive: true });
-    let content = readFileSync(templatePath, "utf8");
-    if (render) {
-      content = content.replace("__MESSAGE_IMPORTS__", imports).replace("__MESSAGE_ARGS__", args);
-    }
-    writeFileSync(targetPath, content);
-    if (target === ROOT_TARGET) written.root = true;
-    else written.router = true;
-    completed.push(`${target}（已接线，脚手架原版备份到 ${target}.bak）`);
-  }
-  return written;
+  const rootPath = resolve(cwd, ROOT_TARGET);
+  // 脚手架原本挂了 devtools 就带回来：整份替换不该顺手拿走用户已经装着的调试面板。
+  const scaffoldRoot = existsSync(rootPath) ? readFileSync(rootPath, "utf8") : "";
+  const keepDevtools = scaffoldRoot.includes("TanStackDevtools");
+  if (existsSync(rootPath)) copyFileSync(rootPath, `${rootPath}.bak`);
+  else mkdirSync(dirname(rootPath), { recursive: true });
+  writeFileSync(
+    rootPath,
+    readFileSync(ROOT_TEMPLATE_PATH, "utf8")
+      .replace("__DEVTOOLS_IMPORTS__", keepDevtools ? DEVTOOLS_IMPORTS : "")
+      .replace("__DEVTOOLS_ELEMENT__", keepDevtools ? DEVTOOLS_ELEMENT : "")
+      .replace("__MESSAGE_IMPORTS__", imports)
+      .replace("__MESSAGE_ARGS__", args),
+  );
+  completed.push(`${ROOT_TARGET}（已接线，脚手架原版备份到 ${ROOT_TARGET}.bak）`);
+
+  const routerPath = resolve(cwd, ROUTER_TARGET);
+  const existing = existsSync(routerPath) ? readFileSync(routerPath, "utf8") : null;
+  const patched = existing === null ? null : patchRouterSource(existing);
+  if (existing !== null) copyFileSync(routerPath, `${routerPath}.bak`);
+  else mkdirSync(dirname(routerPath), { recursive: true });
+  writeFileSync(routerPath, patched ?? readFileSync(ROUTER_TEMPLATE_PATH, "utf8"));
+  completed.push(
+    patched === null
+      ? `${ROUTER_TARGET}（认不出脚手架形状，已整份替换；原版备份到 ${ROUTER_TARGET}.bak）`
+      : `${ROUTER_TARGET}（已就地补 QueryClient 接线，原版备份到 ${ROUTER_TARGET}.bak）`,
+  );
+
+  return { root: true, router: true };
 }
 
 function renameConflictingScaffoldIndex(cwd: string, completed: string[]): boolean {

@@ -10,7 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { clientEnv } from "@/env";
 import appCss from "@/styles.css?url";
 import { RouteError, RouteNotFound } from "./shell-boundary";
-__MESSAGE_IMPORTS__
+__DEVTOOLS_IMPORTS____MESSAGE_IMPORTS__
 
 /** 三层（culture → resource → key）深合并，把各块词条拼成一份 FrontendCatalog。 */
 function mergeCatalogs(...catalogs: FrontendCatalog[]): FrontendCatalog {
@@ -100,7 +100,7 @@ function RootDocument({ children, lang }: { children: ReactNode; lang: string })
       <body>
         {children}
         <Toaster richColors position="top-center" />
-        <Scripts />
+__DEVTOOLS_ELEMENT__        <Scripts />
       </body>
     </html>
   );

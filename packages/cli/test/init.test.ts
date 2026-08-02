@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { InitError, quoteForWindowsShell, runInit } from "../src/init";
+import { InitError, patchRouterSource, quoteForWindowsShell, runInit } from "../src/init";
 
 const COMPONENTS_JSON_TEMPLATE_PATH = fileURLToPath(
   new URL("../templates/components.json", import.meta.url),
@@ -810,5 +810,45 @@ describe("quoteForWindowsShell", () => {
 
     expect(escapedMetachar).toBe(false);
     expect(argv).toEqual(args);
+  });
+});
+
+describe("patchRouterSource", () => {
+  // 脚手架 4.13 实际产出的形状，逐字复制；改这里之前先确认真实脚手架也变了。
+  const scaffold = `import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { routeTree } from './routeTree.gen'
+
+export function getRouter() {
+  const router = createTanStackRouter({
+    routeTree,
+    scrollRestoration: true,
+    defaultPreload: 'intent',
+  })
+
+  return router
+}
+`;
+
+  it("补齐四处接线，同时保留调用方原有的工厂别名与其它选项", () => {
+    const patched = patchRouterSource(scaffold);
+    expect(patched).not.toBeNull();
+    const out = patched as string;
+    expect(out).toContain('import { QueryClient } from "@tanstack/react-query";');
+    expect(out).toContain("const queryClient = new QueryClient();");
+    expect(out).toContain("context: { queryClient },");
+    expect(out).toContain("setupRouterSsrQueryIntegration({ router, queryClient });");
+    // 别名与既有选项不动——就地补的意义就在这里。
+    expect(out).toContain("createTanStackRouter({");
+    expect(out).toContain("scrollRestoration: true,");
+    expect(out).toContain("defaultPreload: 'intent',");
+  });
+
+  it("已接过线时原样返回，重跑 init 不会补第二遍", () => {
+    const once = patchRouterSource(scaffold) as string;
+    expect(patchRouterSource(once)).toBe(once);
+  });
+
+  it("认不出形状时返回 null，交给调用方退回整份模板", () => {
+    expect(patchRouterSource("export const router = 1;\n")).toBeNull();
   });
 });
