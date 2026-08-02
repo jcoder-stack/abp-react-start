@@ -1,5 +1,6 @@
 import type { AuthSession } from "../auth";
 import type { Logger } from "../logger";
+import { tlsTrustFailureCode, tlsTrustFailureMessage } from "./tls-trust";
 
 export interface AbpProxyRequest {
   path: string;
@@ -159,16 +160,22 @@ export function createAbpProxy(opts: {
             signal: AbortSignal.any([...stops, AbortSignal.timeout(timeoutMs)]),
           });
         } catch (error) {
-          if (attempt < maxRetries && !stopped()) {
+          const tlsCode = tlsTrustFailureCode(error);
+          if (tlsCode === null && attempt < maxRetries && !stopped()) {
             opts.logger?.debug("proxy retry after network error", { attempt, path: req.path });
             if (await backoff()) continue;
           }
+          // 裸的 `fetch failed` 不指向任何可执行的下一步，而证书不受信恰恰是本地起步时最常撞的墙。
+          const failure =
+            tlsCode === null
+              ? error
+              : new Error(tlsTrustFailureMessage(tlsCode, url), { cause: error });
           if (setCookies.length > 0) {
             throw new AbpProxyError("abp proxy request failed after refresh", setCookies, {
-              cause: error,
+              cause: failure,
             });
           }
-          throw error;
+          throw failure;
         }
         if (res.status === 401 && !refreshedOnce && session?.tokens.refreshToken !== undefined) {
           refreshedOnce = true;
