@@ -61,11 +61,12 @@ npx jc-abp init --no-admin   # 只要认证外壳与空壳布局
 
 1. **两道前置闸**——检测到认证外壳已存在就在写第一个文件之前中止；用 npm 且 `allow-scripts` 会失败时同样中止。
 2. **播种基线**：缺 `components.json` 就写一份（`new-york` / `neutral`，并把 css 入口填进去）；缺 `src/lib/utils.ts` 就补 `cn()`；css 入口里没有 `--background` 变量时**整体替换成主题文件**，原文件备份为 `.bak`。
-3. **按需装依赖**：只装这次真正播种了的那部分（`clsx` / `tailwind-merge` / `tw-animate-css`）。
+3. **按需装依赖**：只装这次真正播种了的那部分（`clsx` / `tailwind-merge` / `tw-animate-css`），外加根接线要用的 `@tanstack/react-router-ssr-query`（没有任何块声明它）。
 4. **落认证外壳**：`src/auth/*` 五个文件、五个 API 路由、`src/env.ts`、`.env.example`。
 5. **让位首页**：脚手架自带的 `src/routes/index.tsx` 改名为 `.bak`，因为 app-shell 块要放自己的落地页。
 6. **按依赖序装 shadcn 块**：`abp-layout` → `abp-login` → `app-shell` → `data-table` → `combobox` → `date-picker` → `form` → `abp-table` → `tree` → `abp-permission-sheet`，默认再加 `admin-pages`。每块装完会校验声明的产物真的落盘——shadcn 有可能静默中止批量写入却仍然 exit 0。
-7. **收尾**：`--no-admin` 时覆写 `src/menu.tsx`；播种 `tsr.config.json` 并生成路由树；播种 `abp.api.config.ts`。
+7. **接线根文件**：`src/routes/__root.tsx` 整份写入（两个 Provider、块词条深合并、`abp-fetch` 引入、错误边界），`src/router.tsx` 就地补 QueryClient 与 SSR 集成；两者的脚手架原版都备份为 `.bak`。同时播种 `src/i18n/app-messages.json`——分发的菜单引用 `App::` 词条，而那个桶归应用所有，没有块会提供。
+8. **收尾**：`--no-admin` 时覆写 `src/menu.tsx`；播种 `tsr.config.json` 并生成路由树；播种 `abp.api.config.ts`。
 
 css 入口的探测顺序是 `src/styles/app.css` → `src/styles.css` → `src/index.css` → `src/app.css`。都探不到且没有 `components.json` 时它会直接报错停下——先把 css 入口建好再跑。
 
@@ -74,8 +75,10 @@ css 入口的探测顺序是 `src/styles/app.css` → `src/styles.css` → `src/
 | 对象 | 行为 |
 | --- | --- |
 | 认证外壳的任一目标已存在 | **中止**，一个文件都不写（`.env.example` 例外，跳过） |
-| `components.json`、`src/lib/utils.ts`、`tsr.config.json`、`abp.api.config.ts` | 已存在则跳过 |
+| `components.json`、`src/lib/utils.ts`、`tsr.config.json`、`abp.api.config.ts`、`src/i18n/app-messages.json` | 已存在则跳过 |
 | css 入口、`src/routes/index.tsx` | 备份为 `.bak` 后替换/让位 |
+| `src/routes/__root.tsx` | 备份为 `.bak` 后整份替换（结构改造，见第 4 节） |
+| `src/router.tsx` | 备份为 `.bak` 后就地补四处；认不出脚手架形状时才整份替换 |
 | shadcn 块的产物 | 强制覆盖 |
 | `src/menu.tsx` | 仅 `--no-admin` 时覆盖 |
 
@@ -99,67 +102,36 @@ ls src/auth src/routes/_layout src/components/abp
 
 ---
 
-## 4. 接线两个文件
+## 4. init 写了什么胶水
 
-`init` 装完块之后，路由与页面都已就位，**还差两处胶水必须手写**：Provider 接线与 QueryClient 接线。`init` 结尾会打印可直接抄的片段，完整参照 [`examples/starter/src/routes/__root.tsx`](../../examples/starter/src/routes/__root.tsx)。
+页面与路由由块提供，但把它们接起来的两个文件归应用所有，`init` 已经替你写好了。这一节说明它写了什么、想改的时候动哪里——**不需要你动手接线**。
 
-### `src/routes/__root.tsx`
+### `src/routes/__root.tsx`（整份写入）
 
-脚手架生成的版本用 `shellComponent` 承载整份 HTML 文档（还自带占位的 `<Header/>`/`<Footer/>`）。要插入两个 Provider，得改成 `component` + 显式的 `RootDocument` 包装：
+脚手架原版备份在 `__root.tsx.bak`。这里是整份替换而不是就地补，因为改动是结构性的：`createRootRoute` 要变成 `createRootRouteWithContext`，`shellComponent` 要拆成 `component` 加一层文档壳，而两个 Provider 要包住的 `<Outlet/>` 在脚手架版本里根本不存在——它走的是 `shellComponent` 的 `children`，没有可插入的接缝。
 
-```tsx
-// 副作用：注册生成 API 客户端的 fetchFn，全应用只接线这一次。
-import "@/api/abp-fetch";
-import { AppConfigProvider, SessionProvider } from "@jcoder/abp-react/react";
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { getAppStateFn, getIdentityFn } from "@/auth/server-fns";
-// 按你实际装的块追加词条：table / form / tree / crud / combobox / date-picker / admin
-import layoutMessages from "@/components/abp/layout/layout-messages.json";
-import loginMessages from "@/components/abp/login/login-messages.json";
-import shellMessages from "./_layout/shell-messages.json";
-import { RouteError, RouteNotFound } from "./shell-boundary";
+写入的内容：
 
-const messages = mergeCatalogs(layoutMessages, loginMessages, shellMessages /* , ... */);
+- `import "@/api/abp-fetch"`——副作用式注册生成 API 客户端的 fetchFn，全应用只接这一次
+- `beforeLoad` 经 `queryClient.ensureQueryData` 取 appState，带 `staleTime`；路由守卫读的 `context.identity` 由它提供
+- `AppConfigProvider` + `SessionProvider` 包住 `<Outlet/>`
+- 按磁盘上实际存在的 `*-messages.json` 生成词条 import 并深合并，`src/i18n/` 下的排最后（同名 key 后到先赢，所以改一处 json 就能覆盖块的默认文案）
+- `errorComponent` / `notFoundComponent` 接 app-shell 的 `shell-boundary.tsx`
+- 首绘前的主题脚本（与 `ThemeToggle` 共用 `localStorage.theme`，没有它暗色会闪白）与 Inter 变量字体（主题的 510/590 两档字重只有变量字体取得到）
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  beforeLoad: async ({ context }) => {
-    // 用 ensureQueryData 缓存：ABP 的 application-configuration 是秒级响应，但页内每次
-    // 导航都付一次往返没有必要。鉴权态变化都走整页刷新，缓存自然作废。
-    const appState = await context.queryClient.ensureQueryData({
-      queryKey: ["app-state"],
-      queryFn: () => getAppStateFn(),
-      staleTime: 5 * 60_000,
-    });
-    return { appState, identity: appState.identity };
-  },
-  errorComponent: RouteError,
-  notFoundComponent: RouteNotFound,
-  component: RootComponent,
-});
+脚手架原本挂了 TanStack devtools 的话会一并带回来；没挂就不写，免得引到没装的包。
 
-function RootComponent() {
-  const { appState } = Route.useRouteContext();
-  return (
-    <RootDocument lang={appState.config.localization.currentCulture.name}>
-      <AppConfigProvider config={appState.config} messages={messages} fallbackCulture="en">
-        <SessionProvider identity={appState.identity} fetchIdentity={fetchIdentity}>
-          <Outlet />
-        </SessionProvider>
-      </AppConfigProvider>
-    </RootDocument>
-  );
-}
-```
+完整参照 [`examples/starter/src/routes/__root.tsx`](../../examples/starter/src/routes/__root.tsx)——它在这份模板之上还多了应用自己的词条与 favicon/manifest。
 
-三个容易漏的点：
+### `src/router.tsx`（就地补四处）
 
-- **删掉脚手架自带的 `Header`/`Footer`**——布局已经由 app-shell 块的 `_layout.tsx`（侧栏）接管。
-- **`shellMessages` 别漏**，首页与错误边界的文案在里面。
-- **`<html lang>` 要跟随当前语言**，不能写死：读屏发音、断行规则、字体回退与 CJK 排版适配都依赖它。切语言走整页跳转，所以 SSR 输出的值就是最终值。
+只插入 QueryClient 相关的四处：两个 import、`new QueryClient()`、`context: { queryClient }`、`setupRouterSsrQueryIntegration`。你原有的引号风格、`createRouter` 别名、其它 `createRouter` 选项都保留，改动对着脚手架只有五行。
 
-### `src/router.tsx`
+万一将来脚手架换了形状、锚点对不上，`init` 会退回整份模板并在完成步骤里说明——宁可覆盖风格，也不能留下一个没有 `context` 的 router。
 
-接 QueryClient 与 SSR query 集成，同样照抄 [`examples/starter/src/router.tsx`](../../examples/starter/src/router.tsx)。
+### `src/i18n/app-messages.json`（播种，不覆盖）
+
+app-shell 分发的 `menu.tsx` 用 `App::Home` / `App::System` / `App::Settings` 作标签，而「App」桶归应用所有，没有块会提供它——不播种的话侧栏直接显示原始 key。这份文件归你，重跑 `init` 不会覆盖你的编辑。往里加自己的词条即可，它在合并链的最后。
 
 ---
 
@@ -230,7 +202,7 @@ bun run dev
 | `init` 说找不到 css 入口 | 你的 css 不在四个探测位置 | 先建好 css 入口，或手动放一份 `components.json` |
 | `gen` 报 endpoints 为空 | swagger 无效、地址错、或后端没起 | 浏览器直接打开 swagger 地址验证 |
 | `gen` 报 TLS 错误 | 本地后端自签证书 | 加 `NODE_TLS_REJECT_UNAUTHORIZED=0` |
-| 页面白屏、控制台说 Provider 缺失 | 第 4 步的 `__root.tsx` 还没接 | 照抄 starter 那份 |
+| 页面白屏、控制台说 Provider 缺失 | `__root.tsx` 被改坏或被 `.bak` 覆盖回去了 | 对照第 4 节列的几项，或从 starter 那份取回 |
 | 登录后一直跳回登录页 | `.env` 的 client id / 密钥 / 回调地址对不上 | 核对 ABP 端的客户端配置 |
 | `jc-abp` 命令找不到 | monorepo 内直接跑需要先 build | `bun run build` 后再用 `node packages/cli/bin/jc-abp.js` |
 
@@ -250,7 +222,7 @@ your-app/
     ├── app-env.d.ts            # ImportMetaEnv / process.env 类型声明
     ├── menu.tsx                # app-shell 块：导航起点，MenuItem<FileRouteTypes["to"]>[]（路由改名编译期报错）
     ├── permissions.ts          # app-shell 块：ABP 风格权限常量，守卫/菜单/can() 统一引它，杜绝裸字符串
-    ├── router.tsx              # 脚手架产物 + 手写补 QueryClient 与 setupRouterSsrQueryIntegration
+    ├── router.tsx              # 脚手架产物，init 就地补了 QueryClient 与 setupRouterSsrQueryIntegration
     ├── routeTree.gen.ts        # 生成，勿手改
     ├── styles.css              # Tailwind + ABP React Start 主题 token；缺 --background 等变量时由 init 整体替换（原文件备份 .bak）
     │
@@ -285,7 +257,7 @@ your-app/
     ├── i18n/{en,zh-Hans}.json  # 应用自有词库（"App" 桶），与后端 ABP 资源两层合并
     │
     └── routes/                 # TanStack 文件路由
-        ├── __root.tsx            # 唯一要手写的胶水：Provider 接线 + 词条深合并 + abp-fetch 引入 + 错误边界
+        ├── __root.tsx            # init 写入的胶水：Provider 接线 + 词条深合并 + abp-fetch 引入 + 错误边界
         ├── index.tsx             # app-shell 块：全幅营销落地页，脱离 _layout 侧栏壳
         ├── login.tsx             # app-shell 块：/login，同样脱离壳
         ├── shell-boundary.tsx    # RouteError / RouteNotFound——刻意不经 Provider（出错时子树已被替换）

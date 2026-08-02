@@ -73,10 +73,10 @@ npx @tanstack/cli create my-app && cd my-app
 bun add @jcoder/abp-react
 bun add -D @jcoder/cli @jcoder/registry
 
-# 3. 一站式初始化：播种 components.json / lib-utils / 主题 css，落认证外壳，按依赖序装齐所有块
+# 3. 一站式初始化：播种基线配置与主题，落认证外壳，装齐所有块，并接好 __root.tsx / router.tsx
 npx jc-abp init          # --no-admin 可跳过管理后台五页
 
-# 4. 接线 __root.tsx 与 router.tsx（init 结尾会打印代码片段），改 .env 与 abp.api.config.ts
+# 4. 改 .env（照 .env.example 填自己后端的 client id）与 abp.api.config.ts
 
 # 5. 生成 API 客户端并启动
 npx jc-abp gen && bun run dev
