@@ -5,7 +5,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 ## 执行准则
 
 - 沿用既有写法与约定，做最小必要改动。
-- 涉及样式、新增组件、或要加语义色时，先读 `DESIGN.md`；需要新增/修改 token 时再读 `globals.css` 的 `:root` / `.dark` / `@theme inline` 段。同一会话内已读过的不重复读。
+- 涉及样式、新增组件、或要加语义色时，先读 `DESIGN.md`；需要新增/修改 token 时再读 `packages/cli/templates/app-theme.css` 的 `:root` / `.dark` / `@theme inline` 段。同一会话内已读过的不重复读。
 - 设计/交互不确定先问，不擅自发挥；不引入未讨论的依赖。
 
 
@@ -14,7 +14,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 只用语义 token（`bg-background`、`text-foreground`、`text-muted-foreground`、`border-border`、`ring-ring`）。
 - 禁止硬编码色值（`#2F6BFF`、`text-[#...]`、`bg-[oklch(...)]`——品牌色也走 `--brand-*` token）和 Tailwind 调色板（`bg-gray-800`、`text-zinc-500`）——会绕过主题、破坏暗色。
 - 暗色只靠 token + `.dark`，不给组件手写整套 `dark:` 类。
-- 新语义色顺序：DESIGN.md + `globals.css` 的 `:root`/`.dark` 定义 token → `@theme inline` 里 `--color-x: var(--x)` 映射 → 才在组件用。不在组件里就地造色。
+- 新语义色顺序：DESIGN.md + `app-theme.css` 的 `:root`/`.dark` 定义 token → `@theme inline` 里 `--color-x: var(--x)` 映射 → 才在组件用。不在组件里就地造色。
 - 具体数值（间距节奏、圆角、字体、排版层级、视觉克制原则）以 DESIGN.md 为准，本文件不复述。
 
 ## shadcn/ui

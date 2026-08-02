@@ -140,12 +140,11 @@ UI 全部经 shadcn registry 分发源码，没有组件库依赖。由此带来
 
 包的 `main`/`exports` 在仓库内指向 `src`：workspace 里直接吃 TS 源码，改包不用先 build。发布出去的 tarball 显然不能这样，于是 `prepack` 在打包前临时改写 `package.json`、`postpack` 还原。`npm pack` / `npm publish` 与 `bun pm pack` 都会触发（除非显式 `--ignore-scripts`）。
 
-`scripts/apply-publish-config.mjs` 做两件事，缺一不可：
+`scripts/apply-publish-config.mjs` 把 `publishConfig` 里的 `main`/`types`/`exports` 覆盖字段提到顶层，完成 `src` → `dist` 重定向（npm 原生只认 `publishConfig` 里少数几个键，其余得自己搬）。`@jcoder/abp-react` 与 `@jcoder/cli` 需要它，`@jcoder/registry` 分发的是源码文件、没有 dist，所以对它是空操作。
 
-1. **`src` → `dist` 重定向**：把 `publishConfig` 里的 `main`/`types`/`exports` 覆盖字段提到顶层。
-2. **`workspace:*` → 真实版本号**：npm 不认识 bun/pnpm 的 workspace 协议，会把 `workspace:*` 原样写进 tarball，装到宿主端直接失败。脚本按根 `package.json` 的 `workspaces` 逐个读 `name` 去匹配——不能从包名反推目录（`@jcoder/abp-react` 在 `packages/`，`@jcoder/registry` 在仓库根）。解析不到、或版本号还是 `0.0.0` 就抛错中止，不让一个装不上的包溜出去。
+**包间依赖不走这条路**：提交态的 `package.json` 里直接写真实版本区间（`@jcoder/registry` 依赖 `@jcoder/abp-react@^0.1.0`），不用 `workspace:*` 再由 prepack 改写。bun 靠版本匹配照样把仓库内的包链过去，开发体验不变。
 
-两件事是独立的：`@jcoder/registry` 只有第二件（它分发的是源码文件，没有 dist），`@jcoder/abp-react` 两件都要。
+原因是 prepack 改不动 registry 元数据：**npm 在跑 prepack 之前就把 manifest 快照下来当 packument 了**，tarball 是 prepack 之后打的所以干净，元数据里却留着 `workspace:*`。而依赖解析读的正是元数据——包发得出去、装不下来（实测于 verdaccio）。`exports`/`main` 不受影响，那些是从装好的 tarball 里读的，所以同一套改写对它们有效。`scripts/publish-smoke.sh` 因此除了检查 tarball，还断言提交态的 manifest 里没有 `workspace:` 区间。
 
 发布链路只有真跑一遍打包才暴露得出问题，所以 `scripts/publish-smoke.sh` 会实际打出 tarball 并检查内容；CI 在推 `v*` 标签时自动跑它。
 

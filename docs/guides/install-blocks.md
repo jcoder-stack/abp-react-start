@@ -47,14 +47,15 @@ shadcn 把**裸名字**当作官方 registry 的条目，`abp-crud` 会被解析
 
 「前置的非 registry 产物」这一列是最容易踩的：这些 import 的目标**不随 registry 分发**，缺了就是编译失败而不是运行时报错。
 
-## 装完还要手写的两处
+## 只装块的话，根接线要自己补
 
-`app-shell` 把 `abp-layout`/`abp-login` 接成能跑的应用，但还差：
+走 `jc-abp init` 的话这一节可以跳过——它已经写好了这两个文件（见 [初始化指南第 4 节](initialize-a-project.md)）。只手动装块、不走 init 的人才需要自己补：
 
-- `src/routes/__root.tsx`——接线 `AppConfigProvider` / `SessionProvider`（读 `getAppStateFn` / `getIdentityFn`）、副作用 `import "../api/abp-fetch"`、把各已装块的 `*-messages.json` 深合并进 `messages`。
+- `src/routes/__root.tsx`——接线 `AppConfigProvider` / `SessionProvider`（读 `getAppStateFn` / `getIdentityFn`）、副作用 `import "@/api/abp-fetch"`、把各已装块的 `*-messages.json` 深合并进 `messages`，并提供 `beforeLoad` 返回的 `identity`（路由守卫读它）。
 - `src/router.tsx`——补 `QueryClient` context 与 `setupRouterSsrQueryIntegration`。脚手架建的 router 没有这两样，而多数块靠 react-query 发请求。
+- `src/i18n/app-messages.json`——`menu.tsx` 用 `App::` 开头的词条，那个桶归应用所有，没有块会提供它。
 
-`jc-abp init` 结尾会打印这两步的精确代码片段；完整参照 [`examples/starter/src/routes/__root.tsx`](../../examples/starter/src/routes/__root.tsx) 与 [`examples/starter/src/router.tsx`](../../examples/starter/src/router.tsx)。
+完整参照 [`examples/starter/src/routes/__root.tsx`](../../examples/starter/src/routes/__root.tsx) 与 [`examples/starter/src/router.tsx`](../../examples/starter/src/router.tsx)。
 
 ## 逐块说明
 

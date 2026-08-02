@@ -13,7 +13,7 @@
 - **改组件请改 [`registry/ui/blocks/**`](../../registry/ui) 或 [`packages/cli/**`](../../packages/cli)，然后重放脚本**，不要直接改 starter 里由 registry 块分发的文件（`src/routes/_layout*.tsx`、`src/routes/login.tsx`、`src/routes/_layout/_authed/{identity/**,tenants,settings,profile}/**`、`src/components/{abp,data-table,form,tree,combobox,date-picker}/**`、`src/routes/-showcase/**`、`src/permissions.ts`、`src/api/abp-fetch.ts`）——下次重放就会被覆盖。
 - **`src/api/**` 是 `jc-abp gen` 的 orval 产物，`src/components/ui/**` 是 shadcn 官方原语原样安装**，两者都不手改。
 
-手写增量只有这些（脚本 `HANDWRITTEN_PATHS` 清单，重放时原样保留）：`src/routes/__root.tsx`（Provider 接线）、`src/router.tsx`（QueryClient/SSR 接线）、`src/routes/_layout/forbidden.tsx`、`src/routes/_layout/_authed/books/**`、`src/menu.tsx`、`src/i18n/*.json`、`test/**`、`tsconfig.json`、`vite.config.ts`、`.gitignore`、`.cta.json`、`public/**`、`.env`、本 README。`src/menu.tsx` 是 app-shell 净版加一条 Book 项——这是它与块产物之间唯一预期的 diff。
+手写增量只有这些（脚本 `HANDWRITTEN_PATHS` 清单，重放时原样保留）：`src/routes/__root.tsx` 与 `src/router.tsx`（`init` 会写一份基础接线，这里保留的是 starter 自己加了词条与 favicon/manifest 的版本）、`src/routes/_layout/forbidden.tsx`、`src/routes/_layout/_authed/books/**`、`src/menu.tsx`、`src/i18n/*.json`、`test/**`、`tsconfig.json`、`vite.config.ts`、`.gitignore`、`.cta.json`、`public/**`、`.env`、本 README。`src/menu.tsx` 是 app-shell 净版加一条 Book 项——这是它与块产物之间唯一预期的 diff。
 
 重放（默认对着 `https://localhost:44316` 的演示后端）：
 
