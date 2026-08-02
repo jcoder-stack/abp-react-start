@@ -4,7 +4,7 @@
   "title": "Server-side Data Table",
   "description": "Generic paginated/sortable/searchable data table with debounced search, driven by @tanstack/react-table state.",
   "dependencies": [
-    "@tanstack/react-table",
+    "@tanstack/react-table@9.0.0-beta.59",
     "@jcoder/abp-react",
     "lucide-react"
   ],
