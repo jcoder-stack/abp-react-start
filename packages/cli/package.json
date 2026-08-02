@@ -1,7 +1,7 @@
 {
   "name": "@jcoder-stack/cli",
   "description": "jc-abp CLI：gen（orval 预设生成 react-query 客户端）+ add（拉取 registry 外壳）",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
   "repository": {
