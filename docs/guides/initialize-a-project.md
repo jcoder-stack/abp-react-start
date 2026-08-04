@@ -1,5 +1,7 @@
 # 从零初始化一个项目
 
+> 简体中文版。English edition: [`initialize-a-project.en.md`](initialize-a-project.en.md)
+
 跟着走一遍，你会得到一个能登录、带侧栏壳、带权限守卫、带 i18n、并且已经对接你自己 ABP 后端的 TanStack Start 应用。
 
 README 的[快速开始](../../README.md#快速开始)是这份文档的浓缩版——命令一样，这里补的是**每步实际发生了什么、失败长什么样、怎么确认装对了**。

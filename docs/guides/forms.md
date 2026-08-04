@@ -1,5 +1,7 @@
 # 表单体系:架构与用法
 
+> 简体中文版。English edition: [`forms.en.md`](forms.en.md)
+
 本框架的表单是一个**四层体系**,层与层之间只靠数据契约耦合,下层脱离 ABP 也能独立使用。写业务页面只需接触层 2 的 `useAppForm` 与预绑定字段组件。
 
 任务导向的「怎么做一个列表 + CRUD 维护页」见 [`abp-table.md`](./abp-table.md);本文讲**表单体系本身**。

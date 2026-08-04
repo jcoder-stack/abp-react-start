@@ -1,6 +1,6 @@
 {
   "name": "@jcoder-stack/registry",
-  "description": "认证外壳的 copy-in 源：登录/回调/登出 handler、callAbp 代理、路由守卫、TanStack 接线",
+  "description": "Copy-in sources for the auth shell and shadcn blocks: login/callback/logout handlers, the callAbp proxy, route guards, and TanStack wiring",
   "version": "0.1.1",
   "type": "module",
   "files": [

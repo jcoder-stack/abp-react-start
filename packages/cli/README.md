@@ -1,48 +1,50 @@
 # @jcoder-stack/cli
 
-`jc-abp` CLI：`gen`（orval 预设生成 react-query 客户端）+ `add`（拉取 registry 外壳）+ `init`（一站式初始化）。
+The `jc-abp` CLI: `gen` (orval-preset react-query client generation) + `add` (copy a registry shell in) + `init` (one-stop setup).
 
-`abp-react-start` 内核包之一——面向 ABP 后端的纯 React 前端框架，总览见仓库根 README。
+One of the core packages of `abp-react-start` — a pure-React frontend framework for ABP backends. See the repository root README for the big picture.
 
-## 安装
+## Install
 
 ```bash
 bun add -D @jcoder-stack/cli @jcoder-stack/registry
 ```
 
-`add` 与 `init` 从 `@jcoder-stack/registry` 取外壳源码，两者要一起装。
+`add` and `init` take their shell sources from `@jcoder-stack/registry`, so the two are installed together.
 
-## 命令
+## Commands
 
-### `jc-abp init [--no-admin]`
+### `jc-abp init [--no-admin] [--backend <url>]`
 
-一站式初始化：落 auth 外壳、按依赖序装 shadcn 管理后台 block、播种 `abp.api.config.ts`、生成 routeTree。`--no-admin` 跳过 admin-pages 并换用最小菜单。
+One-stop setup: install the auth shell, install the shadcn admin blocks in dependency order, seed `abp.api.config.ts` and `.env`, and generate the route tree. `--no-admin` skips admin-pages and swaps in a minimal menu.
 
-初始化前会做两道前置检查（是否已初始化过、npm 能否装 block），任一不过就中止且不落任何文件。中途失败的报错会列出已完成的步骤——init 不做回滚。
+In an interactive terminal, init asks one question — your ABP backend URL (Enter skips it). Answering fills `AUTH_ISSUER`, `AUTH_ABP_BASE_URL`, and the swagger `input` in one go, and a short reachability probe at the end tells you if the backend is down or its certificate is untrusted (informational only — init never fails because of it). `--backend` answers the question for scripts and CI.
+
+Two preflight checks run before anything is written (has init run here before; can npm install the blocks) — if either fails, init aborts without touching a file. A mid-run failure lists the steps already completed; init does not roll back.
 
 ### `jc-abp gen [--input <url|file>] [--output <dir>] [--config <file>]`
 
-读 `abp.api.config.{ts,js,json}`（flags 覆盖），用 orval 生成 endpoints/models/schemas 与 mutator。
+Reads `abp.api.config.{ts,js,json}` (flags override) and generates endpoints/models/schemas plus the mutator via orval.
 
 ```ts
 // abp.api.config.ts
 import { defineApiConfig } from "@jcoder-stack/cli";
 
 export default defineApiConfig({
-  input: "https://localhost:44300/swagger/v1/swagger.json",
+  input: "https://localhost:44316/swagger/v1/swagger.json",
   output: "src/api",
   zod: true,
 });
 ```
 
-多后端用 `{ targets: { identity: {...}, business: {...} } }` 形态；flags 无从落到某个 target，传了 `--input`/`--output` 即报错，请改写配置文件或用 `--config` 指定一份单 target 配置。
+For multiple backends use the `{ targets: { identity: {...}, business: {...} } }` shape; flags cannot land on one target there, so passing `--input`/`--output` is an error — edit the config file, or point `--config` at a single-target one.
 
-CLI 整体要求 Node ≥18，但 `.ts` 配置需要运行时能直接执行 TypeScript（Bun，或 Node ≥22.18 的 strip-types）——`init`/`add` 在 Node 18 上照常可用，只有读 `.ts` 配置的 `gen` 不行，更老的 Node 请改用 `abp.api.config.json`（此时 `gen` 会给出同样的提示）。
+The CLI as a whole requires Node ≥ 18, but a `.ts` config needs a runtime that executes TypeScript directly (Bun, or Node ≥ 22.18 strip-types) — `init`/`add` work fine on Node 18; only `gen` reading a `.ts` config does not, and on older Node you can switch to `abp.api.config.json` (`gen` tells you the same when it happens).
 
 ### `jc-abp add <name> [--from <registryDir>] [--dest <dir>]`
 
-把 registry 外壳（如 `auth`）拷进项目，默认落 `src/<name>`，**拒绝覆盖任何已存在的文件**。带 manifest 的条目会按声明分发到各自目标目录并改写相对 import。
+Copies a registry shell (e.g. `auth`) into the project, landing in `src/<name>` by default, and **refuses to overwrite any existing file**. Entries with a manifest are distributed to their declared target directories with relative imports rewritten.
 
 ### `jc-abp help`
 
-打印用法。
+Prints usage.

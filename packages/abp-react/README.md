@@ -1,37 +1,37 @@
 # @jcoder-stack/abp-react
 
-`abp-react-start` 的运行时内核——面向 ABP 后端的纯 React 前端框架，总览见仓库根 README。
+The runtime core of `abp-react-start` — a pure-React frontend framework for ABP backends. See the repository root README for the big picture.
 
-各域按**子路径**导出，不提供根导出：聚合入口会让浏览器 bundle 连带打包 `proxy`、`auth` 等服务端模块。
+Every domain is exported through a **subpath**; there is no root export: an aggregate entry point would drag server-side modules like `proxy` and `auth` into the browser bundle.
 
-| 子路径 | 职责 |
+| Subpath | Responsibility |
 | --- | --- |
-| `@jcoder-stack/abp-react/logger` | 同构日志：作用域、字段绑定、默认脱敏、env 开关 |
-| `@jcoder-stack/abp-react/core` | ABP 线上格式归一：application-configuration 的类型 + zod（容错解析）、`PagedResult<T>`、错误信封（`HttpError`/`toHttpError`） |
-| `@jcoder-stack/abp-react/auth` | 授权认证核心：登录策略层（OIDC/password）+ 会话层（加密分块 cookie、刷新、登出）；宿主无关、后端无关 |
-| `@jcoder-stack/abp-react/proxy` | ABP 代理网关与调用层：贴 Bearer 转发、401→刷新→重放、幂等重试、超时；策略头组装、会话代调、身份派生；ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler |
-| `@jcoder-stack/abp-react/permissions` | 权限判定原语 `isGranted` + 变参 checker |
-| `@jcoder-stack/abp-react/i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库），可注入 interpolate/plural |
-| `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks（用户/权限/设置/特性/本地化/菜单）+ `<PermissionGuard>`/`<FeatureGuard>` |
-| `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad 路由守卫 `requireAuth` / `requirePermission` |
+| `@jcoder-stack/abp-react/logger` | Isomorphic logging: scopes, field binding, redaction by default, env switches |
+| `@jcoder-stack/abp-react/core` | Normalizing ABP wire formats: application-configuration types + zod (tolerant parsing), `PagedResult<T>`, the error envelope (`HttpError`/`toHttpError`) |
+| `@jcoder-stack/abp-react/auth` | Authentication core: the sign-in strategy layer (OIDC/password) + the session layer (encrypted chunked cookies, refresh, logout); host-agnostic and backend-agnostic |
+| `@jcoder-stack/abp-react/proxy` | The ABP proxy gateway and call layer: Bearer-attached forwarding, 401→refresh→replay, idempotent retries, timeouts; policy-header assembly, session brokering, identity derivation; the ABP auth runtime factory `createAbpAuthRuntime` plus the login/callback/logout/culture/tenant handlers |
+| `@jcoder-stack/abp-react/permissions` | The permission primitive `isGranted` + a variadic checker |
+| `@jcoder-stack/abp-react/i18n` | A two-layer merging translator (backend ABP resources override the frontend catalog), with injectable interpolate/plural |
+| `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks (user/permissions/settings/features/localization/menu) + `<PermissionGuard>`/`<FeatureGuard>` |
+| `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad guards `requireAuth` / `requirePermission` |
 
-## 安装
+## Install
 
 ```bash
 bun add @jcoder-stack/abp-react
 ```
 
-多数项目是配合 `@jcoder-stack/cli` 使用的——`jc-abp init` 会把接线代码落进你的项目，之后这些文件归你维护。手工接线见下。
+Most projects use it together with `@jcoder-stack/cli` — `jc-abp init` writes the wiring code into your project, and those files are yours to maintain afterwards. Manual wiring is described below.
 
 ## peerDependencies
 
-`react`、`@tanstack/react-router`、`zod` 三者全部声明为 **optional** peer：纯 BFF 消费者只用 `/proxy`、`/auth`，不该被逼装 React 与 router；纯前端消费者只用 `/react`、`/i18n`，也不该被逼装 zod。装哪几个由你实际用到的子路径决定，缺的那些包管理器不会报警。
+`react`, `@tanstack/react-router`, and `zod` are all declared as **optional** peers: a pure BFF consumer only uses `/proxy` and `/auth` and should not be forced to install React and the router; a pure frontend consumer only uses `/react` and `/i18n` and should not be forced to install zod. Install whichever ones the subpaths you actually use require — package managers stay silent about the missing rest.
 
-## 用法
+## Usage
 
-### 服务端：auth 运行时
+### Server side: the auth runtime
 
-`createAbpAuthRuntime` 从环境变量读配置（`AUTH_ISSUER`、`AUTH_CLIENT_ID`、`AUTH_SESSION_SECRET`、`AUTH_REDIRECT_URI`、`AUTH_ABP_BASE_URL`），返回登录/回调/登出所需的一切。每个覆盖项都有默认值：
+`createAbpAuthRuntime` reads its configuration from environment variables (`AUTH_ISSUER`, `AUTH_CLIENT_ID`, `AUTH_SESSION_SECRET`, `AUTH_REDIRECT_URI`, `AUTH_ABP_BASE_URL`) and returns everything the login/callback/logout handlers need. Every override has a default:
 
 ```ts
 import { createAbpAuthRuntime } from "@jcoder-stack/abp-react/proxy";
@@ -45,11 +45,11 @@ export const createRuntime = () =>
   });
 ```
 
-`AUTH_SESSION_SECRET` 至少 32 字符——会话 cookie 用它经 HKDF 派生 AES-GCM 密钥，短于此长度会直接抛错而非静默产出弱密钥。
+`AUTH_SESSION_SECRET` must be at least 32 characters — the session cookie derives its AES-GCM key from it via HKDF, and anything shorter throws outright instead of silently producing a weak key.
 
-### 客户端：Provider 与 hooks
+### Client side: providers and hooks
 
-两个 Provider 分开挂：配置（本地化/设置/特性）与身份的失效时机不同，合成一个会让身份刷新连带重建 translator。
+The two providers are mounted separately: configuration (localization/settings/features) and identity invalidate at different times, and folding them into one would make an identity refresh rebuild the translator along with it.
 
 ```tsx
 import { AppConfigProvider, SessionProvider } from "@jcoder-stack/abp-react/react";
@@ -61,9 +61,9 @@ import { AppConfigProvider, SessionProvider } from "@jcoder-stack/abp-react/reac
 </AppConfigProvider>;
 ```
 
-`messages` 需引用稳定（模块常量或 `useMemo`）——它参与 translator 的重建判定。回调 props（`onMissingKey`、`createTranslator`）经 ref 读取，写成内联箭头函数不会导致 context 重建。
+`messages` needs a stable reference (a module constant or `useMemo`) — it participates in the translator rebuild check. Callback props (`onMissingKey`, `createTranslator`) are read through refs, so writing them as inline arrows does not rebuild the context.
 
-### 路由守卫
+### Route guards
 
 ```ts
 import { requireAuth, requirePermission } from "@jcoder-stack/abp-react/router";
@@ -73,7 +73,7 @@ export const Route = createFileRoute("/_layout/_authed")({
 });
 ```
 
-守卫是**纯 UX**——真正的安全判定在 ABP 服务端。`requirePermission` 缺权限时跳 `/forbidden`；匿名用户没有任何 grantedPolicies，默认也会落到 403，传 `loginPath` 可让未认证访客先去登录：
+The guards are **pure UX** — the real authorization decision lives in the ABP backend. `requirePermission` redirects to `/forbidden` when the permission is missing; an anonymous user has no grantedPolicies at all, so they land on the 403 too by default. Pass `loginPath` to send unauthenticated visitors to sign in first:
 
 ```ts
 beforeLoad: requirePermission(IdentityPermissions.Users.Default, {
@@ -81,6 +81,6 @@ beforeLoad: requirePermission(IdentityPermissions.Users.Default, {
 });
 ```
 
-推荐的做法仍是把受保护页面挂在一个跑 `requireAuth()` 的父路由下，`loginPath` 用于单独使用 `requirePermission` 的场景。
+The recommended layout is still to nest protected pages under a parent route running `requireAuth()`; `loginPath` is for the cases where `requirePermission` is used on its own.
 
-两者都要求祖先路由的 `beforeLoad` 已把 `identity` 放进 route context；没放会抛出带指引的错误而不是静默放行。
+Both guards require an ancestor route's `beforeLoad` to have put `identity` into the route context; when it is missing they throw an error with guidance instead of silently letting the request through.
