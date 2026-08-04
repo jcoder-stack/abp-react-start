@@ -136,10 +136,12 @@ describe("runInit", () => {
     expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(expectedCalls);
     // 锁定到已验证的 minor：@latest 会把 shadcn/router-cli 的行为前提悄悄换掉。
     expect(calls.at(-1)?.args).toEqual([
+      "-y",
       expect.stringMatching(/^@tanstack\/router-cli@\d/),
       "generate",
     ]);
     expect(calls.at(-2)?.args).toEqual([
+      "-y",
       expect.stringMatching(/^shadcn@\d/),
       "add",
       join(registryDir, "public", "r", "admin-pages.json"),
@@ -147,6 +149,7 @@ describe("runInit", () => {
       "--overwrite",
     ]);
     expect(calls.filter((c) => c.cmd === "npx")[0]?.args).toEqual([
+      "-y",
       expect.stringMatching(/^shadcn@\d/),
       "add",
       join(registryDir, "public", "r", "abp-layout.json"),
@@ -189,13 +192,13 @@ describe("runInit", () => {
     expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(4);
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
-    expect(initError.message).toContain('shadcn 块 "data-table" 安装失败');
+    expect(initError.message).toContain('installing shadcn block "data-table" failed');
     expect(initError.completedSteps).toEqual([
-      "已安装播种文件运行期依赖（npm）: @tanstack/react-router-ssr-query",
-      "auth 外壳（jc-abp add auth）",
-      "shadcn 块 abp-layout",
-      "shadcn 块 abp-login",
-      "shadcn 块 app-shell",
+      "runtime dependencies for seeded files installed (npm): @tanstack/react-router-ssr-query",
+      "auth shell (jc-abp add auth)",
+      "shadcn block abp-layout",
+      "shadcn block abp-login",
+      "shadcn block app-shell",
     ]);
   });
 
@@ -254,8 +257,8 @@ describe("runInit", () => {
 
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
-    expect(initError.message).toContain("未检测到 components.json");
-    expect(initError.message).toContain("Tailwind css 入口");
+    expect(initError.message).toContain("no components.json found");
+    expect(initError.message).toContain("Tailwind css entry");
     expect(initError.completedSteps).toEqual([]);
     expect(calls).toHaveLength(0);
     expect(existsSync(join(app, "components.json"))).toBe(false);
@@ -318,16 +321,16 @@ describe("runInit", () => {
 
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
-    expect(initError.message).toContain('shadcn 块 "data-table" 报告安装成功');
+    expect(initError.message).toContain('shadcn block "data-table" reported success');
     expect(initError.message).toContain("components/data-table/use-data-table.ts");
     // abp-layout, abp-login, and app-shell declare no files (their fixture json is "{}"), so they pass
     // verification trivially and land in completedSteps; data-table is where it stops.
     expect(initError.completedSteps).toEqual([
-      "已安装播种文件运行期依赖（npm）: @tanstack/react-router-ssr-query",
-      "auth 外壳（jc-abp add auth）",
-      "shadcn 块 abp-layout",
-      "shadcn 块 abp-login",
-      "shadcn 块 app-shell",
+      "runtime dependencies for seeded files installed (npm): @tanstack/react-router-ssr-query",
+      "auth shell (jc-abp add auth)",
+      "shadcn block abp-layout",
+      "shadcn block abp-login",
+      "shadcn block app-shell",
     ]);
     expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(4);
   });
@@ -343,7 +346,7 @@ describe("runInit", () => {
       }),
     );
     const runner = async (_cmd: string, args: string[], cwd: string): Promise<void> => {
-      const jsonPath = args[2];
+      const jsonPath = args[3];
       if (jsonPath === undefined) return;
       const parsed = JSON.parse(readFileSync(jsonPath, "utf8"));
       for (const file of parsed.files ?? []) {
@@ -597,7 +600,11 @@ describe("runInit", () => {
     });
     expect(result.tsrConfigSeeded).toBe(true);
     const gen = calls.at(-1);
-    expect(gen?.args).toEqual([expect.stringMatching(/^@tanstack\/router-cli@\d/), "generate"]);
+    expect(gen?.args).toEqual([
+      "-y",
+      expect.stringMatching(/^@tanstack\/router-cli@\d/),
+      "generate",
+    ]);
     expect(result.routeTreeGenerated).toBe(true);
   });
 
@@ -608,7 +615,7 @@ describe("runInit", () => {
     const result = await initWithStubbedProbe({
       cwd: app,
       runner: async (_cmd, args) => {
-        if (args[0]?.startsWith("@tanstack/router-cli@")) throw new Error("offline");
+        if (args[1]?.startsWith("@tanstack/router-cli@")) throw new Error("offline");
       },
     });
 
@@ -707,7 +714,7 @@ describe("runInit preflight", () => {
     const { runner, calls } = recordingRunner();
 
     await expect(initWithStubbedProbe({ cwd: app, runner })).rejects.toThrow(
-      /已经有 auth 外壳的文件[\s\S]*src[/\\]auth/,
+      /already has auth shell files[\s\S]*src[/\\]auth/,
     );
 
     expect(calls).toEqual([]);

@@ -227,7 +227,7 @@ function planAdd(opts: AddOptions): AddPlan {
   } catch (error) {
     // 裸 SyntaxError 只说「Unexpected token」，指不到是哪份 manifest 写坏了。
     throw new Error(
-      `${opts.name} 的 manifest.json 不是合法 JSON（${manifestPath}）: ${error instanceof Error ? error.message : String(error)}`,
+      `manifest.json of ${opts.name} is not valid JSON (${manifestPath}): ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   const parsed = manifestSchema.safeParse(manifestJson);
@@ -238,10 +238,10 @@ function planAdd(opts: AddOptions): AddPlan {
   if (manifest.requiresPathAlias && hasPathAlias(opts.cwd, manifest.requiresPathAlias) === "no") {
     const alias = manifest.requiresPathAlias;
     throw new Error(
-      `jc-abp add ${opts.name}: 目标项目的 tsconfig.json 里没找到 "${alias}" 路径别名，而 ${opts.name} ` +
-        `的源码用它引用（不写相对路径）。请在 tsconfig.json 的 compilerOptions.paths 里补一条，例如 ` +
-        `{ "${alias}": ["./src/*"] }（具体相对路径按你的 src 根调整），再重跑 jc-abp add ${opts.name}。` +
-        `（这里只看 tsconfig.json 顶层自身声明的 paths，不会追踪 extends 链。）`,
+      `jc-abp add ${opts.name}: the target project's tsconfig.json declares no "${alias}" path alias, and the ` +
+        `${opts.name} sources import through it (never via relative paths). Add one to compilerOptions.paths, e.g. ` +
+        `{ "${alias}": ["./src/*"] } (adjust the relative path to your src root), then rerun jc-abp add ${opts.name}. ` +
+        `(Only paths declared at the tsconfig.json top level are checked; the extends chain is not followed.)`,
     );
   }
   const copies: AddPlan["copies"] = [];
