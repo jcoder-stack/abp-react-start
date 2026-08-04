@@ -9,6 +9,8 @@ export interface CliFlags {
   dest?: string;
   /** init only: install the admin-pages block too (--no-admin sets false). */
   admin?: boolean;
+  /** init only: ABP backend origin; fills .env and the swagger input without the prompt. */
+  backend?: string;
 }
 
 /** A parsed jc-abp invocation: the command, its positionals, and flags. */
@@ -22,7 +24,7 @@ export interface CliInvocation {
 const COMMAND_FLAGS: Record<CliInvocation["command"], readonly string[]> = {
   gen: ["input", "output", "config"],
   add: ["from", "dest"],
-  init: ["no-admin"],
+  init: ["no-admin", "backend"],
   help: [],
 };
 
@@ -41,6 +43,7 @@ export function parseCliArgs(argv: string[]): CliInvocation {
       config: { type: "string" },
       from: { type: "string" },
       dest: { type: "string" },
+      backend: { type: "string" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -71,6 +74,7 @@ export function parseCliArgs(argv: string[]): CliInvocation {
   if (values.config !== undefined) flags.config = values.config;
   if (values.from !== undefined) flags.from = values.from;
   if (values.dest !== undefined) flags.dest = values.dest;
+  if (values.backend !== undefined) flags.backend = values.backend;
   if (command === "init") flags.admin = !noAdmin;
   return { command, positionals: positionalRest, flags };
 }

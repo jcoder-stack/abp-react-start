@@ -31,14 +31,83 @@ function hasExternalRefs(document: string): boolean {
   return /"\$ref"\s*:\s*"(?!#)/.test(document) || /\$ref\s*:\s*['"]?(?!#)/.test(document);
 }
 
+// 证书信任类错误码（与 @jcoder-stack/abp-react/proxy 的 tls-trust 同一份清单）：换个报错方向。
+const TLS_TRUST_CODES = new Set([
+  "CERT_HAS_EXPIRED",
+  "CERT_NOT_YET_VALID",
+  "CERT_UNTRUSTED",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "ERR_TLS_CERT_ALTNAME_INVALID",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "UNABLE_TO_GET_ISSUER_CERT",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+]);
+
+// 「后端根本不在那儿」类错误码：与 spec 内容无关，指路去 abp.api.config.ts 或先把后端起起来。
+const UNREACHABLE_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+]);
+
+/** 沿 cause 链与 AggregateError.errors 找第一个错误码；fetch 抛的是包了一层的 `TypeError: fetch failed`。 */
+function findErrorCode(error: unknown, depth = 0): string | null {
+  if (depth > 5 || typeof error !== "object" || error === null) return null;
+  const record = error as { code?: unknown; errors?: unknown; cause?: unknown };
+  if (typeof record.code === "string") return record.code;
+  if (Array.isArray(record.errors)) {
+    for (const inner of record.errors) {
+      const found = findErrorCode(inner, depth + 1);
+      if (found !== null) return found;
+    }
+  }
+  return findErrorCode(record.cause, depth + 1);
+}
+
+/** 把拉取 swagger 的网络失败翻译成可执行的下一步；认不出的错误原样保留在结尾。 */
+export function describeSpecFetchError(error: unknown, input: string): string {
+  const code = findErrorCode(error);
+  if (code !== null && TLS_TRUST_CODES.has(code)) {
+    return (
+      `the ABP backend at ${input} uses a certificate this process does not trust (${code}). ` +
+      "For a local self-signed dev certificate, export it and point AUTH_EXTRA_CA_FILE at it in .env:\n" +
+      "  dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM\n" +
+      "  AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt"
+    );
+  }
+  if (code !== null && UNREACHABLE_CODES.has(code)) {
+    return (
+      `could not reach the ABP backend (${code}): ${input}. ` +
+      "The backend is not running, or the input URL in abp.api.config.ts points at the wrong place. " +
+      "Start the backend, or fix the input and rerun jc-abp gen."
+    );
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return `failed to fetch the OpenAPI document: ${input} (${message})`;
+}
+
 /** 每个 project 都会自己解析一遍 input：远端 spec 先落到临时文件，才不会一次 gen 里把同一份文档拉好几遍（两次之间后端有变更会让 types 与 zod schema 漂移）。返回本地路径与清理函数；本地 input 原样返回。 */
 async function localizeSpec(input: string): Promise<{ target: string; cleanup: () => void }> {
   const keepRemote = { target: input, cleanup: () => {} };
   if (!isRemote(input)) return keepRemote;
-  const response = await fetch(input);
+  let response: Response;
+  try {
+    response = await fetch(input);
+  } catch (error) {
+    throw new Error(describeSpecFetchError(error, input), { cause: error });
+  }
   if (!response.ok) {
     throw new Error(
-      `failed to fetch the OpenAPI document (${response.status} ${response.statusText}): ${input}`,
+      `failed to fetch the OpenAPI document (${response.status} ${response.statusText}): ${input}` +
+        (response.status === 404
+          ? " — the path is not a swagger document; ABP templates usually serve /swagger/v1/swagger.json"
+          : ""),
     );
   }
   const document = await response.text();

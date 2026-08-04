@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { runGen } from "../src/gen";
+import { describeSpecFetchError, runGen } from "../src/gen";
 
 const MINI = join(__dirname, "fixtures", "mini-abp-swagger.json");
 const DEMO = join(__dirname, "fixtures", "demo-abp-swagger.json");
@@ -165,5 +165,74 @@ describe("runGen", () => {
     const postInit = fetchFn.mock.calls[1]?.[1] as RequestInit;
     expect(postInit.method).toBe("POST");
     expect(postInit.body).toBe(JSON.stringify({ userName: "alice" }));
+  });
+});
+
+describe("describeSpecFetchError", () => {
+  const INPUT = "https://localhost:44316/swagger/v1/swagger.json";
+
+  function withCode(code: string): TypeError {
+    return new TypeError("fetch failed", {
+      cause: Object.assign(new Error("x"), { code }),
+    });
+  }
+
+  it("routes a certificate-trust failure to AUTH_EXTRA_CA_FILE guidance", () => {
+    const message = describeSpecFetchError(withCode("DEPTH_ZERO_SELF_SIGNED_CERT"), INPUT);
+    expect(message).toContain("AUTH_EXTRA_CA_FILE");
+    expect(message).toContain("DEPTH_ZERO_SELF_SIGNED_CERT");
+    expect(message).not.toContain("abp.api.config.ts");
+  });
+
+  it("routes an unreachable backend to the config/start-the-backend guidance", () => {
+    const message = describeSpecFetchError(withCode("ECONNREFUSED"), INPUT);
+    expect(message).toContain("abp.api.config.ts");
+    expect(message).toContain(INPUT);
+    expect(message).not.toContain("AUTH_EXTRA_CA_FILE");
+  });
+
+  it("finds the code inside an AggregateError from a dual-stack attempt", () => {
+    const error = new TypeError("fetch failed", {
+      cause: new AggregateError([
+        Object.assign(new Error("a"), { code: "ECONNREFUSED" }),
+        Object.assign(new Error("b"), { code: "ECONNREFUSED" }),
+      ]),
+    });
+    expect(describeSpecFetchError(error, INPUT)).toContain("abp.api.config.ts");
+  });
+
+  it("keeps an unrecognized error verbatim", () => {
+    const message = describeSpecFetchError(new Error("boom"), INPUT);
+    expect(message).toContain("boom");
+    expect(message).toContain(INPUT);
+  });
+});
+
+describe("runGen network failure surfacing", () => {
+  it("classifies a refused connection instead of leaking a bare fetch failed", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-net-"));
+    // listen(0) 拿一个真实空闲端口再关掉：拒连立即返回，且不落入 fetch 规范的 bad-port
+    // 黑名单（9 之类的低位端口 undici 根本不去连，抛的是 "bad port" 而非 ECONNREFUSED）。
+    const { createServer } = await import("node:net");
+    const port = await new Promise<number>((resolvePort) => {
+      const srv = createServer().listen(0, "127.0.0.1", () => {
+        const address = srv.address();
+        const found = typeof address === "object" && address !== null ? address.port : 0;
+        srv.close(() => resolvePort(found));
+      });
+    });
+    writeFileSync(
+      join(cwd, "abp.api.config.json"),
+      JSON.stringify({ input: `http://127.0.0.1:${port}/swagger/v1/swagger.json` }),
+    );
+    const error = await runGen({ cwd }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    if (!(error instanceof Error)) throw new Error("unreachable");
+    expect(error.message).toContain("abp.api.config.ts");
+    expect(error.message).toContain("127.0.0.1:");
+    expect(error.message).not.toBe("fetch failed");
   });
 });

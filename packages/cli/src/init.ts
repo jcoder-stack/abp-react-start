@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
@@ -37,6 +38,8 @@ const MENU_NO_ADMIN_TEMPLATE_PATH = fileURLToPath(
 
 /** app-shell's distributed src/menu.tsx references admin routes (/identity/users etc.); --no-admin overwrites it with this minimal (home-only) template so the app doesn't dead-link/fail typecheck on routes it never installed. */
 const MENU_TARGET = "src/menu.tsx";
+/** 模板里挂在 input 占位上方的 TODO；backend 已填时连注释一起摘掉。 */
+const INPUT_TODO_COMMENT = "  // TODO: 换成你自己的 ABP 后端 swagger 地址";
 
 const ROOT_TEMPLATE_PATH = fileURLToPath(new URL("../templates/root.tsx.tpl", import.meta.url));
 const ROUTER_TEMPLATE_PATH = fileURLToPath(new URL("../templates/router.tsx.tpl", import.meta.url));
@@ -171,6 +174,9 @@ export interface InitOptions {
   cwd: string;
   /** Install the admin-pages block too (default true; --no-admin sets false). */
   admin?: boolean;
+  /** ABP backend origin (already normalized via normalizeBackendUrl); fills AUTH_ISSUER,
+   *  AUTH_ABP_BASE_URL and the swagger input in one go. Absent = the user skipped it. */
+  backend?: string;
   runner?: CommandRunner;
   /** Overrides the npm allow-scripts probe (see AllowScriptsProbe); tests inject one to stay off the real npm. */
   allowScriptsProbe?: AllowScriptsProbe;
@@ -193,6 +199,57 @@ export interface InitResult {
   /** __root.tsx / router.tsx 是否已写入接线模板（脚手架原版备份到同名 .bak）。 */
   rootWired: boolean;
   routerWired: boolean;
+  /** .env 是否本次生成（已存在则不动）。 */
+  envSeeded: boolean;
+  /** 交互/--backend 给出的后端地址（规范化后）；跳过为 null。 */
+  backendUrl: string | null;
+}
+
+/**
+ * 把用户输入的后端地址规范化为无尾斜杠的 http(s) URL；不合法返回 null。
+ * issuer / abpBaseUrl / swagger input 三处派生共用这一个形态。
+ */
+export function normalizeBackendUrl(raw: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  return url.toString().replace(/\/+$/, "");
+}
+
+/** init 生成 .env 时改写的变量；其余行（注释、redirect 等默认值）原样保留。 */
+function envSeedValues(backend: string | undefined): Map<string, string> {
+  return new Map([
+    ["AUTH_ISSUER", backend ?? ""],
+    ["AUTH_ABP_BASE_URL", backend ?? ""],
+    // client id 无从猜测（必须是后端 OpenIddict 里注册的那一个），留空让启动检查点名它，
+    // 好过留一个看似能用的占位。
+    ["AUTH_CLIENT_ID", ""],
+    ["AUTH_SESSION_SECRET", randomBytes(32).toString("base64")],
+  ]);
+}
+
+/** 从 auth 外壳落位的 .env.example 派生 .env；已有 .env 不碰，example 缺席（异常形态）不硬造。 */
+function seedEnvFile(cwd: string, backend: string | undefined, completed: string[]): boolean {
+  const envPath = resolve(cwd, ".env");
+  if (existsSync(envPath)) return false;
+  const examplePath = resolve(cwd, ".env.example");
+  if (!existsSync(examplePath)) return false;
+  const values = envSeedValues(backend);
+  const lines = readFileSync(examplePath, "utf8")
+    .split("\n")
+    .map((line) => {
+      const name = line.match(/^([A-Z0-9_]+)=/)?.[1];
+      if (name === undefined) return line;
+      const value = values.get(name);
+      return value === undefined ? line : `${name}=${value}`;
+    });
+  writeFileSync(envPath, lines.join("\n"));
+  completed.push(".env（自 .env.example 生成，session secret 已随机）");
+  return true;
 }
 
 function errorMessage(error: unknown): string {
@@ -801,7 +858,24 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   const configSeeded = !existsSync(configPath);
   if (configSeeded) {
     copyFileSync(CONFIG_TEMPLATE_PATH, configPath);
+    if (opts.backend !== undefined) {
+      const anchor = 'input: "https://localhost:44316/swagger/v1/swagger.json"';
+      const content = readFileSync(configPath, "utf8");
+      if (!content.includes(anchor)) {
+        // 只可能是模板改了占位却没同步这里——宁可炸在 CI，不留下静默丢失用户输入的 init。
+        throw new InitError("abp.api.config.ts 模板的 input 占位与 init 不一致", completed);
+      }
+      writeFileSync(
+        configPath,
+        content
+          .replace(`${INPUT_TODO_COMMENT}\n`, "")
+          .replace(anchor, `input: "${opts.backend}/swagger/v1/swagger.json"`),
+      );
+      completed.push("abp.api.config.ts（input 已指向你的后端）");
+    }
   }
+
+  const envSeeded = seedEnvFile(opts.cwd, opts.backend, completed);
 
   return {
     addResult,
@@ -816,5 +890,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     routeTreeGenerated,
     rootWired: rootWiring.root,
     routerWired: rootWiring.router,
+    envSeeded,
+    backendUrl: opts.backend ?? null,
   };
 }

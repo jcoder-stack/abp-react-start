@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { runAdd } from "./add";
 import { parseCliArgs } from "./args";
 import { runGen } from "./gen";
-import { runInit } from "./init";
+import { normalizeBackendUrl, runInit } from "./init";
 
 /** jc-abp usage text (v1: gen + add + init; watch is deferred). */
 const USAGE = `jc-abp — ABP React 前端工具
@@ -14,13 +15,36 @@ const USAGE = `jc-abp — ABP React 前端工具
       多 target 配置（{ targets: {...} }）下 --input/--output 无从落到某个 target，传了即报错
   jc-abp add <name> [--from <registryDir>] [--dest <dir>]
       把 registry 外壳（如 auth）拷贝进项目（默认 src/<name>，拒绝覆盖）
-  jc-abp init [--no-admin]
-      一站式初始化：落 auth 外壳 + 按依赖序装 shadcn 管理后台 block（--no-admin 跳过 admin-pages 并换最小菜单）+ 播种 abp.api.config.ts + 生成 routeTree
+  jc-abp init [--no-admin] [--backend <url>]
+      一站式初始化：落 auth 外壳 + 按依赖序装 shadcn 管理后台 block（--no-admin 跳过 admin-pages 并换最小菜单）+ 播种 abp.api.config.ts 与 .env + 生成 routeTree
+      交互时会问一次 ABP 后端地址（回车跳过）；--backend 直接给出，脚本/CI 免交互
   jc-abp help
 `;
 
 /** init 收尾打印的 __root.tsx / router.tsx 接线教程；正文是模板文本，dispatch 只负责打印，免得近百行样例代码长在函数里、还要跟 starter 的 __root.tsx 两头维护。 */
 const WIRING_GUIDE_PATH = fileURLToPath(new URL("../templates/wiring-guide.txt", import.meta.url));
+
+/**
+ * 交互式问一次 ABP 后端地址；回车跳过，非 TTY（CI、管道）直接跳过。
+ * 地址不合法时就地重问——这是 init 唯一的交互，错一次就中止太苛刻。
+ */
+async function promptBackendUrl(): Promise<string | undefined> {
+  if (process.stdin.isTTY !== true || process.stdout.isTTY !== true) return undefined;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    for (;;) {
+      const answer = (
+        await rl.question("ABP 后端地址（如 https://localhost:44316，回车跳过）: ")
+      ).trim();
+      if (answer === "") return undefined;
+      const normalized = normalizeBackendUrl(answer);
+      if (normalized !== null) return normalized;
+      console.log("地址不合法：需要 http(s):// 开头的完整 URL，再试一次或直接回车跳过。");
+    }
+  } finally {
+    rl.close();
+  }
+}
 
 /** CLI entry: dispatch gen/add/help; returns the process exit code. */
 export async function main(argv: string[]): Promise<number> {
@@ -50,7 +74,18 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     if (invocation.command === "init") {
-      const result = await runInit({ cwd: process.cwd(), admin: invocation.flags.admin });
+      let backend: string | undefined;
+      if (invocation.flags.backend !== undefined) {
+        const normalized = normalizeBackendUrl(invocation.flags.backend);
+        if (normalized === null) {
+          console.error(`--backend 不是合法的 http(s) URL: ${invocation.flags.backend}`);
+          return 1;
+        }
+        backend = normalized;
+      } else {
+        backend = await promptBackendUrl();
+      }
+      const result = await runInit({ cwd: process.cwd(), admin: invocation.flags.admin, backend });
       if (result.componentsJsonSeeded) {
         console.log(
           `已播种 components.json（css: ${result.componentsJsonCssPath}，基线 new-york/neutral）`,
@@ -65,9 +100,18 @@ export async function main(argv: string[]): Promise<number> {
       );
       console.log(
         result.configSeeded
-          ? `已生成 ${result.configPath}`
+          ? `已生成 ${result.configPath}${result.backendUrl !== null ? "（input 已指向你的后端）" : ""}`
           : `${result.configPath} 已存在，跳过播种`,
       );
+      if (result.envSeeded) {
+        console.log(
+          result.backendUrl !== null
+            ? `已生成 .env（后端 ${result.backendUrl}，会话密钥已随机生成）——还差 AUTH_CLIENT_ID，启动前填上`
+            : "已生成 .env（会话密钥已随机生成）——后端地址已跳过，启动前填 AUTH_ISSUER / AUTH_ABP_BASE_URL / AUTH_CLIENT_ID",
+        );
+      } else {
+        console.log(".env 已存在，未改动");
+      }
       if (result.scaffoldIndexRenamed) {
         console.log(
           "已将脚手架默认首页备份为 src/routes/index.tsx.bak；`/` 现由 app-shell 的落地页 " +

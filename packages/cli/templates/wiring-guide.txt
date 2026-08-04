@@ -1,6 +1,7 @@
 接下来:
-  1. 改 .env（参照 .env.example）
-  2. 改 abp.api.config.ts 指向你的后端 → jc-abp gen
+  1. 补全 .env：AUTH_CLIENT_ID 必填——后端 OpenIddict 里注册的那一个，.env 注释里有探测方法
+     （后端地址在 init 时跳过的话，AUTH_ISSUER / AUTH_ABP_BASE_URL 与 abp.api.config.ts 的 input 也要填）
+  2. jc-abp gen
   3. bun run dev
 
 后端用自签证书时 gen 与 dev 都会被拒（Node 不读系统钥匙串，证书在钥匙串里受信也没用）。
