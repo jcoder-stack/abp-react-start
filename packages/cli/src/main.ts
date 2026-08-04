@@ -5,6 +5,7 @@ import { runAdd } from "./add";
 import { parseCliArgs } from "./args";
 import { runGen } from "./gen";
 import { normalizeBackendUrl, runInit } from "./init";
+import { findErrorCode, TLS_TRUST_CODES, UNREACHABLE_CODES } from "./upstream-errors";
 
 /** jc-abp usage text (v1: gen + add + init; watch is deferred). */
 const USAGE = `jc-abp — ABP React frontend tooling
@@ -44,6 +45,42 @@ async function promptBackendUrl(): Promise<string | undefined> {
     }
   } finally {
     rl.close();
+  }
+}
+
+/**
+ * init 收尾的连通性探测（best-effort，永不让 init 失败）：任何 HTTP 响应（含 404/405）都证明
+ * TCP+TLS 通了，返回 null；只有连不上才有话说。3 秒超时——它的价值是在最早的时刻抓住手误，
+ * 不值得为一个慢后端拖住收尾。
+ * @returns 给用户看的一行提示，null 表示无需提示。
+ */
+export async function probeBackend(
+  url: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<string | null> {
+  try {
+    await fetchFn(`${url}/swagger/v1/swagger.json`, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(3000),
+    });
+    return null;
+  } catch (error) {
+    const code = findErrorCode(error);
+    if (code !== null && TLS_TRUST_CODES.has(code)) {
+      // 证书握手失败反而证明地址填对了——有一台真后端在回话。
+      return (
+        `note: the backend at ${url} is up, but its certificate is not trusted by this process ` +
+        `(${code}) — set AUTH_EXTRA_CA_FILE in .env before running gen or dev (see the notes in .env).`
+      );
+    }
+    if (code !== null && UNREACHABLE_CODES.has(code)) {
+      return (
+        `note: the backend at ${url} is not reachable right now (${code}) — init finished fine; ` +
+        "start the backend (or fix the address in .env and abp.api.config.ts) before running jc-abp gen."
+      );
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return `note: probing ${url} failed (${message}) — verify the address before running jc-abp gen.`;
   }
 }
 
@@ -123,6 +160,10 @@ export async function main(argv: string[]): Promise<number> {
         console.log(
           "--no-admin: src/menu.tsx was overwritten with the minimal menu (the distributed menu links to admin routes that are not installed).",
         );
+      }
+      if (backend !== undefined) {
+        const note = await probeBackend(backend);
+        if (note !== null) console.log(note);
       }
       console.log(`\n${readFileSync(WIRING_GUIDE_PATH, "utf8").trimEnd()}`);
       return 0;

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { main } from "../src/main";
+import { main, probeBackend } from "../src/main";
 
 /** 跑真实 bin，但把它对 dist 的 import 换成一个只管刷输出的 stub，从而只考察进程退出方式。 */
 function runBinWith(stubSource: string): Promise<{ code: number | null; stdout: string }> {
@@ -71,5 +71,43 @@ describe("main", () => {
     expect(await main(["add"])).toBe(1);
     expect(error).toHaveBeenCalled();
     error.mockRestore();
+  });
+});
+
+describe("probeBackend", () => {
+  const URL_ = "https://localhost:44316";
+
+  function failingFetch(code: string): typeof fetch {
+    return (async () => {
+      throw new TypeError("fetch failed", {
+        cause: Object.assign(new Error("x"), { code }),
+      });
+    }) as unknown as typeof fetch;
+  }
+
+  it("stays silent when the backend answers at all — even with 404", async () => {
+    const fetchFn = (async () => new Response(null, { status: 404 })) as unknown as typeof fetch;
+    expect(await probeBackend(URL_, fetchFn)).toBe(null);
+  });
+
+  it("reads a certificate failure as good news: the address is right, trust is missing", async () => {
+    const note = await probeBackend(URL_, failingFetch("DEPTH_ZERO_SELF_SIGNED_CERT"));
+    expect(note).toContain("is up");
+    expect(note).toContain("AUTH_EXTRA_CA_FILE");
+  });
+
+  it("points an unreachable backend at gen, not at init", async () => {
+    const note = await probeBackend(URL_, failingFetch("ECONNREFUSED"));
+    expect(note).toContain("not reachable");
+    expect(note).toContain("init finished fine");
+    expect(note).toContain("jc-abp gen");
+  });
+
+  it("never throws on an unrecognized failure", async () => {
+    const fetchFn = (async () => {
+      throw new Error("weird");
+    }) as unknown as typeof fetch;
+    const note = await probeBackend(URL_, fetchFn);
+    expect(note).toContain("weird");
   });
 });

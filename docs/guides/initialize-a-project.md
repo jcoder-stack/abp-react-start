@@ -58,6 +58,8 @@ npx jc-abp init --backend https://localhost:44316   # 脚本/CI：免交互直�
 
 交互终端下 init 会问一次 **ABP 后端地址**（回车跳过）。给了地址就一并填好三处：`.env` 的 `AUTH_ISSUER` 与 `AUTH_ABP_BASE_URL`，以及 `abp.api.config.ts` 的 swagger `input`（按 ABP 单体的约定取 `<地址>/swagger/v1/swagger.json`，分离部署后改即可）。非 TTY（CI、管道）自动跳过。
 
+init 本身**从不连接后端**——地址只是写进配置，后端没启动、暂时不可达都不影响初始化。给了地址时收尾会做一次 3 秒的连通性探测，只提示不阻断：连不上会提醒你在 gen 前把后端启动起来；握手到了但证书不受信，会直接指出该配 `AUTH_EXTRA_CA_FILE`（这其实是好消息——地址没填错）。
+
 `.env` 由 `.env.example` 派生生成（已存在则不动）：`AUTH_SESSION_SECRET` 自动生成随机值；`AUTH_CLIENT_ID` 留空——它必须是后端 OpenIddict 里注册的那一个，猜不了，启动时会被点名提醒。跳过后端地址时 `AUTH_ISSUER`/`AUTH_ABP_BASE_URL` 也留空，同样由启动检查兜底，不会带着一个看似能用的占位地址悄悄失败。
 
 ### 它做了什么
@@ -232,7 +234,8 @@ AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt
 | `init` 说找不到 css 入口 | 你的 css 不在四个探测位置 | 先建好 css 入口，或手动放一份 `components.json` |
 | `gen` 报 endpoints 为空 | swagger 无效、地址错、或后端没起 | 浏览器直接打开 swagger 地址验证 |
 | `gen` 报 `fetch failed` | 本地后端自签证书 | 见上一节 |
-| 首页 500，只写着 `fetch failed` | 同上，服务端到后端那一跳被拒 | 见上一节 |
+| 首页 500，说 upstream TLS certificate is not trusted | 服务端到后端那一跳证书被拒 | 见上一节 |
+| 首页 500，说 cannot reach the ABP backend | 后端没启动，或 `AUTH_ABP_BASE_URL` 指错 | 启动后端 / 改 `.env` |
 | 页面白屏、控制台说 Provider 缺失 | `__root.tsx` 被改坏或被 `.bak` 覆盖回去了 | 对照第 4 节列的几项，或从 starter 那份取回 |
 | 登录后一直跳回登录页 | `.env` 的 client id / 密钥 / 回调地址对不上 | 核对 ABP 端的客户端配置 |
 | `jc-abp` 命令找不到 | monorepo 内直接跑需要先 build | `bun run build` 后再用 `node packages/cli/bin/jc-abp.js` |
