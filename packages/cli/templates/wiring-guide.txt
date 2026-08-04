@@ -1,12 +1,16 @@
-接下来:
-  1. 改 .env（参照 .env.example）
-  2. 改 abp.api.config.ts 指向你的后端 → jc-abp gen
+Next steps:
+  1. Finish .env: AUTH_CLIENT_ID is required — the client registered in your backend's OpenIddict
+     (the notes in .env show how to probe for it). If you skipped the backend URL during init,
+     also fill AUTH_ISSUER / AUTH_ABP_BASE_URL and the input in abp.api.config.ts.
+  2. jc-abp gen
   3. bun run dev
 
-后端用自签证书时 gen 与 dev 都会被拒（Node 不读系统钥匙串，证书在钥匙串里受信也没用）。
-导出证书，路径写进 .env，只放行这一张（需要 Node >= 22.15）:
+A self-signed backend certificate (the local ABP default) fails both gen and dev — Node ignores
+the OS keychain, so trusting it there is not enough. Export the certificate and put its path in
+.env; only that one certificate is trusted extra (needs Node >= 22.15):
   dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM
-  然后在 .env 里加一行: AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt
+  then add to .env: AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt
 
-src/routes/__root.tsx 与 src/router.tsx 已接好线（两个 Provider、块词条合并、QueryClient、SSR 集成），
-脚手架原版分别备份在同名 .bak。要改 head、加回 devtools 就直接编辑这两个文件，或从 .bak 取回片段。
+src/routes/__root.tsx and src/router.tsx are already wired (both providers, block message merge,
+QueryClient, SSR integration); the scaffold originals are backed up next to them as .bak. To tweak
+head tags or bring devtools back, edit those two files directly or pull fragments from the .bak.

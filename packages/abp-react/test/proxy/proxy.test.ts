@@ -303,4 +303,22 @@ describe("createAbpProxy", () => {
     await proxy.send({ path: "/x" }, { session: null, refresh: async () => null });
     expect(new Headers(calls[0]?.init?.headers).has("Authorization")).toBe(false);
   });
+
+  it("names AUTH_ABP_BASE_URL when the backend is unreachable, after exhausting retries", async () => {
+    const down = () =>
+      new TypeError("fetch failed", {
+        cause: Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }),
+      });
+    const { fetchFn, calls } = fakeFetch(down(), down(), down());
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const error = await proxy.send({ path: "/x" }, noRefresh).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Error);
+    if (!(error instanceof Error)) throw new Error("unreachable");
+    // 可能是后端正在重启：重试保留(1 次原始 + 2 次重试),报错在耗尽后才升级
+    expect(calls).toHaveLength(3);
+    expect(error.message).toContain("cannot reach the ABP backend");
+    expect(error.message).toContain("AUTH_ABP_BASE_URL");
+    expect(error.message).toContain("https://abp.example");
+    expect(error.cause).toBeDefined();
+  });
 });

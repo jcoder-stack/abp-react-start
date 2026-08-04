@@ -73,10 +73,11 @@ npx @tanstack/cli create my-app && cd my-app
 bun add @jcoder-stack/abp-react
 bun add -D @jcoder-stack/cli @jcoder-stack/registry
 
-# 3. 一站式初始化：播种基线配置与主题，落认证外壳，装齐所有块，并接好 __root.tsx / router.tsx
+# 3. 一站式初始化：播种基线配置与主题，落认证外壳，装齐所有块，接好 __root.tsx / router.tsx，
+#    问一次后端地址（回车跳过，或 --backend 直接给）并生成 .env（会话密钥已随机）
 npx jc-abp init          # --no-admin 可跳过管理后台五页
 
-# 4. 改 .env（照 .env.example 填自己后端的 client id）与 abp.api.config.ts
+# 4. 补全 .env 的 AUTH_CLIENT_ID（后端 OpenIddict 里注册的那一个，.env 注释里有探测方法）
 
 # 5. 生成 API 客户端并启动
 npx jc-abp gen && bun run dev

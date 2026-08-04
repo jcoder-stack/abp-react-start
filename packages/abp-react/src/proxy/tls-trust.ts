@@ -18,6 +18,19 @@ const TRUST_FAILURE_CODES = new Set([
   "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
 ]);
 
+// 「后端根本不在那儿」类错误码：与请求内容无关。可能是瞬态（后端正在重启），保留重试，
+// 但重试耗尽后的报错必须指向 AUTH_ABP_BASE_URL / 启动后端，而不是一句 fetch failed。
+const UNREACHABLE_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+]);
+
 const MAX_DEPTH = 5;
 
 function property(value: unknown, key: string): unknown {
@@ -25,19 +38,19 @@ function property(value: unknown, key: string): unknown {
   return (value as Record<string, unknown>)[key];
 }
 
-function search(value: unknown, depth: number): string | null {
+function search(value: unknown, depth: number, codes: ReadonlySet<string>): string | null {
   if (depth > MAX_DEPTH || typeof value !== "object" || value === null) return null;
   const code = property(value, "code");
-  if (typeof code === "string" && TRUST_FAILURE_CODES.has(code)) return code;
+  if (typeof code === "string" && codes.has(code)) return code;
   // localhost 同时解析到 ::1 与 127.0.0.1 时 undici 会并发尝试，把各自的失败聚成 AggregateError。
   const aggregated = property(value, "errors");
   if (Array.isArray(aggregated)) {
     for (const inner of aggregated) {
-      const found = search(inner, depth + 1);
+      const found = search(inner, depth + 1, codes);
       if (found !== null) return found;
     }
   }
-  return search(property(value, "cause"), depth + 1);
+  return search(property(value, "cause"), depth + 1, codes);
 }
 
 /**
@@ -45,7 +58,21 @@ function search(value: unknown, depth: number): string | null {
  * 沿 `cause` 链与 AggregateError 的 `errors` 向下找——fetch 抛出的是包了一层的 `TypeError: fetch failed`。
  */
 export function tlsTrustFailureCode(error: unknown): string | null {
-  return search(error, 0);
+  return search(error, 0, TRUST_FAILURE_CODES);
+}
+
+/** 若 error 表示上游不可达（拒连/解析失败/超时），返回错误码，否则返回 null。查找方式同上。 */
+export function upstreamUnreachableCode(error: unknown): string | null {
+  return search(error, 0, UNREACHABLE_CODES);
+}
+
+/** 上游不可达时的处置说明；`code` 取自 {@link upstreamUnreachableCode}，`url` 为请求的上游地址。 */
+export function upstreamUnreachableMessage(code: string, url: string): string {
+  return (
+    `abp proxy: cannot reach the ABP backend (${code}) at ${new URL(url).origin}. ` +
+    "The backend is not running, or AUTH_ABP_BASE_URL in .env points at the wrong place. " +
+    "Start the backend (or fix the address) and reload."
+  );
 }
 
 /** 证书不受信时的处置说明；`code` 取自 {@link tlsTrustFailureCode}，`url` 为请求的上游地址。 */

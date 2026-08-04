@@ -3,7 +3,13 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { InitError, patchRouterSource, quoteForWindowsShell, runInit } from "../src/init";
+import {
+  InitError,
+  normalizeBackendUrl,
+  patchRouterSource,
+  quoteForWindowsShell,
+  runInit,
+} from "../src/init";
 
 const COMPONENTS_JSON_TEMPLATE_PATH = fileURLToPath(
   new URL("../templates/components.json", import.meta.url),
@@ -130,10 +136,12 @@ describe("runInit", () => {
     expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(expectedCalls);
     // 锁定到已验证的 minor：@latest 会把 shadcn/router-cli 的行为前提悄悄换掉。
     expect(calls.at(-1)?.args).toEqual([
+      "-y",
       expect.stringMatching(/^@tanstack\/router-cli@\d/),
       "generate",
     ]);
     expect(calls.at(-2)?.args).toEqual([
+      "-y",
       expect.stringMatching(/^shadcn@\d/),
       "add",
       join(registryDir, "public", "r", "admin-pages.json"),
@@ -141,6 +149,7 @@ describe("runInit", () => {
       "--overwrite",
     ]);
     expect(calls.filter((c) => c.cmd === "npx")[0]?.args).toEqual([
+      "-y",
       expect.stringMatching(/^shadcn@\d/),
       "add",
       join(registryDir, "public", "r", "abp-layout.json"),
@@ -183,13 +192,13 @@ describe("runInit", () => {
     expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(4);
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
-    expect(initError.message).toContain('shadcn 块 "data-table" 安装失败');
+    expect(initError.message).toContain('installing shadcn block "data-table" failed');
     expect(initError.completedSteps).toEqual([
-      "已安装播种文件运行期依赖（npm）: @tanstack/react-router-ssr-query",
-      "auth 外壳（jc-abp add auth）",
-      "shadcn 块 abp-layout",
-      "shadcn 块 abp-login",
-      "shadcn 块 app-shell",
+      "runtime dependencies for seeded files installed (npm): @tanstack/react-router-ssr-query",
+      "auth shell (jc-abp add auth)",
+      "shadcn block abp-layout",
+      "shadcn block abp-login",
+      "shadcn block app-shell",
     ]);
   });
 
@@ -248,8 +257,8 @@ describe("runInit", () => {
 
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
-    expect(initError.message).toContain("未检测到 components.json");
-    expect(initError.message).toContain("Tailwind css 入口");
+    expect(initError.message).toContain("no components.json found");
+    expect(initError.message).toContain("Tailwind css entry");
     expect(initError.completedSteps).toEqual([]);
     expect(calls).toHaveLength(0);
     expect(existsSync(join(app, "components.json"))).toBe(false);
@@ -312,16 +321,16 @@ describe("runInit", () => {
 
     expect(caught).toBeInstanceOf(InitError);
     const initError = caught as InitError;
-    expect(initError.message).toContain('shadcn 块 "data-table" 报告安装成功');
+    expect(initError.message).toContain('shadcn block "data-table" reported success');
     expect(initError.message).toContain("components/data-table/use-data-table.ts");
     // abp-layout, abp-login, and app-shell declare no files (their fixture json is "{}"), so they pass
     // verification trivially and land in completedSteps; data-table is where it stops.
     expect(initError.completedSteps).toEqual([
-      "已安装播种文件运行期依赖（npm）: @tanstack/react-router-ssr-query",
-      "auth 外壳（jc-abp add auth）",
-      "shadcn 块 abp-layout",
-      "shadcn 块 abp-login",
-      "shadcn 块 app-shell",
+      "runtime dependencies for seeded files installed (npm): @tanstack/react-router-ssr-query",
+      "auth shell (jc-abp add auth)",
+      "shadcn block abp-layout",
+      "shadcn block abp-login",
+      "shadcn block app-shell",
     ]);
     expect(calls.filter((c) => c.cmd === "npx")).toHaveLength(4);
   });
@@ -337,7 +346,7 @@ describe("runInit", () => {
       }),
     );
     const runner = async (_cmd: string, args: string[], cwd: string): Promise<void> => {
-      const jsonPath = args[2];
+      const jsonPath = args[3];
       if (jsonPath === undefined) return;
       const parsed = JSON.parse(readFileSync(jsonPath, "utf8"));
       for (const file of parsed.files ?? []) {
@@ -591,7 +600,11 @@ describe("runInit", () => {
     });
     expect(result.tsrConfigSeeded).toBe(true);
     const gen = calls.at(-1);
-    expect(gen?.args).toEqual([expect.stringMatching(/^@tanstack\/router-cli@\d/), "generate"]);
+    expect(gen?.args).toEqual([
+      "-y",
+      expect.stringMatching(/^@tanstack\/router-cli@\d/),
+      "generate",
+    ]);
     expect(result.routeTreeGenerated).toBe(true);
   });
 
@@ -602,7 +615,7 @@ describe("runInit", () => {
     const result = await initWithStubbedProbe({
       cwd: app,
       runner: async (_cmd, args) => {
-        if (args[0]?.startsWith("@tanstack/router-cli@")) throw new Error("offline");
+        if (args[1]?.startsWith("@tanstack/router-cli@")) throw new Error("offline");
       },
     });
 
@@ -701,7 +714,7 @@ describe("runInit preflight", () => {
     const { runner, calls } = recordingRunner();
 
     await expect(initWithStubbedProbe({ cwd: app, runner })).rejects.toThrow(
-      /已经有 auth 外壳的文件[\s\S]*src[/\\]auth/,
+      /already has auth shell files[\s\S]*src[/\\]auth/,
     );
 
     expect(calls).toEqual([]);
@@ -850,5 +863,137 @@ export function getRouter() {
 
   it("认不出形状时返回 null，交给调用方退回整份模板", () => {
     expect(patchRouterSource("export const router = 1;\n")).toBeNull();
+  });
+});
+
+describe("normalizeBackendUrl", () => {
+  it("strips trailing slashes and keeps a path prefix", () => {
+    expect(normalizeBackendUrl("https://localhost:44316/")).toBe("https://localhost:44316");
+    expect(normalizeBackendUrl("  https://api.example  ")).toBe("https://api.example");
+    expect(normalizeBackendUrl("https://api.example/abp/")).toBe("https://api.example/abp");
+    expect(normalizeBackendUrl("http://10.0.0.5:8080")).toBe("http://10.0.0.5:8080");
+  });
+
+  it("rejects non-http(s) and non-URL input", () => {
+    expect(normalizeBackendUrl("localhost:44316")).toBe(null);
+    expect(normalizeBackendUrl("ftp://x")).toBe(null);
+    expect(normalizeBackendUrl("not a url")).toBe(null);
+    expect(normalizeBackendUrl("")).toBe(null);
+  });
+});
+
+const ENV_EXAMPLE_FIXTURE = `# 说明注释保持原样
+AUTH_ISSUER=https://localhost:44316
+AUTH_CLIENT_ID=WebApp
+# AUTH_CLIENT_SECRET=
+AUTH_SCOPE="openid profile offline_access"
+AUTH_REDIRECT_URI=http://localhost:3000/api/auth/callback
+AUTH_SESSION_SECRET=
+# AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt
+AUTH_ABP_BASE_URL=https://localhost:44316
+AUTH_DEBUG=false
+`;
+
+function envOf(app: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const line of readFileSync(join(app, ".env"), "utf8").split("\n")) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (match?.[1] !== undefined) map.set(match[1], match[2] ?? "");
+  }
+  return map;
+}
+
+describe("runInit env seeding", () => {
+  it("derives .env from .env.example, fills the backend into both URLs, and randomizes the secret", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, ".env.example"), ENV_EXAMPLE_FIXTURE);
+    const { runner } = recordingRunner();
+    const result = await initWithStubbedProbe({
+      cwd: app,
+      runner,
+      backend: "https://backend.example:44311",
+    });
+    expect(result.envSeeded).toBe(true);
+    expect(result.backendUrl).toBe("https://backend.example:44311");
+    const env = envOf(app);
+    expect(env.get("AUTH_ISSUER")).toBe("https://backend.example:44311");
+    expect(env.get("AUTH_ABP_BASE_URL")).toBe("https://backend.example:44311");
+    // client id 无从猜测，留空让启动检查点名
+    expect(env.get("AUTH_CLIENT_ID")).toBe("");
+    expect(env.get("AUTH_SESSION_SECRET")?.length).toBeGreaterThanOrEqual(40);
+    // 不该动的行保持原样：默认回调、注释、被注释的可选项
+    expect(env.get("AUTH_REDIRECT_URI")).toBe("http://localhost:3000/api/auth/callback");
+    const raw = readFileSync(join(app, ".env"), "utf8");
+    expect(raw).toContain("# 说明注释保持原样");
+    expect(raw).toContain("# AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt");
+  });
+
+  it("leaves the backend URLs empty when the prompt was skipped", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, ".env.example"), ENV_EXAMPLE_FIXTURE);
+    const { runner } = recordingRunner();
+    const result = await initWithStubbedProbe({ cwd: app, runner });
+    expect(result.envSeeded).toBe(true);
+    expect(result.backendUrl).toBe(null);
+    const env = envOf(app);
+    expect(env.get("AUTH_ISSUER")).toBe("");
+    expect(env.get("AUTH_ABP_BASE_URL")).toBe("");
+    expect(env.get("AUTH_SESSION_SECRET")?.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it("never touches an existing .env", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, ".env.example"), ENV_EXAMPLE_FIXTURE);
+    writeFileSync(join(app, ".env"), "AUTH_ISSUER=https://mine.example\n");
+    const { runner } = recordingRunner();
+    const result = await initWithStubbedProbe({
+      cwd: app,
+      runner,
+      backend: "https://other.example",
+    });
+    expect(result.envSeeded).toBe(false);
+    expect(readFileSync(join(app, ".env"), "utf8")).toBe("AUTH_ISSUER=https://mine.example\n");
+  });
+
+  it("generates a distinct secret per project", async () => {
+    const secrets: (string | undefined)[] = [];
+    for (let i = 0; i < 2; i++) {
+      const { app } = fakeWorkspace();
+      writeFileSync(join(app, ".env.example"), ENV_EXAMPLE_FIXTURE);
+      const { runner } = recordingRunner();
+      await initWithStubbedProbe({ cwd: app, runner });
+      secrets.push(envOf(app).get("AUTH_SESSION_SECRET"));
+    }
+    expect(secrets[0]).not.toBe(secrets[1]);
+  });
+});
+
+describe("runInit config backend substitution", () => {
+  it("points the swagger input at the backend and drops the TODO", async () => {
+    const { app } = fakeWorkspace();
+    const { runner } = recordingRunner();
+    await initWithStubbedProbe({ cwd: app, runner, backend: "https://backend.example" });
+    const config = readFileSync(join(app, "abp.api.config.ts"), "utf8");
+    expect(config).toContain('input: "https://backend.example/swagger/v1/swagger.json"');
+    expect(config).not.toContain("TODO");
+  });
+
+  it("keeps the template placeholder and TODO when skipped", async () => {
+    const { app } = fakeWorkspace();
+    const { runner } = recordingRunner();
+    await initWithStubbedProbe({ cwd: app, runner });
+    const config = readFileSync(join(app, "abp.api.config.ts"), "utf8");
+    expect(config).toContain('input: "https://localhost:44316/swagger/v1/swagger.json"');
+    expect(config).toContain("TODO");
+  });
+
+  it("does not rewrite a pre-existing abp.api.config.ts even with a backend given", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, "abp.api.config.ts"), 'export default { input: "./mine.json" };\n');
+    const { runner } = recordingRunner();
+    await initWithStubbedProbe({ cwd: app, runner, backend: "https://backend.example" });
+    expect(readFileSync(join(app, "abp.api.config.ts"), "utf8")).toBe(
+      'export default { input: "./mine.json" };\n',
+    );
   });
 });

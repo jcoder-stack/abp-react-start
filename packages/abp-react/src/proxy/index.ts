@@ -45,4 +45,6 @@ export {
   installExtraCa,
   tlsTrustFailureCode,
   tlsTrustFailureMessage,
+  upstreamUnreachableCode,
+  upstreamUnreachableMessage,
 } from "./tls-trust";

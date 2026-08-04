@@ -14,6 +14,7 @@ import { generate } from "orval";
 import { type ApiTargetInput, loadApiConfig } from "./config";
 import { installExtraCaFromEnv } from "./extra-ca";
 import { createOrvalConfig } from "./orval-config";
+import { findErrorCode, TLS_TRUST_CODES, UNREACHABLE_CODES } from "./upstream-errors";
 
 const TEMPLATE_PATH = fileURLToPath(new URL("../templates/mutator.ts", import.meta.url));
 
@@ -31,14 +32,44 @@ function hasExternalRefs(document: string): boolean {
   return /"\$ref"\s*:\s*"(?!#)/.test(document) || /\$ref\s*:\s*['"]?(?!#)/.test(document);
 }
 
+/** 把拉取 swagger 的网络失败翻译成可执行的下一步；认不出的错误原样保留在结尾。 */
+export function describeSpecFetchError(error: unknown, input: string): string {
+  const code = findErrorCode(error);
+  if (code !== null && TLS_TRUST_CODES.has(code)) {
+    return (
+      `the ABP backend at ${input} uses a certificate this process does not trust (${code}). ` +
+      "For a local self-signed dev certificate, export it and point AUTH_EXTRA_CA_FILE at it in .env:\n" +
+      "  dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM\n" +
+      "  AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt"
+    );
+  }
+  if (code !== null && UNREACHABLE_CODES.has(code)) {
+    return (
+      `could not reach the ABP backend (${code}): ${input}. ` +
+      "The backend is not running, or the input URL in abp.api.config.ts points at the wrong place. " +
+      "Start the backend, or fix the input and rerun jc-abp gen."
+    );
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return `failed to fetch the OpenAPI document: ${input} (${message})`;
+}
+
 /** 每个 project 都会自己解析一遍 input：远端 spec 先落到临时文件，才不会一次 gen 里把同一份文档拉好几遍（两次之间后端有变更会让 types 与 zod schema 漂移）。返回本地路径与清理函数；本地 input 原样返回。 */
 async function localizeSpec(input: string): Promise<{ target: string; cleanup: () => void }> {
   const keepRemote = { target: input, cleanup: () => {} };
   if (!isRemote(input)) return keepRemote;
-  const response = await fetch(input);
+  let response: Response;
+  try {
+    response = await fetch(input);
+  } catch (error) {
+    throw new Error(describeSpecFetchError(error, input), { cause: error });
+  }
   if (!response.ok) {
     throw new Error(
-      `failed to fetch the OpenAPI document (${response.status} ${response.statusText}): ${input}`,
+      `failed to fetch the OpenAPI document (${response.status} ${response.statusText}): ${input}` +
+        (response.status === 404
+          ? " — the path is not a swagger document; ABP templates usually serve /swagger/v1/swagger.json"
+          : ""),
     );
   }
   const document = await response.text();

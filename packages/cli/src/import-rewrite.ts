@@ -11,8 +11,8 @@ function loadTypeScript(): typeof ts {
     cached = createRequire(import.meta.url)("typescript") as typeof ts;
   } catch (error) {
     throw new Error(
-      "jc-abp add 需要 typescript 来改写相对 import，但当前项目里找不到它。" +
-        "请先安装（bun add -D typescript）再重试。",
+      "jc-abp add needs typescript to rewrite relative imports, and the current project does not have it. " +
+        "Install it first (bun add -D typescript) and retry.",
       { cause: error },
     );
   }

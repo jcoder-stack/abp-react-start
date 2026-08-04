@@ -218,7 +218,7 @@ describe("runAdd", () => {
     const { root, app } = workspaceWithManifest({ base: "src/auth" });
     writeFileSync(join(root, "registry", "auth", "manifest.json"), '{ "base": "src/auth"');
 
-    expect(() => runAdd({ name: "auth", cwd: app })).toThrow(/manifest\.json .*合法 JSON/);
+    expect(() => runAdd({ name: "auth", cwd: app })).toThrow(/manifest\.json .*not valid JSON/);
   });
 
   it("refuses to overwrite an existing destination and rejects unknown items", () => {

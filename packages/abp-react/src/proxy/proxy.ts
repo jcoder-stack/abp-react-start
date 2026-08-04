@@ -1,6 +1,11 @@
 import type { AuthSession } from "../auth";
 import type { Logger } from "../logger";
-import { tlsTrustFailureCode, tlsTrustFailureMessage } from "./tls-trust";
+import {
+  tlsTrustFailureCode,
+  tlsTrustFailureMessage,
+  upstreamUnreachableCode,
+  upstreamUnreachableMessage,
+} from "./tls-trust";
 
 export interface AbpProxyRequest {
   path: string;
@@ -160,16 +165,21 @@ export function createAbpProxy(opts: {
             signal: AbortSignal.any([...stops, AbortSignal.timeout(timeoutMs)]),
           });
         } catch (error) {
+          // 证书不受信是确定性失败，重试只会重演同一次握手；不可达可能是后端正在重启，重试照旧。
           const tlsCode = tlsTrustFailureCode(error);
           if (tlsCode === null && attempt < maxRetries && !stopped()) {
             opts.logger?.debug("proxy retry after network error", { attempt, path: req.path });
             if (await backoff()) continue;
           }
-          // 裸的 `fetch failed` 不指向任何可执行的下一步，而证书不受信恰恰是本地起步时最常撞的墙。
-          const failure =
-            tlsCode === null
-              ? error
-              : new Error(tlsTrustFailureMessage(tlsCode, url), { cause: error });
+          // 裸的 `fetch failed` 不指向任何可执行的下一步，而这两类恰恰是本地起步时最常撞的墙。
+          const unreachableCode = tlsCode === null ? upstreamUnreachableCode(error) : null;
+          const explanation =
+            tlsCode !== null
+              ? tlsTrustFailureMessage(tlsCode, url)
+              : unreachableCode !== null
+                ? upstreamUnreachableMessage(unreachableCode, url)
+                : null;
+          const failure = explanation === null ? error : new Error(explanation, { cause: error });
           if (setCookies.length > 0) {
             throw new AbpProxyError("abp proxy request failed after refresh", setCookies, {
               cause: failure,

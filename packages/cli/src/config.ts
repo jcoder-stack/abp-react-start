@@ -57,7 +57,7 @@ async function readConfigFile(path: string, importModule: ConfigImporter) {
     // 裸的 ERR_UNKNOWN_FILE_EXTENSION 完全指不到「换个运行时或换 .json」这个出路。
     if (/\.m?ts$/.test(path) && isUnknownFileExtension(error)) {
       throw new Error(
-        `无法加载 ${path}：.ts 配置需要运行时能直接执行 TypeScript（Bun，或 Node ≥22.18 的 strip-types）；更老的 Node 请改用 abp.api.config.json`,
+        `cannot load ${path}: a .ts config needs a runtime that executes TypeScript directly (Bun, or Node >= 22.18 strip-types); on older Node use abp.api.config.json instead`,
         { cause: error },
       );
     }
@@ -66,7 +66,7 @@ async function readConfigFile(path: string, importModule: ConfigImporter) {
   if (mod.default === undefined) {
     // 没有 default 时落回空对象，报错会变成「input 必填」，把用户指向一个完全无关的字段。
     throw new Error(
-      `${path} 必须用 default export 导出配置：写成 \`export default defineApiConfig({ input: "..." })\`（\`export const config = {...}\` 不会被读取）`,
+      `${path} must export the config as its default export: write \`export default defineApiConfig({ input: "..." })\` (\`export const config = {...}\` is not read)`,
     );
   }
   return mod.default;
@@ -98,7 +98,7 @@ export async function loadApiConfig(opts: {
       .map(([key]) => `--${key}`);
     if (given.length > 0) {
       throw new Error(
-        `多 target 配置下命令行 ${given.join("/")} 不生效：请改写配置文件里对应 target，或用 --config 指定一份单 target 配置`,
+        `${given.join("/")} has no effect with a multi-target config: edit the matching target in the config file, or point --config at a single-target one`,
       );
     }
     const parsed = multiTargetSchema.parse(fromFile);

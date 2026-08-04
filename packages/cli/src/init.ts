@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
@@ -37,6 +38,8 @@ const MENU_NO_ADMIN_TEMPLATE_PATH = fileURLToPath(
 
 /** app-shell's distributed src/menu.tsx references admin routes (/identity/users etc.); --no-admin overwrites it with this minimal (home-only) template so the app doesn't dead-link/fail typecheck on routes it never installed. */
 const MENU_TARGET = "src/menu.tsx";
+/** 模板里挂在 input 占位上方的 TODO；backend 已填时连注释一起摘掉。 */
+const INPUT_TODO_COMMENT = "  // TODO: 换成你自己的 ABP 后端 swagger 地址";
 
 const ROOT_TEMPLATE_PATH = fileURLToPath(new URL("../templates/root.tsx.tpl", import.meta.url));
 const ROUTER_TEMPLATE_PATH = fileURLToPath(new URL("../templates/router.tsx.tpl", import.meta.url));
@@ -160,8 +163,8 @@ export class InitError extends Error {
   ) {
     super(
       completedSteps.length > 0
-        ? `${message}\n已完成: ${completedSteps.join(" → ")}`
-        : `${message}\n未完成任何步骤`,
+        ? `${message}\ncompleted so far: ${completedSteps.join(" → ")}`
+        : `${message}\nno steps completed`,
     );
     this.name = "InitError";
   }
@@ -171,6 +174,9 @@ export interface InitOptions {
   cwd: string;
   /** Install the admin-pages block too (default true; --no-admin sets false). */
   admin?: boolean;
+  /** ABP backend origin (already normalized via normalizeBackendUrl); fills AUTH_ISSUER,
+   *  AUTH_ABP_BASE_URL and the swagger input in one go. Absent = the user skipped it. */
+  backend?: string;
   runner?: CommandRunner;
   /** Overrides the npm allow-scripts probe (see AllowScriptsProbe); tests inject one to stay off the real npm. */
   allowScriptsProbe?: AllowScriptsProbe;
@@ -193,6 +199,57 @@ export interface InitResult {
   /** __root.tsx / router.tsx 是否已写入接线模板（脚手架原版备份到同名 .bak）。 */
   rootWired: boolean;
   routerWired: boolean;
+  /** .env 是否本次生成（已存在则不动）。 */
+  envSeeded: boolean;
+  /** 交互/--backend 给出的后端地址（规范化后）；跳过为 null。 */
+  backendUrl: string | null;
+}
+
+/**
+ * 把用户输入的后端地址规范化为无尾斜杠的 http(s) URL；不合法返回 null。
+ * issuer / abpBaseUrl / swagger input 三处派生共用这一个形态。
+ */
+export function normalizeBackendUrl(raw: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  return url.toString().replace(/\/+$/, "");
+}
+
+/** init 生成 .env 时改写的变量；其余行（注释、redirect 等默认值）原样保留。 */
+function envSeedValues(backend: string | undefined): Map<string, string> {
+  return new Map([
+    ["AUTH_ISSUER", backend ?? ""],
+    ["AUTH_ABP_BASE_URL", backend ?? ""],
+    // client id 无从猜测（必须是后端 OpenIddict 里注册的那一个），留空让启动检查点名它，
+    // 好过留一个看似能用的占位。
+    ["AUTH_CLIENT_ID", ""],
+    ["AUTH_SESSION_SECRET", randomBytes(32).toString("base64")],
+  ]);
+}
+
+/** 从 auth 外壳落位的 .env.example 派生 .env；已有 .env 不碰，example 缺席（异常形态）不硬造。 */
+function seedEnvFile(cwd: string, backend: string | undefined, completed: string[]): boolean {
+  const envPath = resolve(cwd, ".env");
+  if (existsSync(envPath)) return false;
+  const examplePath = resolve(cwd, ".env.example");
+  if (!existsSync(examplePath)) return false;
+  const values = envSeedValues(backend);
+  const lines = readFileSync(examplePath, "utf8")
+    .split("\n")
+    .map((line) => {
+      const name = line.match(/^([A-Z0-9_]+)=/)?.[1];
+      if (name === undefined) return line;
+      const value = values.get(name);
+      return value === undefined ? line : `${name}=${value}`;
+    });
+  writeFileSync(envPath, lines.join("\n"));
+  completed.push(".env (derived from .env.example, session secret randomized)");
+  return true;
 }
 
 function errorMessage(error: unknown): string {
@@ -228,9 +285,9 @@ function seedOrRequireComponentsJson(
   const cssPath = findCssEntry(cwd);
   if (cssPath === undefined) {
     throw new InitError(
-      `未检测到 components.json（${componentsJsonPath}），也没能在常见位置探测到 Tailwind css 入口` +
-        `（探测过 ${CSS_ENTRY_CANDIDATES.join(" / ")}）。请先建好 css 入口文件后重跑 jc-abp init，` +
-        `或手动放一份 components.json（最小字段：style "new-york"、tailwind.baseColor "neutral"、` +
+      `no components.json found (${componentsJsonPath}) and no Tailwind css entry at the usual places ` +
+        `(probed ${CSS_ENTRY_CANDIDATES.join(" / ")}). Create the css entry first and rerun jc-abp init, ` +
+        `or drop in a components.json yourself (minimum fields: style "new-york", tailwind.baseColor "neutral", ` +
         `tailwind.css 指向你的入口，其余参照 https://ui.shadcn.com/docs/components-json）。`,
       completed,
     );
@@ -238,7 +295,7 @@ function seedOrRequireComponentsJson(
 
   const template = readFileSync(COMPONENTS_JSON_TEMPLATE_PATH, "utf8");
   writeFileSync(componentsJsonPath, template.replace("__CSS_PATH__", cssPath));
-  completed.push(`components.json（播种，css: ${cssPath}，基线 new-york/neutral）`);
+  completed.push(`components.json (seeded, css: ${cssPath}, baseline new-york/neutral)`);
   return { seeded: true, cssPath };
 }
 
@@ -248,7 +305,7 @@ function seedLibUtils(cwd: string, completed: string[]): boolean {
   if (existsSync(utilsPath)) return false;
   mkdirSync(dirname(utilsPath), { recursive: true });
   copyFileSync(LIB_UTILS_TEMPLATE_PATH, utilsPath);
-  completed.push(`${LIB_UTILS_TARGET}（播种，shadcn cn() helper）`);
+  completed.push(`${LIB_UTILS_TARGET} (seeded, shadcn cn() helper)`);
   return true;
 }
 
@@ -283,7 +340,7 @@ function seedThemeCss(cwd: string, cssRelPath: string | undefined, completed: st
   copyFileSync(cssPath, `${cssPath}.bak`);
   copyFileSync(APP_THEME_CSS_TEMPLATE_PATH, cssPath);
   completed.push(
-    `${cssRelPath}（缺主题变量，已整体替换为基线主题模板；原内容备份到 ${cssRelPath}.bak）`,
+    `${cssRelPath} (theme variables missing, replaced with the baseline theme; original backed up to ${cssRelPath}.bak)`,
   );
   return true;
 }
@@ -389,12 +446,12 @@ function assertNpmCanInstallBlocks(
   const configured = findConfiguredAllowScripts(cwd);
   if (!configured || !probe(configured.value)) return;
   throw new InitError(
-    `${configured.file} 里配置了 allow-scripts，而本机的 npm 会因此拒绝 shadcn 的依赖安装` +
-      `（${ALLOW_SCRIPTS_REJECTION_CODE}）：init 经 npx 启动 shadcn，npx 把解析后的 npm 配置以 ` +
-      `npm_config_* 注入子进程，npm 不接受这个来源的 allow-scripts。已在开工前中止，目录未被改动。` +
-      `解法任选其一：①把 allow-scripts 从 ${configured.file} 里移走（npm 提示的替代位置是本项目 ` +
-      `package.json 的 "allowScripts" 字段），装完 init 再决定是否加回；②临时 npm config delete ` +
-      `allow-scripts；③改用 bun——目录树里存在 bun.lock 时 shadcn 走 bun add，完全不经过这条链路。`,
+    `${configured.file} sets allow-scripts, and this npm rejects shadcn dependency installs because of it ` +
+      `(${ALLOW_SCRIPTS_REJECTION_CODE}): init launches shadcn through npx, npx injects the resolved npm config ` +
+      `into the child as npm_config_*, and npm refuses allow-scripts from that source. Aborted before touching ` +
+      `anything. Pick one fix: (1) move allow-scripts out of ${configured.file} (npm suggests this project's ` +
+      `package.json "allowScripts" field) and restore it after init; (2) temporarily npm config delete ` +
+      `allow-scripts; (3) use bun — with a bun.lock in the tree shadcn runs bun add and skips this chain.`,
     completed,
   );
 }
@@ -416,10 +473,11 @@ function assertNoPriorInit(cwd: string, completed: string[]): void {
   }
   if (conflicts.length === 0) return;
   throw new InitError(
-    `目标目录里已经有 auth 外壳的文件（${conflicts.join("、")}），说明这里跑过 jc-abp init。` +
-      `init 是一次性脚手架步骤，不做增量更新，重跑会在写了一半时停下。已在开工前中止，目录未被改动。` +
-      `请换一个全新的项目目录；确实要在原地重来就先删掉上一次的产物（至少这几个文件）再跑。` +
-      `只想更新某个块的话用 npx shadcn add <块的 registry json> --overwrite，不必走 init。`,
+    `this directory already has auth shell files (${conflicts.join(", ")}), so jc-abp init has run here before. ` +
+      `init is a one-shot scaffold step, not an incremental updater; rerunning would stop halfway through its ` +
+      `writes. Aborted before touching anything. Use a fresh project directory, or delete the previous output ` +
+      `(at least the files above) to redo it in place. To update a single block, run ` +
+      `npx shadcn add <the block registry json> --overwrite instead of init.`,
     completed,
   );
 }
@@ -469,11 +527,11 @@ async function installSeededDependencies(
     await runner(pm, args, cwd);
   } catch (error) {
     throw new InitError(
-      `安装播种文件运行期依赖失败（${packages.join(", ")}）: ${errorMessage(error)}`,
+      `installing runtime dependencies for the seeded files failed (${packages.join(", ")}): ${errorMessage(error)}`,
       completed,
     );
   }
-  completed.push(`已安装播种文件运行期依赖（${pm}）: ${packages.join(", ")}`);
+  completed.push(`runtime dependencies for seeded files installed (${pm}): ${packages.join(", ")}`);
 }
 
 /**
@@ -568,7 +626,7 @@ function seedRootWiring(cwd: string, completed: string[]): { root: boolean; rout
   if (!existsSync(appMessagesPath)) {
     mkdirSync(dirname(appMessagesPath), { recursive: true });
     copyFileSync(APP_MESSAGES_TEMPLATE_PATH, appMessagesPath);
-    completed.push(`${APP_MESSAGES_TARGET}（播种应用自有词条）`);
+    completed.push(`${APP_MESSAGES_TARGET} (seeded the app-owned message bucket)`);
   }
 
   const catalogs = findMessageCatalogs(cwd);
@@ -589,7 +647,7 @@ function seedRootWiring(cwd: string, completed: string[]): { root: boolean; rout
       .replace("__MESSAGE_IMPORTS__", imports)
       .replace("__MESSAGE_ARGS__", args),
   );
-  completed.push(`${ROOT_TARGET}（已接线，脚手架原版备份到 ${ROOT_TARGET}.bak）`);
+  completed.push(`${ROOT_TARGET} (wired; scaffold original backed up to ${ROOT_TARGET}.bak)`);
 
   const routerPath = resolve(cwd, ROUTER_TARGET);
   const existing = existsSync(routerPath) ? readFileSync(routerPath, "utf8") : null;
@@ -599,8 +657,8 @@ function seedRootWiring(cwd: string, completed: string[]): { root: boolean; rout
   writeFileSync(routerPath, patched ?? readFileSync(ROUTER_TEMPLATE_PATH, "utf8"));
   completed.push(
     patched === null
-      ? `${ROUTER_TARGET}（认不出脚手架形状，已整份替换；原版备份到 ${ROUTER_TARGET}.bak）`
-      : `${ROUTER_TARGET}（已就地补 QueryClient 接线，原版备份到 ${ROUTER_TARGET}.bak）`,
+      ? `${ROUTER_TARGET} (scaffold shape not recognized, replaced whole; original backed up to ${ROUTER_TARGET}.bak)`
+      : `${ROUTER_TARGET} (QueryClient wiring patched in place; original backed up to ${ROUTER_TARGET}.bak)`,
   );
 
   return { root: true, router: true };
@@ -611,7 +669,7 @@ function renameConflictingScaffoldIndex(cwd: string, completed: string[]): boole
   if (!existsSync(scaffoldIndexPath)) return false;
   renameSync(scaffoldIndexPath, `${scaffoldIndexPath}.bak`);
   completed.push(
-    "src/routes/index.tsx → src/routes/index.tsx.bak（脚手架默认首页，与 app-shell 落地页同路径，已改名让位）",
+    "src/routes/index.tsx → src/routes/index.tsx.bak (scaffold default home renamed aside; app-shell landing owns the path)",
   );
   return true;
 }
@@ -729,15 +787,15 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   try {
     addResult = runAdd({ name: "auth", cwd: opts.cwd });
   } catch (error) {
-    throw new InitError(`auth 外壳落位失败: ${errorMessage(error)}`, completed);
+    throw new InitError(`installing the auth shell failed: ${errorMessage(error)}`, completed);
   }
-  completed.push("auth 外壳（jc-abp add auth）");
+  completed.push("auth shell (jc-abp add auth)");
 
   let registryDir: string;
   try {
     registryDir = resolveRegistryDir(opts.cwd);
   } catch (error) {
-    throw new InitError(`定位 registry 目录失败: ${errorMessage(error)}`, completed);
+    throw new InitError(`locating the registry dir failed: ${errorMessage(error)}`, completed);
   }
 
   // 先给脚手架默认首页让位，app-shell 才能把落地页写到 src/routes/index.tsx（若在安装后改名会把落地页误移走）。
@@ -747,7 +805,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     const jsonPath = join(registryDir, "public", "r", `${block}.json`);
     if (!existsSync(jsonPath)) {
       throw new InitError(
-        `registry 中找不到 shadcn 块 "${block}"（期望路径 ${jsonPath}）`,
+        `shadcn block "${block}" not found in the registry (expected at ${jsonPath})`,
         completed,
       );
     }
@@ -757,26 +815,31 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
       // conflict (e.g. two blocks sharing label.tsx with different content) makes shadcn silently
       // abort that block's entire write batch on a non-TTY stdin while still exiting 0. The exit
       // code alone can't be trusted, hence findMissingArtifacts below.
-      await runner("npx", [SHADCN_CLI, "add", jsonPath, "--yes", "--overwrite"], opts.cwd);
+      // npx 自身的 -y：交互终端下（用户真实场景）npx 首次下载 CLI 会停在 "Ok to proceed?" 等确认，
+      // init 的进度输出会把这个提问淹没，看起来像挂死。非 TTY 下 npx 本就静默继续，加了也无副作用。
+      await runner("npx", ["-y", SHADCN_CLI, "add", jsonPath, "--yes", "--overwrite"], opts.cwd);
     } catch (error) {
-      throw new InitError(`shadcn 块 "${block}" 安装失败: ${errorMessage(error)}`, completed);
+      throw new InitError(
+        `installing shadcn block "${block}" failed: ${errorMessage(error)}`,
+        completed,
+      );
     }
     const missing = findMissingArtifacts(opts.cwd, jsonPath);
     if (missing.length > 0) {
       throw new InitError(
-        `shadcn 块 "${block}" 报告安装成功（exit 0），但以下声明的产物文件在磁盘上缺失，` +
-          `很可能是 shadcn 静默中止了整批写入: ${missing.join(", ")}`,
+        `shadcn block "${block}" reported success (exit 0), but these declared files are missing on disk — ` +
+          `most likely shadcn silently aborted the whole write batch: ${missing.join(", ")}`,
         completed,
       );
     }
-    completed.push(`shadcn 块 ${block}`);
+    completed.push(`shadcn block ${block}`);
   }
 
   let menuRewrittenForNoAdmin = false;
   if (opts.admin === false) {
     copyFileSync(MENU_NO_ADMIN_TEMPLATE_PATH, resolve(opts.cwd, MENU_TARGET));
     menuRewrittenForNoAdmin = true;
-    completed.push("src/menu.tsx（--no-admin 覆写为最小菜单）");
+    completed.push("src/menu.tsx (overwritten with the minimal menu for --no-admin)");
   }
 
   const rootWiring = seedRootWiring(opts.cwd, completed);
@@ -785,12 +848,12 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   const tsrConfigSeeded = !existsSync(tsrConfigPath);
   if (tsrConfigSeeded) {
     writeFileSync(tsrConfigPath, '{\n  "target": "react"\n}\n');
-    completed.push("tsr.config.json（播种，target react）");
+    completed.push("tsr.config.json (seeded, target react)");
   }
   let routeTreeGenerated = false;
   try {
     // bin 名是 tsr，但 npm 上存在同名无关包，必须走完整包名。
-    await runner("npx", [ROUTER_CLI, "generate"], opts.cwd);
+    await runner("npx", ["-y", ROUTER_CLI, "generate"], opts.cwd);
     routeTreeGenerated = true;
     completed.push("routeTree.gen.ts（tsr generate）");
   } catch {
@@ -801,7 +864,27 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   const configSeeded = !existsSync(configPath);
   if (configSeeded) {
     copyFileSync(CONFIG_TEMPLATE_PATH, configPath);
+    if (opts.backend !== undefined) {
+      const anchor = 'input: "https://localhost:44316/swagger/v1/swagger.json"';
+      const content = readFileSync(configPath, "utf8");
+      if (!content.includes(anchor)) {
+        // 只可能是模板改了占位却没同步这里——宁可炸在 CI，不留下静默丢失用户输入的 init。
+        throw new InitError(
+          "the abp.api.config.ts template input placeholder is out of sync with init",
+          completed,
+        );
+      }
+      writeFileSync(
+        configPath,
+        content
+          .replace(`${INPUT_TODO_COMMENT}\n`, "")
+          .replace(anchor, `input: "${opts.backend}/swagger/v1/swagger.json"`),
+      );
+      completed.push("abp.api.config.ts (input points at your backend)");
+    }
   }
+
+  const envSeeded = seedEnvFile(opts.cwd, opts.backend, completed);
 
   return {
     addResult,
@@ -816,5 +899,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     routeTreeGenerated,
     rootWired: rootWiring.root,
     routerWired: rootWiring.router,
+    envSeeded,
+    backendUrl: opts.backend ?? null,
   };
 }

@@ -40,3 +40,17 @@ describe("parseCliArgs", () => {
     expect(parseCliArgs(["init"]).flags.admin).toBe(true);
   });
 });
+
+describe("--backend", () => {
+  it("is accepted by init and lands in flags", () => {
+    const parsed = parseCliArgs(["init", "--backend", "https://x.example"]);
+    expect(parsed.flags.backend).toBe("https://x.example");
+  });
+
+  it("is rejected by gen and add", () => {
+    expect(() => parseCliArgs(["gen", "--backend", "https://x"])).toThrow(/unknown flag for gen/);
+    expect(() => parseCliArgs(["add", "auth", "--backend", "https://x"])).toThrow(
+      /unknown flag for add/,
+    );
+  });
+});
