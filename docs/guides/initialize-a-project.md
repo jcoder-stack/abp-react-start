@@ -160,8 +160,7 @@ export default defineApiConfig({
 
 ```bash
 npx jc-abp gen
-# 后端是自签证书时见下面「自签证书的本地后端」：
-NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt npx jc-abp gen
+# 后端是自签证书时在 .env 配 AUTH_EXTRA_CA_FILE，见下面「自签证书的本地后端」
 ```
 
 产出三个目录加一个文件：
@@ -197,18 +196,22 @@ bun run dev
 
 本地 ABP 用的是 `dotnet dev-certs` 生成的自签证书，`--trust` 把它装进系统钥匙串，浏览器与 curl 因此放行。**Node 不读钥匙串**，只校验自己内置的那份 CA 列表——所以浏览器能打开 `https://localhost:44316`，服务端发出的请求照样被拒（`DEPTH_ZERO_SELF_SIGNED_CERT`）。`gen` 和 `dev` 都会撞上：前者报 `fetch failed`，后者是首页 500。
 
-导出证书，然后只放行这一张：
+导出证书，把路径写进 `.env`，只放行这一张：
 
 ```bash
 dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM
-
-NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt npx jc-abp gen
-NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt bun run dev
 ```
 
-嫌每次都带就 `export` 进 shell profile。**它不能写进 `.env`**——Node 在进程启动时读这个变量，dotenv 加载时已经太晚，写了也不生效。
+```bash
+# .env
+AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt
+```
 
-`NODE_TLS_REJECT_UNAUTHORIZED=0` 同样能跑通，且写进 `.env` 就生效，但它关掉的是整个进程对所有主机的证书校验。临时试可以，别留在任何会被复制到服务器的文件里。
+之后 `bun run dev` 和 `npx jc-abp gen` 都直接工作。auth 运行时在第一笔上游请求前把这张证书追加进进程默认 CA（`tls.setDefaultCACertificates`，需要 **Node ≥ 22.15**），其余站点照常校验。
+
+旧运行时（更早的 Node、Bun 直跑服务端）没有这个 API，会在日志里提示回退方案——启动命令带 `NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt`（它在进程启动时读取，写进 `.env` 不生效）。
+
+`NODE_TLS_REJECT_UNAUTHORIZED=0` 同样能跑通，但它关掉的是整个进程对所有主机的证书校验。临时试可以，别留在任何会被复制到服务器的文件里。
 
 ---
 

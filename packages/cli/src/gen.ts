@@ -12,6 +12,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generate } from "orval";
 import { type ApiTargetInput, loadApiConfig } from "./config";
+import { installExtraCaFromEnv } from "./extra-ca";
 import { createOrvalConfig } from "./orval-config";
 
 const TEMPLATE_PATH = fileURLToPath(new URL("../templates/mutator.ts", import.meta.url));
@@ -69,6 +70,13 @@ export async function runGen(opts: {
   configPath?: string;
   overrides?: Partial<ApiTargetInput>;
 }): Promise<GenResult> {
+  // 在任何到后端的 fetch 之前装上 .env 里声明的额外 CA；自签证书的本地后端靠它免去启动时环境变量。
+  if (installExtraCaFromEnv(opts.cwd) === "unsupported") {
+    console.warn(
+      "AUTH_EXTRA_CA_FILE is set but this runtime lacks tls.setDefaultCACertificates " +
+        "(Node >= 22.15); run gen with NODE_EXTRA_CA_CERTS=<pem path> instead.",
+    );
+  }
   const targets = await loadApiConfig(opts);
   const results: GenTargetResult[] = [];
   for (const config of targets) {

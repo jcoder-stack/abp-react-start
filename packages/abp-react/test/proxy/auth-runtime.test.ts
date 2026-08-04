@@ -118,3 +118,73 @@ describe("session tuning overrides", () => {
     );
   });
 });
+
+describe("resolveAbpAuthEnv aggregated errors", () => {
+  it("names the .env variables, not the internal fields", () => {
+    const bare = { AUTH_ISSUER: "", AUTH_CLIENT_ID: "" };
+    const error = (() => {
+      try {
+        resolveAbpAuthEnv(bare);
+        return null;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(error).toBeInstanceOf(Error);
+    if (error === null) throw new Error("unreachable");
+    expect(error.message).toContain("AUTH_ISSUER (not set)");
+    expect(error.message).toContain("AUTH_CLIENT_ID (not set)");
+    expect(error.message).toContain("AUTH_SESSION_SECRET (not set)");
+    expect(error.message).toContain(".env");
+    // 内部字段名不该泄漏到用户面前
+    expect(error.message).not.toContain("abpBaseUrl");
+    expect(error.message).not.toContain("sessionSecret");
+  });
+
+  it("keeps the ZodError as cause and distinguishes invalid from unset", () => {
+    const error = (() => {
+      try {
+        resolveAbpAuthEnv({ ...ENV, AUTH_ISSUER: "not-a-url" });
+        return null;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    if (error === null) throw new Error("unreachable");
+    expect(error.message).toContain("AUTH_ISSUER");
+    expect(error.message).not.toContain("AUTH_ISSUER (not set)");
+    expect(error.cause).toBeDefined();
+  });
+
+  it("treats an empty AUTH_EXTRA_CA_FILE line as absent", () => {
+    expect(resolveAbpAuthEnv({ ...ENV, AUTH_EXTRA_CA_FILE: "" }).extraCaFile).toBeUndefined();
+    expect(resolveAbpAuthEnv({ ...ENV, AUTH_EXTRA_CA_FILE: "/tmp/x.crt" }).extraCaFile).toBe(
+      "/tmp/x.crt",
+    );
+  });
+});
+
+describe("createAbpAuthRuntime extra CA wiring", () => {
+  it("installs the CA from AUTH_EXTRA_CA_FILE before any upstream call and logs it", async () => {
+    const { createLogger, createMemorySink, resolveConfig } = await import("../../src/logger");
+    const { readFileSync } = await import("node:fs");
+    const tls = (await import("node:tls")).default;
+    const { sink, records } = createMemorySink();
+    const logger = createLogger({ scope: "auth", config: resolveConfig({}), sink });
+    const caFile = `${import.meta.dirname}/__fixtures__/self-signed.pem`;
+    createAbpAuthRuntime({ ...ENV, AUTH_EXTRA_CA_FILE: caFile }, { logger });
+    // 断言效果而不只是日志：fixture 证书必须真的进了进程默认 CA 列表
+    expect(tls.getCACertificates("default")).toContain(readFileSync(caFile, "utf8"));
+    const record = records.find((r) => r.message.includes("extra CA certificate trusted"));
+    expect(record).toBeDefined();
+  });
+
+  it("logs the aggregated env error before rethrowing", async () => {
+    const { createLogger, createMemorySink, resolveConfig } = await import("../../src/logger");
+    const { sink, records } = createMemorySink();
+    const logger = createLogger({ scope: "auth", config: resolveConfig({}), sink });
+    expect(() => createAbpAuthRuntime({}, { logger })).toThrow(/AUTH_ISSUER/);
+    const record = records.find((r) => r.message.includes("auth env resolution failed"));
+    expect(record).toBeDefined();
+  });
+});
