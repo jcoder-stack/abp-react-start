@@ -2,7 +2,7 @@
 
 `jc-abp` CLI：`gen`（orval 预设生成 react-query 客户端）+ `add`（拉取 registry 外壳）+ `init`（一站式初始化）。
 
-`abp-react-start` 内核包之一——从零自研的纯 React ABP 前端框架，总览见仓库根 README。
+`abp-react-start` 内核包之一——面向 ABP 后端的纯 React 前端框架，总览见仓库根 README。
 
 ## 安装
 

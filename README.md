@@ -35,7 +35,7 @@ token 全程不进浏览器——所有请求经服务端代理，会话是一�
 
 ### npm 包（运行时）
 
-运行时全部收在**一个** npm 包 `@jcoder-stack/abp-react` 里，按子路径分域导出——刻意不提供根导出，避免纯前端 bundle 拖进 `proxy`/`auth` 这类服务端代码。
+运行时全部收在**一个** npm 包 `@jcoder-stack/abp-react` 里，按子路径分域导出——刻意不提供根导出，以免浏览器 bundle 连带打包 `proxy`、`auth` 等服务端模块。
 
 | 子路径 | 作用 |
 |---|---|
@@ -117,3 +117,7 @@ bun run build       # tsup bundle 各包到 dist（发布产物）
 ## License
 
 [MIT](LICENSE)
+
+本项目不打包第三方代码：依赖由包管理器从各自来源安装，遵循其自身许可证（均为 MIT / Apache-2.0 / ISC / BSD 等宽松许可）。shadcn/ui 原语同理，由 shadcn CLI 从其官方 registry 取得。上表列出的项目是这套东西得以成立的前提。
+
+ABP 与 ABP Framework 是 Volosoft 的商标。本项目为独立社区项目，与 Volosoft 无隶属关系，亦未获其背书。

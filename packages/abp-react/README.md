@@ -1,8 +1,8 @@
 # @jcoder-stack/abp-react
 
-`abp-react-start` 的运行时内核——从零自研的纯 React ABP 前端框架，总览见仓库根 README。
+`abp-react-start` 的运行时内核——面向 ABP 后端的纯 React 前端框架，总览见仓库根 README。
 
-各域按**子路径**导出，没有把所有东西糊在一起的根导出：一个根导出会让纯前端的 bundle 拖进 `proxy`/`auth` 这类服务端代码。
+各域按**子路径**导出，不提供根导出：聚合入口会让浏览器 bundle 连带打包 `proxy`、`auth` 等服务端模块。
 
 | 子路径 | 职责 |
 | --- | --- |
