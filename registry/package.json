@@ -1,7 +1,7 @@
 {
   "name": "@jcoder-stack/registry",
   "description": "Copy-in sources for the auth shell and shadcn blocks: login/callback/logout handlers, the callAbp proxy, route guards, and TanStack wiring",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "files": [
     "auth",
