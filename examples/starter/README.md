@@ -49,11 +49,11 @@ bun run dev            # http://localhost:5173（vite 默认端口）
 
 `AUTH_DEBUG=true` 可打开 auth 全链路调试日志（不输出 token 原文）。
 
-本地 ABP 用自签/dev 证书时首页会 500——Node 不读系统钥匙串，服务端到后端那一跳被拒。导出证书后带着它启动（这个变量 Node 只在启动时读，写进 `.env` 不生效）：
+本地 ABP 用自签/dev 证书时首页会 500——Node 不读系统钥匙串，服务端到后端那一跳被拒。导出证书，路径写进 `.env`（需要 Node ≥ 22.15）：
 
 ```bash
 dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM
-NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt bun run dev
+echo 'AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt' >> .env
 ```
 
 ## 页面清单

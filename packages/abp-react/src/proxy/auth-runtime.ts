@@ -21,6 +21,7 @@ import { TENANT_COOKIE } from "./abp-call";
 import { createAbpIdentityResolver } from "./abp-identity";
 import { type AbpAuthEnv, resolveAbpAuthEnv } from "./auth-env";
 import { type AbpProxy, createAbpProxy } from "./proxy";
+import { installExtraCa } from "./tls-trust";
 
 /** 加密会话 cookie（httpOnly）默认名，装密封的 AuthSession（超长分块）。 */
 export const DEFAULT_SESSION_COOKIE = "auth_session";
@@ -99,7 +100,18 @@ export function createAbpAuthRuntime(
   envRecord: Record<string, string | undefined>,
   opts: AbpAuthRuntimeOptions = {},
 ): AuthRuntime {
-  const env = resolveAbpAuthEnv(envRecord, { schema: opts.envSchema });
+  let env: AbpAuthEnv;
+  try {
+    env = resolveAbpAuthEnv(envRecord, { schema: opts.envSchema });
+  } catch (error) {
+    // 常规 logger 要等 env 解析出 debug 开关才建；这条失败必须落日志（错误页可能被用户忽略），
+    // 用默认配置的后备 logger 补位。
+    const fallback = opts.logger ?? createLogger({ scope: "auth", config: resolveConfig({}) });
+    fallback.error("auth env resolution failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
   const cookies: AuthCookieConfig = {
     session: {
       ...opts.cookies?.session,
@@ -119,6 +131,22 @@ export function createAbpAuthRuntime(
       scope: "auth",
       config: resolveConfig({ LOG_LEVEL: env.debug ? "debug" : "info" }),
     });
+  if (env.extraCaFile !== undefined) {
+    // 在第一笔上游请求之前装：运行时单例化保证这里最多跑一次，helper 自身也幂等。
+    const outcome = installExtraCa(env.extraCaFile);
+    if (outcome === "unsupported") {
+      logger.warn(
+        "AUTH_EXTRA_CA_FILE is set but this runtime lacks tls.setDefaultCACertificates " +
+          "(Node >= 22.15 required); falling back — start the process with NODE_EXTRA_CA_CERTS instead",
+        { caFile: env.extraCaFile },
+      );
+    } else {
+      logger.info("extra CA certificate trusted for upstream TLS", {
+        caFile: env.extraCaFile,
+        outcome,
+      });
+    }
+  }
   const tokenClient = createTokenClient({
     issuer: env.issuer,
     clientId: env.clientId,

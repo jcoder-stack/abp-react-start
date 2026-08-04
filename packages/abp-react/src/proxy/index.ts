@@ -40,3 +40,9 @@ export {
   type AbpProxyResponse,
   createAbpProxy,
 } from "./proxy";
+export {
+  type InstallExtraCaResult,
+  installExtraCa,
+  tlsTrustFailureCode,
+  tlsTrustFailureMessage,
+} from "./tls-trust";

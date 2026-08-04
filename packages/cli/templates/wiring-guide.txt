@@ -3,10 +3,10 @@
   2. 改 abp.api.config.ts 指向你的后端 → jc-abp gen
   3. bun run dev
 
-后端用自签证书时 gen 与 dev 都会报 "fetch failed"（Node 不读系统钥匙串，证书在钥匙串里受信也没用）。
-导出证书后带着它启动，只放行这一张:
+后端用自签证书时 gen 与 dev 都会被拒（Node 不读系统钥匙串，证书在钥匙串里受信也没用）。
+导出证书，路径写进 .env，只放行这一张（需要 Node >= 22.15）:
   dotnet dev-certs https --export-path ~/.aspnet-dev.crt --format PEM
-  NODE_EXTRA_CA_CERTS=~/.aspnet-dev.crt bun run dev   # Node 只在启动时读，写进 .env 不生效
+  然后在 .env 里加一行: AUTH_EXTRA_CA_FILE=~/.aspnet-dev.crt
 
 src/routes/__root.tsx 与 src/router.tsx 已接好线（两个 Provider、块词条合并、QueryClient、SSR 集成），
 脚手架原版分别备份在同名 .bak。要改 head、加回 devtools 就直接编辑这两个文件，或从 .bak 取回片段。
