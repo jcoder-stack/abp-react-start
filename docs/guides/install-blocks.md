@@ -1,5 +1,7 @@
 # 按需安装块
 
+> 简体中文版。English edition: [`install-blocks.en.md`](install-blocks.en.md)
+
 `jc-abp init` 会按依赖序一次装齐全部块。这份文档针对另一种情况：**你只想要其中几块**，或者想弄清块与块之间的依赖。初次初始化走 [`initialize-a-project.md`](initialize-a-project.md)——那条路更短，还会连 `components.json`、主题 css、认证外壳一起播种。
 
 ## 装你要的那一块就行，前置会跟着来

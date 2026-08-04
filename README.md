@@ -7,6 +7,8 @@
 
 <p align="center">给 ABP 后端配一套现代 React 前端——登录、权限、多租户、本地化、CRUD 页全都开箱可跑。</p>
 
+<p align="center"><a href="README.en.md">English</a> · 简体中文</p>
+
 ---
 
 ## 这是什么

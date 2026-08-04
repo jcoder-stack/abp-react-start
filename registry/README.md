@@ -1,29 +1,29 @@
 # @jcoder-stack/registry
 
-认证外壳的 copy-in 源，工厂化到极简：**`auth.config.ts` 是你唯一要看的文件**——一句 `createAbpAuthRuntime(process.env, {…覆盖项})`，默认即现行为，每个覆盖项（cookie 名/寿命、策略启停、登出回跳、身份解析器…）都带默认值，取消注释即生效。其余是薄接线：`runtime.ts`（进程单例）、`server-fns.ts` / `middleware.ts`（TanStack 接线，编译约束必留 copy-in）、`index.ts`（barrel）。
+The copy-in source for the auth shell, factored down to a minimum: **`auth.config.ts` is the only file you need to look at** — a single `createAbpAuthRuntime(process.env, {…overrides})` call, where the defaults are the current behavior and every override (cookie names/lifetimes, strategy toggles, post-logout redirect, identity resolver…) ships with a default; uncomment to activate. The rest is thin wiring: `runtime.ts` (a process singleton), `server-fns.ts` / `middleware.ts` (TanStack wiring that must stay copy-in for compile-time reasons), and `index.ts` (the barrel).
 
-装配与机制全部下沉包：ABP auth 运行时工厂 `createAbpAuthRuntime` 与登录/回调/登出/文化/租户 handler → `@jcoder-stack/abp-react/proxy`；路由守卫 `requireAuth`/`requirePermission` → `@jcoder-stack/abp-react/router`（TanStack Router beforeLoad，经 `@/auth` barrel 重导出）；ABP 代理调用、身份读取、returnUrl/culture 纯函数 → `@jcoder-stack/abp-react/proxy` / `@jcoder-stack/abp-react/auth`。
+All assembly and mechanics live down in the packages: the ABP auth runtime factory `createAbpAuthRuntime` and the login/callback/logout/culture/tenant handlers → `@jcoder-stack/abp-react/proxy`; the route guards `requireAuth`/`requirePermission` → `@jcoder-stack/abp-react/router` (TanStack Router beforeLoad, re-exported through the `@/auth` barrel); ABP proxy calls, identity reads, and the returnUrl/culture pure functions → `@jcoder-stack/abp-react/proxy` / `@jcoder-stack/abp-react/auth`.
 
-由 `jc-abp add auth` 按 manifest 落位到应用 `src/`；属 ABP React Start 框架，总览见仓库根 README。
+`jc-abp add auth` distributes it into the app's `src/` per the manifest. Part of the ABP React Start framework — see the repository root README for the big picture.
 
 ## UI blocks
 
-`ui/blocks/` 下是可用官方 shadcn CLI 安装的块，产物在 `public/r/`：
+`ui/blocks/` holds blocks installable with the official shadcn CLI; the built artifacts live in `public/r/`:
 
-| 块 | 内容 |
+| Block | Contents |
 | --- | --- |
-| `abp-layout` | 侧栏布局（AppSidebar / SiteHeader / 面包屑 / 语言与主题切换 / 品牌标识） |
-| `abp-login` | 密码登录卡片，含 OIDC 入口 |
-| `app-shell` | 应用壳胶水：`_layout`/`_authed`/首页/login 路由 + `abp-fetch.ts` + 起点 `menu.tsx` |
-| `data-table` | 通用服务端分页/排序/搜索表格 |
-| `combobox` | 单选/多选 combobox（本地过滤或防抖远程 loadOptions） |
-| `date-picker` | 单日期 / 日期区间 / 日期时间选择器 |
-| `form` | 表单壳 + 字段组件 + 服务端字段错误映射 |
-| `abp-crud` | ABP CRUD 协议（`createCrudService` / `AbpTableSource`）与共享件 |
-| `abp-table` | `useAbpTable`——表格 + 筛选面板 + 批量操作 |
-| `abp-sheet` | `useAbpSheet`——增删改抽屉 |
-| `tree` | 通用树形块（展开收起 / 勾选，级联策略留给消费方） |
-| `abp-permission-sheet` | 权限树 Sheet（组=Accordion，组内 Tree） |
-| `admin-pages` | users / roles / tenants / settings / profile 五个管理页 |
+| `abp-layout` | The sidebar layout (AppSidebar / SiteHeader / breadcrumbs / locale & theme switchers / brand mark) |
+| `abp-login` | The password sign-in card, with an OIDC entry point |
+| `app-shell` | App-shell glue: the `_layout`/`_authed`/home/login routes + `abp-fetch.ts` + the starting `menu.tsx` |
+| `data-table` | A general server-side paging/sorting/search table |
+| `combobox` | Single/multi-select combobox (local filtering or debounced remote loadOptions) |
+| `date-picker` | Single date / date range / date-time pickers |
+| `form` | The form shell + field components + server-side field error mapping |
+| `abp-crud` | The ABP CRUD protocol (`createCrudService` / `AbpTableSource`) and shared pieces |
+| `abp-table` | `useAbpTable` — table + filter panel + bulk actions |
+| `abp-sheet` | `useAbpSheet` — the create/edit/delete drawer |
+| `tree` | A general tree block (expand/collapse, checking; cascade policy left to the consumer) |
+| `abp-permission-sheet` | The permission tree sheet (groups as Accordion, a Tree per group) |
+| `admin-pages` | The five admin pages: users / roles / tenants / settings / profile |
 
-装法、依赖顺序与各块的前置条件见 [`docs/guides/install-blocks.md`](../docs/guides/install-blocks.md)。源码改动后用 `bun run build:registry` 重新生成产物。
+Install steps, dependency order, and each block's prerequisites are in [`docs/guides/install-blocks.md`](../docs/guides/install-blocks.md). After changing block sources, rebuild the artifacts with `bun run build:registry`.

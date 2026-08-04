@@ -1,6 +1,6 @@
 {
   "name": "@jcoder-stack/abp-react",
-  "description": "纯 React ABP 前端框架运行时：日志、ABP 类型与 zod 解析、fetch client、认证会话、ABP 代理网关、权限、i18n、React Provider/hooks、TanStack Router 守卫；按子路径分域导出",
+  "description": "Pure-React runtime for ABP backends: logging, ABP types with zod parsing, fetch client, auth sessions, the ABP proxy gateway, permissions, i18n, React providers/hooks, and TanStack Router guards — exported per domain via subpaths",
   "version": "0.1.1",
   "type": "module",
   "license": "MIT",

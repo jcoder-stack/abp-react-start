@@ -1,5 +1,7 @@
 # 架构
 
+> 简体中文版。English edition: [`architecture.en.md`](architecture.en.md)
+
 这份文档讲**这套框架为什么长这样**——分几层、每层守什么边界、哪些东西刻意不做成 npm 包。要动手搭项目看 [`guides/initialize-a-project.md`](guides/initialize-a-project.md)，要改样式看 [`../DESIGN.md`](../DESIGN.md)。
 
 ## 一句话

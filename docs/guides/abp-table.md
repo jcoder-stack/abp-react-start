@@ -1,5 +1,7 @@
 # abp-table:列表页与 CRUD 维护页
 
+> 简体中文版。English edition: [`abp-table.en.md`](abp-table.en.md)
+
 以 ABP demo 后端的 `Book` 实体为例，演示「装完框架后，怎么给自己的实体加一个列表 + 新建/编辑/详情页」。表格侧与表单侧是两个互不 import 的 hook——`useAbpTable` 管列表/查询/删除，`useAbpSheet` 管新建/编辑的抽屉表单；两者返回的都是**实例**，组件长在实例上（`t.Table`、`sheet.Sheet` 这类绑定成员），不手写分页/权限判定这些机制代码，也不需要把 `table`/`crud`/`queryForm` 分别接线到某个装配组件的多个 props 上。
 
 完整可运行的参照就是本仓库的 [`examples/starter/src/routes/_layout/_authed/books/index.tsx`](../../examples/starter/src/routes/_layout/_authed/books/index.tsx)——它用页签把 L0（标准 `useAbpTable`/`useAbpSheet`）、L1（`source` 回调）、L2（纯 `DataTable`）三层摆在同一页对照展示，下面每一步的代码都是从它精简摘出来的，遇到含糊的地方直接去翻那个文件。
