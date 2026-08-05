@@ -28,8 +28,7 @@
       "Table:DensityComfortable": "Comfortable",
       "Table:DensityCompact": "Compact",
       "Table:Filter": "Filters",
-      "Table:FilterActive": "{0} filters applied",
-      "Table:RefreshTip": "Refresh current results (filters kept)"
+      "Table:FilterActive": "{0} filters applied"
     }
   },
   "zh-Hans": {
@@ -61,8 +60,7 @@
       "Table:DensityComfortable": "舒适",
       "Table:DensityCompact": "紧凑",
       "Table:Filter": "筛选",
-      "Table:FilterActive": "已应用 {0} 个筛选条件",
-      "Table:RefreshTip": "刷新当前结果（保留筛选条件）"
+      "Table:FilterActive": "已应用 {0} 个筛选条件"
     }
   }
 }

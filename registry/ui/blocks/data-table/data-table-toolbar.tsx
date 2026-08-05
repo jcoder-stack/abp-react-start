@@ -84,8 +84,7 @@ export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarP
                   <RefreshCw className={cn(props.refreshing && "animate-spin")} />
                 </Button>
               </TooltipTrigger>
-              {/* 不只重复「刷新」二字:这颗钮容易被误解为重置,提示里写清语义——重发当前查询,筛选保留 */}
-              <TooltipContent>{L("Table:RefreshTip")}</TooltipContent>
+              <TooltipContent>{L("Table:Refresh")}</TooltipContent>
             </Tooltip>
           )}
           {props.onExport && (
