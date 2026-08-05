@@ -16,6 +16,7 @@ import { Route as LayoutAuthedRouteImport } from './routes/_layout/_authed'
 import { Route as LayoutForbiddenRouteImport } from './routes/_layout/forbidden'
 import { Route as ApiCultureRouteImport } from './routes/api.culture'
 import { Route as ApiTenantRouteImport } from './routes/api.tenant'
+import { Route as LayoutAuthedHomeRouteImport } from './routes/_layout/_authed/home'
 import { Route as ApiAuthCallbackRouteImport } from './routes/api.auth.callback'
 import { Route as ApiAuthLoginRouteImport } from './routes/api.auth.login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api.auth.logout'
@@ -59,6 +60,11 @@ const ApiTenantRoute = ApiTenantRouteImport.update({
   id: '/api/tenant',
   path: '/api/tenant',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LayoutAuthedHomeRoute = LayoutAuthedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => LayoutAuthedRoute,
 } as any)
 const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
   id: '/api/auth/callback',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/forbidden': typeof LayoutForbiddenRoute
   '/api/culture': typeof ApiCultureRoute
   '/api/tenant': typeof ApiTenantRoute
+  '/home': typeof LayoutAuthedHomeRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/forbidden': typeof LayoutForbiddenRoute
   '/api/culture': typeof ApiCultureRoute
   '/api/tenant': typeof ApiTenantRoute
+  '/home': typeof LayoutAuthedHomeRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/_layout/forbidden': typeof LayoutForbiddenRoute
   '/api/culture': typeof ApiCultureRoute
   '/api/tenant': typeof ApiTenantRoute
+  '/_layout/_authed/home': typeof LayoutAuthedHomeRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/api/culture'
     | '/api/tenant'
+    | '/home'
     | '/api/auth/callback'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/api/culture'
     | '/api/tenant'
+    | '/home'
     | '/api/auth/callback'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/_layout/forbidden'
     | '/api/culture'
     | '/api/tenant'
+    | '/_layout/_authed/home'
     | '/api/auth/callback'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -287,6 +299,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/tenant'
       preLoaderRoute: typeof ApiTenantRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_layout/_authed/home': {
+      id: '/_layout/_authed/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof LayoutAuthedHomeRouteImport
+      parentRoute: typeof LayoutAuthedRoute
     }
     '/api/auth/callback': {
       id: '/api/auth/callback'
@@ -362,6 +381,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutAuthedRouteChildren {
+  LayoutAuthedHomeRoute: typeof LayoutAuthedHomeRoute
   LayoutAuthedBooksNewRoute: typeof LayoutAuthedBooksNewRoute
   LayoutAuthedIdentityRolesRoute: typeof LayoutAuthedIdentityRolesRoute
   LayoutAuthedIdentityUsersRoute: typeof LayoutAuthedIdentityUsersRoute
@@ -372,6 +392,7 @@ interface LayoutAuthedRouteChildren {
 }
 
 const LayoutAuthedRouteChildren: LayoutAuthedRouteChildren = {
+  LayoutAuthedHomeRoute: LayoutAuthedHomeRoute,
   LayoutAuthedBooksNewRoute: LayoutAuthedBooksNewRoute,
   LayoutAuthedIdentityRolesRoute: LayoutAuthedIdentityRolesRoute,
   LayoutAuthedIdentityUsersRoute: LayoutAuthedIdentityUsersRoute,
@@ -411,12 +432,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

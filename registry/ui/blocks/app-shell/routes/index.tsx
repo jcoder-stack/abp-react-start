@@ -190,11 +190,12 @@ function Brand() {
   );
 }
 
-/** 认证态跳控制台用整页跳转（`<a href>`）而非 typed Link：进 shell 是上下文切换，且 --no-admin 项目没有该路由时不会编译报错。 */
+/** 认证态跳控制台用整页跳转（`<a href>`）而非 typed Link：进 shell 是上下文切换。落点是零权限
+ *  要求的控制台首页 /home——指向某个权限页会让没有该权限的用户一进门就 403。 */
 function ConsoleLink({ L, size }: { L: Localizer; size?: "sm" | "lg" }) {
   return (
     <Button asChild size={size}>
-      <a href="/identity/users">
+      <a href="/home">
         {L("Landing:NavConsole")}
         {size === "lg" && <ArrowRight />}
       </a>

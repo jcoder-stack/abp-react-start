@@ -22,7 +22,7 @@ import type { FileRouteTypes } from "@/routeTree.gen";
  *  ABP 自带实体，它的数据来自 `books/-book-api.ts` 里的进程内 mock，没有后端权限策略可挂，
  *  故不带 requiredPolicy。换成你自己的业务模块时把这一整组删掉即可。 */
 export const menuItems: MenuItem<FileRouteTypes["to"]>[] = [
-  { key: "home", label: "App::Home", to: "/", icon: <Home /> },
+  { key: "home", label: "App::Home", to: "/home", icon: <Home /> },
   {
     key: "identity",
     label: "AbpIdentity::Menu:IdentityManagement",

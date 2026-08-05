@@ -301,7 +301,7 @@ your-app/
         ├── _layout/
         │   ├── forbidden.tsx      # the 403 page, hand-maintained
         │   ├── _authed.tsx        # pathless guard shell, requireAuth() in beforeLoad
-        │   └── _authed/           # admin-pages block: identity/{users,roles}, tenants, settings, profile
+        │   └── _authed/           # home.tsx (console home, zero permissions) + admin-pages block: identity/{users,roles}, tenants, settings, profile
         ├── -showcase/            # `-` prefix = not a route; the landing page's live demos (starter increment, not registry-distributed)
         └── api.auth.{login,callback,logout}.ts, api.culture.ts, api.tenant.ts
 ```

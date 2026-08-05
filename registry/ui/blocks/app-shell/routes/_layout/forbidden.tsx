@@ -13,7 +13,7 @@ function Forbidden() {
       <h1 className="text-2xl font-normal">{L("Shell:Forbidden")}</h1>
       <p className="text-sm text-muted-foreground">{L("Shell:ForbiddenHint")}</p>
       <p className="space-x-4 text-sm">
-        <Link to="/" className="text-primary underline-offset-4 hover:underline">
+        <Link to="/home" className="text-primary underline-offset-4 hover:underline">
           {L("Shell:BackHome")}
         </Link>
         {/* 权限不够的正解常常是换个账号:注销是鉴权态变化,必须整页跳转(a href),不走 SPA navigate */}
