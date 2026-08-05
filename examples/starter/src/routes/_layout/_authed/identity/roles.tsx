@@ -19,7 +19,6 @@ import type { TableColumnDef } from "@/components/data-table/table-core";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { IdentityPermissions } from "@/permissions";
 import { buildRoleSchema } from "@/routes/_layout/_authed/identity/-role-schema";
-import { RouteError } from "@/routes/shell-boundary";
 
 // 权限面板的重依赖（tree、accordion 等）按需加载：列表首屏不背这批模块。
 const PermissionSheet = lazy(() =>
@@ -31,7 +30,6 @@ const PermissionSheet = lazy(() =>
 /** 角色本身无可分配对象，故无角色 MultiCombobox。 */
 export const Route = createFileRoute("/_layout/_authed/identity/roles")({
   beforeLoad: requirePermission(IdentityPermissions.Roles.Default),
-  errorComponent: RouteError,
   component: RolesPage,
 });
 

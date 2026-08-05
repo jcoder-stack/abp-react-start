@@ -28,7 +28,6 @@ import type { ComboboxOption } from "@/components/combobox/use-combobox-options"
 import type { TableColumnDef } from "@/components/data-table/table-core";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { IdentityPermissions } from "@/permissions";
-import { RouteError } from "@/routes/shell-boundary";
 
 // 编辑/权限面板的重依赖（combobox、tree、accordion 等）按需加载：列表首屏不背这批模块。
 const PermissionSheet = lazy(() =>
@@ -40,7 +39,6 @@ const PermissionSheet = lazy(() =>
 /** 用户 DTO 不带 roleNames，故 open() 需先 GET .../roles 再开 sheet。 */
 export const Route = createFileRoute("/_layout/_authed/identity/users")({
   beforeLoad: requirePermission(IdentityPermissions.Users.Default),
-  errorComponent: RouteError,
   component: UsersPage,
 });
 

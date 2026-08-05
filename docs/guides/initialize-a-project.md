@@ -132,9 +132,9 @@ ls src/auth src/routes/_layout src/components/abp
 
 完整参照 [`examples/starter/src/routes/__root.tsx`](../../examples/starter/src/routes/__root.tsx)——它在这份模板之上还多了应用自己的词条与 favicon/manifest。
 
-### `src/router.tsx`（就地补四处）
+### `src/router.tsx`（就地补齐）
 
-只插入 QueryClient 相关的四处：两个 import、`new QueryClient()`、`context: { queryClient }`、`setupRouterSsrQueryIntegration`。你原有的引号风格、`createRouter` 别名、其它 `createRouter` 选项都保留，改动对着脚手架只有五行。
+插入 QueryClient 接线（两个 import、`new QueryClient()`、`context: { queryClient }`、`setupRouterSsrQueryIntegration`）与路由级默认边界（`defaultErrorComponent` / `defaultNotFoundComponent`，指向 shell-boundary——壳内任何页面出错或 404 都渲染在自己的位置上，侧栏保持在位，页面不必各自挂 errorComponent）。你原有的引号风格、`createRouter` 别名、其它 `createRouter` 选项都保留。
 
 万一将来脚手架换了形状、锚点对不上，`init` 会退回整份模板并在完成步骤里说明——宁可覆盖风格，也不能留下一个没有 `context` 的 router。
 

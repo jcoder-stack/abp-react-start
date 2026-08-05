@@ -212,6 +212,16 @@
           "path": "ui/blocks/app-shell/permissions.ts",
           "type": "registry:file",
           "target": "src/permissions.ts"
+        },
+        {
+          "path": "ui/blocks/app-shell/components/section-boundary.tsx",
+          "type": "registry:file",
+          "target": "src/components/section-boundary.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/_layout/forbidden.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/forbidden.tsx"
         }
       ]
     },

@@ -132,9 +132,9 @@ If the scaffold had TanStack devtools mounted, they are carried over; if not, no
 
 The complete reference is [`examples/starter/src/routes/__root.tsx`](../../examples/starter/src/routes/__root.tsx) — which adds the app's own messages and favicon/manifest on top of this template.
 
-### `src/router.tsx` (patched in four places)
+### `src/router.tsx` (patched in place)
 
-Only the QueryClient-related four are inserted: two imports, `new QueryClient()`, `context: { queryClient }`, and `setupRouterSsrQueryIntegration`. Your quote style, `createRouter` alias, and other `createRouter` options are preserved — the diff against the scaffold is five lines.
+The QueryClient wiring (two imports, `new QueryClient()`, `context: { queryClient }`, `setupRouterSsrQueryIntegration`) plus the router-level default boundaries (`defaultErrorComponent` / `defaultNotFoundComponent` pointing at shell-boundary — any page inside the shell that errors or 404s renders in its own place with the sidebar intact; pages no longer declare errorComponent themselves). Your quote style, `createRouter` alias, and other `createRouter` options are preserved.
 
 If a future scaffold changes shape and the anchors stop matching, `init` falls back to the whole template and says so in the completed-steps list — better to override style than to leave a router without `context`.
 
