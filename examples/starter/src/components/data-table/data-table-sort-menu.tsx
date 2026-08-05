@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface DataTableSortMenuProps<TData extends RowData> {
@@ -34,17 +35,21 @@ export function DataTableSortMenu<TData extends RowData>(props: DataTableSortMen
 
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("size-8 text-muted-foreground", props.className)}
-          aria-label={L("Table:Sort")}
-          title={L("Table:Sort")}
-        >
-          <ArrowUpDown />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("size-8 text-muted-foreground", props.className)}
+              aria-label={L("Table:Sort")}
+            >
+              <ArrowUpDown />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{L("Table:Sort")}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end">
         {columns.map((column) => (
           <DropdownMenuItem

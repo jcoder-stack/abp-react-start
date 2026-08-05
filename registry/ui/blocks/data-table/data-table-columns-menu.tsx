@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface DataTableColumnsMenuProps<TData extends RowData> {
@@ -33,17 +34,21 @@ export function DataTableColumnsMenu<TData extends RowData>(
 
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("size-8 text-muted-foreground", props.className)}
-          aria-label={L("Table:Columns")}
-          title={L("Table:Columns")}
-        >
-          <TableProperties />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("size-8 text-muted-foreground", props.className)}
+              aria-label={L("Table:Columns")}
+            >
+              <TableProperties />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{L("Table:Columns")}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end">
         {columns.map((column) => (
           <DropdownMenuCheckboxItem
