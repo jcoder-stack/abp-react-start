@@ -301,7 +301,7 @@ your-app/
         ├── _layout/
         │   ├── forbidden.tsx      # 403 页，手写维护
         │   ├── _authed.tsx        # pathless 守卫壳，beforeLoad 挂 requireAuth()
-        │   └── _authed/           # admin-pages 块：identity/{users,roles}、tenants、settings、profile
+        │   └── _authed/           # home.tsx(控制台首页,零权限) + admin-pages 块:identity/{users,roles}、tenants、settings、profile
         ├── -showcase/            # `-` 前缀 = 非路由，落地页的实时组件演示（starter 增量，不随 registry 分发）
         └── api.auth.{login,callback,logout}.ts, api.culture.ts, api.tenant.ts
 ```

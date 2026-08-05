@@ -9,7 +9,7 @@ import type { FileRouteTypes } from "@/routeTree.gen";
 
 /** `to` 类型化自生成路由树,路由改名/删除在此 typecheck 失败而非运行时死链;extend 时照 requiredPolicy 格式补。 */
 export const menuItems: MenuItem<FileRouteTypes["to"]>[] = [
-  { key: "home", label: "App::Home", to: "/", icon: <Home /> },
+  { key: "home", label: "App::Home", to: "/home", icon: <Home /> },
   {
     key: "identity",
     label: "AbpIdentity::Menu:IdentityManagement",

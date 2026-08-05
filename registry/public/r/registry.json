@@ -222,6 +222,11 @@
           "path": "ui/blocks/app-shell/routes/_layout/forbidden.tsx",
           "type": "registry:file",
           "target": "src/routes/_layout/forbidden.tsx"
+        },
+        {
+          "path": "ui/blocks/app-shell/routes/_layout/_authed/home.tsx",
+          "type": "registry:file",
+          "target": "src/routes/_layout/_authed/home.tsx"
         }
       ]
     },
