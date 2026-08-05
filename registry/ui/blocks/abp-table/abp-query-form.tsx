@@ -2,6 +2,7 @@ import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { ListFilter } from "lucide-react";
 import { Children, Fragment, isValidElement, type KeyboardEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 /** `Children.toArray` 不拆 fragment（`<>a b</>` 整体算一个子节点），必须先取出
@@ -43,30 +44,35 @@ export function AbpQueryPanelToggle(props: AbpQueryPanelToggleProps) {
   const L = useLocalization();
   const active = props.activeCount > 0;
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={cn(
-        "relative",
-        props.expanded || active ? "text-primary" : "text-muted-foreground",
-      )}
-      aria-label={L("Table:Filter")}
-      aria-expanded={props.expanded}
-      aria-controls={props.expanded ? props.panelId : undefined}
-      onClick={props.onToggle}
-    >
-      <ListFilter />
-      {active && (
-        // 圆点只是"还筛着"的视觉提示，具体筛了什么展开面板即见；读屏另有 sr-only 文本，
-        // 不靠颜色/形状单独传达状态。
-        <span
-          aria-hidden="true"
-          className="absolute right-1 top-1 size-1.5 rounded-full bg-primary"
-        />
-      )}
-      {active && <span className="sr-only">{L("Table:FilterActive", props.activeCount)}</span>}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "relative",
+            props.expanded || active ? "text-primary" : "text-muted-foreground",
+          )}
+          aria-label={L("Table:Filter")}
+          aria-expanded={props.expanded}
+          aria-controls={props.expanded ? props.panelId : undefined}
+          onClick={props.onToggle}
+        >
+          <ListFilter />
+          {active && (
+            // 圆点只是"还筛着"的视觉提示，具体筛了什么展开面板即见；读屏另有 sr-only 文本，
+            // 不靠颜色/形状单独传达状态。
+            <span
+              aria-hidden="true"
+              className="absolute right-1 top-1 size-1.5 rounded-full bg-primary"
+            />
+          )}
+          {active && <span className="sr-only">{L("Table:FilterActive", props.activeCount)}</span>}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{L("Table:Filter")}</TooltipContent>
+    </Tooltip>
   );
 }
 

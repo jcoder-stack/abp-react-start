@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 /** 顶部条功能图标钮的共同外观：ghost 32px 方钮、静态色比正文更轻，hover 才提亮。 */
@@ -70,41 +71,57 @@ export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarP
         <div className="flex items-center gap-1">
           {props.utilityLeading}
           {props.onRefresh && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={UTILITY_ICON_CLASS}
-              aria-label={L("Table:Refresh")}
-              onClick={props.onRefresh}
-            >
-              <RefreshCw className={cn(props.refreshing && "animate-spin")} />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={UTILITY_ICON_CLASS}
+                  aria-label={L("Table:Refresh")}
+                  onClick={props.onRefresh}
+                >
+                  <RefreshCw className={cn(props.refreshing && "animate-spin")} />
+                </Button>
+              </TooltipTrigger>
+              {/* 不只重复「刷新」二字:这颗钮容易被误解为重置,提示里写清语义——重发当前查询,筛选保留 */}
+              <TooltipContent>{L("Table:RefreshTip")}</TooltipContent>
+            </Tooltip>
           )}
           {props.onExport && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={UTILITY_ICON_CLASS}
-              aria-label={L("Table:Export")}
-              onClick={props.onExport}
-            >
-              <Download />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={UTILITY_ICON_CLASS}
+                  aria-label={L("Table:Export")}
+                  onClick={props.onExport}
+                >
+                  <Download />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{L("Table:Export")}</TooltipContent>
+            </Tooltip>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className={UTILITY_ICON_CLASS}
-                aria-label={L("Table:Density")}
-              >
-                <Rows3 />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={UTILITY_ICON_CLASS}
+                    aria-label={L("Table:Density")}
+                  >
+                    <Rows3 />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>{L("Table:Density")}</TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="end">
               <DropdownMenuRadioGroup
                 value={state.density}

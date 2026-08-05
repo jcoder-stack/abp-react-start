@@ -372,3 +372,10 @@
   letter-spacing: normal;
   text-transform: none;
 }
+
+/* Radix 系 modal(Sheet/Dialog)打开时把 body 设为 pointer-events:none,只恢复自己的内容;
+ * Base UI 的 combobox 弹层 portal 在 body 下、dialog 外,整个弹层因此点不中(键盘可用,鼠标全哑)。
+ * 子元素显式 auto 可覆盖父级的 none,这里统一恢复。 */
+[data-slot="combobox-content"] {
+  pointer-events: auto;
+}
