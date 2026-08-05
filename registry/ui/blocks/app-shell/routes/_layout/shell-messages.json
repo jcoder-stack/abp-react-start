@@ -151,7 +151,9 @@
       "Landing:StackAbp": ".NET backend — auth, permissions, and multi-tenancy.",
       "Landing:CtaTitle": "Ready to build?",
       "Landing:CtaSubtitle": "Initialize a project and you're looking at a working ABP admin in minutes.",
-      "Landing:FooterTagline": "Built with React, TanStack Start, and shadcn/ui."
+      "Landing:FooterTagline": "Built with React, TanStack Start, and shadcn/ui.",
+      "Shell:Retry": "Retry",
+      "Shell:SignOut": "Sign out"
     }
   },
   "zh-Hans": {
@@ -306,7 +308,9 @@
       "Landing:StackAbp": ".NET 后端——认证、权限、多租户。",
       "Landing:CtaTitle": "准备好开始了吗？",
       "Landing:CtaSubtitle": "初始化一个项目，几分钟后你面对的就是一套能跑的 ABP 后台。",
-      "Landing:FooterTagline": "基于 React、TanStack Start 与 shadcn/ui 构建。"
+      "Landing:FooterTagline": "基于 React、TanStack Start 与 shadcn/ui 构建。",
+      "Shell:Retry": "重试",
+      "Shell:SignOut": "注销"
     }
   }
 }

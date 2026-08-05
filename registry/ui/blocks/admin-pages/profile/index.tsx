@@ -20,13 +20,11 @@ import { useAppForm } from "@/components/form/form-hook";
 import { SubmitButton } from "@/components/form/submit-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RouteError } from "@/routes/shell-boundary";
 
 /** /profile 个人中心。无 requiredPolicy（认证即可访问，非租户/角色资源）。两张独立 Card：
  * 资料卡直到 getApiAccountMyProfile 结算才挂载表单（用查到的值当 useForm 的 defaultValues，
  * 而非先挂空表单再靠 effect 回填，省一次 reset 竞态）；改密码卡是纯空表单，成功后自己清空。 */
 export const Route = createFileRoute("/_layout/_authed/profile/")({
-  errorComponent: RouteError,
   component: ProfilePage,
 });
 

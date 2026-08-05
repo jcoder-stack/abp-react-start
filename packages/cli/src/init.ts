@@ -601,13 +601,19 @@ export function patchRouterSource(source: string): string | null {
     callLine,
     `${indent}const queryClient = new QueryClient();${indent}${assignment}${factory}({`,
   );
-  out = out.replace(routeTree[0], `${routeTree[1]}\n${routeTree[2]}context: { queryClient },`);
+  out = out.replace(
+    routeTree[0],
+    `${routeTree[1]}\n${routeTree[2]}context: { queryClient },` +
+      `\n${routeTree[2]}defaultErrorComponent: RouteError,` +
+      `\n${routeTree[2]}defaultNotFoundComponent: RouteNotFound,`,
+  );
   out = out.replace(
     ret[0],
     `\n  setupRouterSsrQueryIntegration({ router, queryClient });${ret[0]}`,
   );
   return `import { QueryClient } from "@tanstack/react-query";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+import { RouteError, RouteNotFound } from "@/routes/shell-boundary";
 ${out}`;
 }
 

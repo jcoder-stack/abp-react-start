@@ -41,13 +41,11 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingManagementPermissions } from "@/permissions";
-import { RouteError } from "@/routes/shell-boundary";
 
 /** /settings：SettingManagement 模块的邮件/时区两页签。requiredPolicy 用
  * SettingManagement.Emailing。demo 后端两页签共用这一策略，无独立的 TimeZone 权限点。 */
 export const Route = createFileRoute("/_layout/_authed/settings/")({
   beforeLoad: requirePermission(SettingManagementPermissions.Emailing),
-  errorComponent: RouteError,
   component: SettingsPage,
 });
 

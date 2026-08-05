@@ -61,7 +61,7 @@ shadcn 把**裸名字**当作官方 registry 的条目，`abp-crud` 会被解析
 
 ## 逐块说明
 
-**`app-shell`** 分发 16 个文件：`_layout.tsx`（pathless 布局壳）、`_layout/_authed.tsx`（守卫壳，挂 `requireAuth()`）、`index.tsx`（全幅营销落地页，脱离侧栏壳）、`login.tsx`、`shell-boundary.tsx`（`RouteError` / `RouteNotFound`）、`api/abp-fetch.ts`、`menu.tsx`、`permissions.ts`，外加落地页用的 `routes/-showcase/*` 七个演示组件。除 `menu.tsx` 外都与 starter 对应文件逐字相同；`menu.tsx` 刻意是干净起点，不含 starter 手写增量里的 `books` 菜单项，装完按你实际暴露的页面增删。
+**`app-shell`** 分发 18 个文件：`_layout.tsx`（pathless 布局壳）、`_layout/_authed.tsx`（守卫壳，挂 `requireAuth()`）、`index.tsx`（全幅营销落地页，脱离侧栏壳）、`login.tsx`、`_layout/forbidden.tsx`（403 页，权限守卫的跳转目标）、`shell-boundary.tsx`（`RouteError` / `RouteNotFound`，内置静态兜底防错误页自炸）、`components/section-boundary.tsx`（区块级错误边界，包住页面局部即用）、`api/abp-fetch.ts`、`menu.tsx`、`permissions.ts`，外加落地页用的 `routes/-showcase/*` 七个演示组件。除 `menu.tsx` 外都与 starter 对应文件逐字相同；`menu.tsx` 刻意是干净起点，不含 starter 手写增量里的 `books` 菜单项，装完按你实际暴露的页面增删。
 
 `-showcase/*` 那几个演示组件 import 了 `data-table` / `form` / `combobox` / `date-picker` / `tree` / `abp-table` 的组件——所以按上面的顺序装到 `app-shell` 这一步时，落地页的 import 会悬空一阵，直到后续块补齐才 typecheck 通过。安装本身不受影响（shadcn 不做类型检查）。真的只要壳不要落地页演示，装完删掉 `src/routes/-showcase/` 并把 `index.tsx` 里对应的 section 一起删。
 

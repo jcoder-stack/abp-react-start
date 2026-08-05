@@ -842,7 +842,7 @@ export function getRouter() {
 }
 `;
 
-  it("补齐四处接线，同时保留调用方原有的工厂别名与其它选项", () => {
+  it("补齐接线,同时保留调用方原有的工厂别名与其它选项", () => {
     const patched = patchRouterSource(scaffold);
     expect(patched).not.toBeNull();
     const out = patched as string;
@@ -850,6 +850,10 @@ export function getRouter() {
     expect(out).toContain("const queryClient = new QueryClient();");
     expect(out).toContain("context: { queryClient },");
     expect(out).toContain("setupRouterSsrQueryIntegration({ router, queryClient });");
+    // 路由级默认边界:壳内页面出错/404 渲染在自己的位置,不脱壳
+    expect(out).toContain('import { RouteError, RouteNotFound } from "@/routes/shell-boundary";');
+    expect(out).toContain("defaultErrorComponent: RouteError,");
+    expect(out).toContain("defaultNotFoundComponent: RouteNotFound,");
     // 别名与既有选项不动——就地补的意义就在这里。
     expect(out).toContain("createTanStackRouter({");
     expect(out).toContain("scrollRestoration: true,");
