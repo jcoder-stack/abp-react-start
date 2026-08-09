@@ -108,10 +108,10 @@ pkg.dependencies["zod"] = "^4.0.0";
 // 锁回与 starter 提交态一致的版本保证重放可复现（有意升级时改这份 pin 表）。
 Object.assign(pkg.dependencies, {
   "@tanstack/react-devtools": "^0.10.8",
-  "@tanstack/react-router": "^1.170.18",
-  "@tanstack/react-router-devtools": "^1.167.0",
+  "@tanstack/react-router": "^1.170.24",
+  "@tanstack/react-router-devtools": "^1.167.1",
   "@tanstack/react-router-ssr-query": "^1.167.1",
-  "@tanstack/react-start": "^1.168.32",
+  "@tanstack/react-start": "^1.168.41",
   "@tanstack/router-plugin": "^1.132.0",
   "lucide-react": "^0.545.0",
   "radix-ui": "^1.6.4",
