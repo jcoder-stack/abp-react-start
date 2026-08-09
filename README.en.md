@@ -120,6 +120,8 @@ bun run build       # tsup bundles each package into dist (the publish artifacts
 
 Inside the repository, package `exports` point at `src` rather than `dist` — that is not a misconfiguration: the workspace consumes TS sources directly, and `prepack` rewrites the exports temporarily at publish time. The mechanism is described in [the architecture doc](docs/architecture.en.md).
 
+For the release process — when CI gates, which version fields to edit, how a prerelease gets acceptance-tested — see [`docs/releasing.en.md`](docs/releasing.en.md).
+
 ## License
 
 [MIT](LICENSE)

@@ -7,7 +7,7 @@
     "@jcoder-stack/abp-react",
     "@tanstack/react-form",
     "@tanstack/react-query",
-    "@tanstack/react-table@9.0.0-beta.59",
+    "@tanstack/react-table@9.1.2",
     "sonner",
     "lucide-react",
     "zod"
