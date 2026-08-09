@@ -117,6 +117,8 @@ bun run build       # tsup bundle 各包到 dist（发布产物）
 
 包的 `exports` 在仓库内指向 `src` 而不是 `dist`——这不是漏配，是 workspace 内直接吃 TS 源码；发布时由 `prepack` 临时改写。机制见[架构文档的发布态一节](docs/architecture.md#发布态与开发态)。
 
+发版流程（CI 在哪个时刻把关、版本号要改哪几处、预发布怎么做真机验收）见 [`docs/releasing.md`](docs/releasing.md)。
+
 ## License
 
 [MIT](LICENSE)
