@@ -1,7 +1,7 @@
 import { useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import {
   getGetApiIdentityRolesQueryKey,
   useDeleteApiIdentityRolesId,
@@ -13,9 +13,8 @@ import type { VoloAbpIdentityIdentityRoleDto } from "@/api/models";
 import { requirePermission } from "@/auth";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
-import { StatusBadge } from "@/components/abp/table/status-badge";
+import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
-import type { TableColumnDef } from "@/components/data-table/table-core";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { IdentityPermissions } from "@/permissions";
 import { buildRoleSchema } from "@/routes/_layout/_authed/identity/-role-schema";
@@ -26,6 +25,14 @@ const PermissionSheet = lazy(() =>
     default: m.PermissionSheet,
   })),
 );
+
+// 列走词条 key，不依赖 L，故留在模块级：引用天然稳定，不必包 useMemo。
+const col = createAbpColumns<VoloAbpIdentityIdentityRoleDto>();
+const columns = [
+  col.text("name", "AbpIdentity::DisplayName:RoleName"),
+  col.bool("isDefault", "AbpIdentity::DisplayName:IsDefault", { enableSorting: false }),
+  col.bool("isPublic", "AbpIdentity::DisplayName:IsPublic", { enableSorting: false }),
+];
 
 /** 角色本身无可分配对象，故无角色 MultiCombobox。 */
 export const Route = createFileRoute("/_layout/_authed/identity/roles")({
@@ -68,33 +75,6 @@ function RolesPage() {
         </DropdownMenuItem>
       ) : null,
     [canManagePermissions, L],
-  );
-
-  const columns = useMemo<TableColumnDef<VoloAbpIdentityIdentityRoleDto>[]>(
-    () => [
-      { accessorKey: "name", header: () => L("AbpIdentity::DisplayName:RoleName") },
-      {
-        accessorKey: "isDefault",
-        header: () => L("AbpIdentity::DisplayName:IsDefault"),
-        enableSorting: false,
-        cell: ({ getValue }) => (
-          <StatusBadge status={getValue() ? "info" : "neutral"}>
-            {getValue() ? L("Admin:Yes") : L("Admin:No")}
-          </StatusBadge>
-        ),
-      },
-      {
-        accessorKey: "isPublic",
-        header: () => L("AbpIdentity::DisplayName:IsPublic"),
-        enableSorting: false,
-        cell: ({ getValue }) => (
-          <StatusBadge status={getValue() ? "info" : "neutral"}>
-            {getValue() ? L("Admin:Yes") : L("Admin:No")}
-          </StatusBadge>
-        ),
-      },
-    ],
-    [L],
   );
 
   const sheet = useAbpSheet(roleService, {

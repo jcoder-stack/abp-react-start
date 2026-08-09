@@ -1,6 +1,5 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { z } from "zod";
 import {
   getGetApiMultiTenancyTenantsQueryKey,
@@ -22,8 +21,8 @@ import {
 import { requirePermission } from "@/auth";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
+import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
-import type { TableColumnDef } from "@/components/data-table/table-core";
 import { TenantManagementPermissions } from "@/permissions";
 
 /** /tenants：TenantManagement 模块的租户 CRUD；create/edit 字段集不同：create 额外收
@@ -33,6 +32,10 @@ export const Route = createFileRoute("/_layout/_authed/tenants/")({
   beforeLoad: requirePermission(TenantManagementPermissions.Tenants.Default),
   component: TenantsPage,
 });
+
+// 列走词条 key，不依赖 L，故留在模块级：引用天然稳定，不必包 useMemo。
+const col = createAbpColumns<VoloAbpTenantManagementTenantDto>();
+const columns = [col.text("name", "AbpTenantManagement::TenantName")];
 
 const tenantService = createCrudService({
   useList: useGetApiMultiTenancyTenants,
@@ -70,11 +73,6 @@ function toUpdateInput(value: TenantFormValues): VoloAbpTenantManagementTenantUp
 
 function TenantsPage() {
   const L = useLocalization();
-
-  const columns = useMemo<TableColumnDef<VoloAbpTenantManagementTenantDto>[]>(
-    () => [{ accessorKey: "name", header: () => L("AbpTenantManagement::TenantName") }],
-    [L],
-  );
 
   const sheet = useAbpSheet(tenantService, {
     emptyValues: EMPTY_VALUES,

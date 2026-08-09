@@ -41,6 +41,7 @@ import { createCrudService } from "@/components/abp/crud/crud-service"
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet"
 import { useAbpTable } from "@/components/abp/table/use-abp-table"
 import { QueryDateRange } from "@/components/abp/table/query-date-range"
+import { createAbpColumns, columnHeader } from "@/components/abp/table/column-presets"
 import type { TableColumnDef } from "@/components/data-table/table-core"
 ```
 
@@ -242,27 +243,44 @@ Three points:
 
 ## ④ Column definitions
 
-`TableColumnDef<TDto>[]` (v9's native `ColumnDef` has `TFeatures` in the first generic slot, not `TData` — direct use errors with `TS2559`; `TableColumnDef` is the alias with the feature set pre-bound), with `header` going through `useLocalization()`'s `L()`:
+Use `createAbpColumns<TDto>()`. It passes v9's native `accessor` / `display` / `group` through untouched and adds five presets for column shapes common in admin tables. **The second argument is a message key, not an already-translated string:**
 
 ```ts
-const columns = useMemo<TableColumnDef<AbpSwaggerBooksBookDto>[]>(
-  () => [
-    { accessorKey: "name", header: () => L("App::BookName") },
-    { accessorKey: "authorName", header: () => L("App::BookAuthor"), enableSorting: false },
-    {
-      accessorKey: "publishDate",
-      header: () => L("App::BookPublishDate"),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | undefined;
-        return value ? value.slice(0, 10) : "";
-      },
-    },
-  ],
-  [L],
-);
+const col = createAbpColumns<AbpSwaggerBooksBookDto>();
+
+const columns = [
+  col.text("name", "App::BookName"),
+  col.text("authorName", "App::BookAuthor", { enableSorting: false }),
+  col.enum("type", "App::BookType", { map: BOOK_TYPE_KEYS, enableSorting: false }),
+  col.date("publishDate", "App::BookPublishDate"),
+  col.money("price", "App::BookPrice", { digits: 2 }),
+  col.bool("isActive", "AbpIdentity::DisplayName:IsActive", { trueStatus: "success" }),
+];
 ```
 
-Using `L()` in `header` forces `columns` into the component body, while `columns` must also be referentially stable — `useAbpTable`'s internal `useDataTable` rebuilds the column model on every new array. Fortunately `useLocalization()` returns a stable `L`, so `useMemo(() => [...], [L])` is effectively a permanent memo and the two constraints don't clash. If columns reference other in-component values (some `useState`), add them to the deps array — don't skip any. Violating the stability contract logs a `console.warn` in DEV.
+`L()` is called by the presets at render time inside the cell, so column definitions depend on no hook — **they can live at module scope**, referentially stable by construction, with no `useMemo` wrapper. (`useAbpTable`'s internal `useDataTable` rebuilds the column model whenever it receives a new array; violating the stability contract logs a `console.warn` in DEV. If your columns do reference in-component values, keep them in the component body under `useMemo` with complete deps.)
+
+The five presets:
+
+| Preset | Renders | Own options |
+|---|---|---|
+| `text` | the raw value | — |
+| `date` | the date portion of an ISO value (no timezone conversion — date-only fields carry no time-of-day meaning, converting only shifts the day) | — |
+| `money` | fixed-point, right-aligned | `digits` (default 2) |
+| `enum` | the value mapped through `map` to a message; values not in the map render as-is rather than being swallowed | `map`, `fallback` (message key for an absent value) |
+| `bool` | a yes/no `StatusBadge` | `trueStatus`, `falseStatus` (semantic color) |
+
+**Presets are sugar, not a wall.** The third argument also accepts any `ColumnDef` key, replacing the preset's default wholesale — including `cell` / `header` / `meta`. When overriding isn't enough, write a native column with `col.accessor` / `col.display`; use `columnHeader("Message:Key")` for the header rather than calling `L()` directly, which would bind the definition back to a hook and forfeit module-scope placement:
+
+```tsx
+col.display({
+  id: "fullName",
+  header: columnHeader("Admin:FullName"),
+  cell: ({ row }) => <FullNameCell name={row.original.name} surname={row.original.surname} />,
+})
+```
+
+Column definitions are typed `TableColumnDef<TDto>` (v9's native `ColumnDef` has `TFeatures` in the first generic slot, not `TData` — direct use errors with `TS2559`; `TableColumnDef` is the alias with the feature set pre-bound). Column `meta` carries `align` / `className` / `label`, declared per table through `baseFeatureMap`'s `columnMeta` type slot — to add your own keys pass `columnMeta: {} as TableColumnMeta & { mine: X }` in `features`, rather than a global `declare module`.
 
 Relation fields (like `authorName`) and enum fields (like `type`) mostly don't support server-side sorting — set `enableSorting: false`; allowing sort on a column the backend never sorts is a no-op click.
 
