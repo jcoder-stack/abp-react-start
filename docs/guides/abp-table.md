@@ -41,6 +41,7 @@ import { createCrudService } from "@/components/abp/crud/crud-service"
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet"
 import { useAbpTable } from "@/components/abp/table/use-abp-table"
 import { QueryDateRange } from "@/components/abp/table/query-date-range"
+import { createAbpColumns, columnHeader } from "@/components/abp/table/column-presets"
 import type { TableColumnDef } from "@/components/data-table/table-core"
 ```
 
@@ -240,27 +241,44 @@ const roleSchema = buildRoleSchema(L);
 
 ## ④ 列定义
 
-`TableColumnDef<TDto>[]`（v9 的原生 `ColumnDef` 首个泛型位是 `TFeatures` 不是 `TData`，直接用会报 `TS2559`；`TableColumnDef` 是已绑好特性集的别名），`header` 走 `useLocalization()` 的 `L()` 取词条：
+用 `createAbpColumns<TDto>()`。它把 v9 原生的 `accessor` / `display` / `group` 原样透出，另加五个后台常见列型的预设，**第二个参数是词条 key 而不是已翻译的字符串**：
 
 ```ts
-const columns = useMemo<TableColumnDef<AbpSwaggerBooksBookDto>[]>(
-  () => [
-    { accessorKey: "name", header: () => L("App::BookName") },
-    { accessorKey: "authorName", header: () => L("App::BookAuthor"), enableSorting: false },
-    {
-      accessorKey: "publishDate",
-      header: () => L("App::BookPublishDate"),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | undefined;
-        return value ? value.slice(0, 10) : "";
-      },
-    },
-  ],
-  [L],
-);
+const col = createAbpColumns<AbpSwaggerBooksBookDto>();
+
+const columns = [
+  col.text("name", "App::BookName"),
+  col.text("authorName", "App::BookAuthor", { enableSorting: false }),
+  col.enum("type", "App::BookType", { map: BOOK_TYPE_KEYS, enableSorting: false }),
+  col.date("publishDate", "App::BookPublishDate"),
+  col.money("price", "App::BookPrice", { digits: 2 }),
+  col.bool("isActive", "AbpIdentity::DisplayName:IsActive", { trueStatus: "success" }),
+];
 ```
 
-`header` 里要用 `L()` 就必须把 `columns` 写在组件体内，而 `columns` 又必须引用稳定——`useAbpTable` 内部的 `useDataTable` 每渲染收到新数组都会重建列模型。好在 `useLocalization()` 返回的 `L` 引用稳定，所以 `useMemo(() => [...], [L])` 等价于永久 memo，两个约束不冲突。列里若还引用了其它组件内值（如某个 `useState`），一并写进依赖数组，不要漏。违反引用稳定契约时 DEV 期会有 `console.warn` 提示。
+`L()` 由预设在渲染期于单元格内部调用，列定义因此不依赖任何 hook——**可以写在模块级**，引用天然稳定，不必包 `useMemo`。（`useAbpTable` 内部的 `useDataTable` 每渲染收到新数组都会重建列模型；违反引用稳定契约时 DEV 期有 `console.warn` 提示。列里若引用了组件内的值，那就仍需写在组件体内并用 `useMemo` 把依赖写全。）
+
+五个预设：
+
+| 预设 | 渲染 | 专属选项 |
+|---|---|---|
+| `text` | 原值 | — |
+| `date` | ISO 值的日期段（不做时区换算——date-only 字段没有时刻语义，换算只会挪错一天） | — |
+| `money` | 定点小数，右对齐 | `digits`（默认 2） |
+| `enum` | 值经 `map` 映射成词条；查不到的值按原样渲染，不吞掉 | `map`、`fallback`（值为空时的词条 key） |
+| `bool` | `StatusBadge` 是/否 | `trueStatus`、`falseStatus`（语义色） |
+
+**预设是加法糖，不是围墙。** 第三个参数还接受任意 `ColumnDef` 键，整键覆盖预设的默认值——包括 `cell` / `header` / `meta`。覆盖不动的场景直接用 `col.accessor` / `col.display` 手写原生列定义，此时表头用 `columnHeader("词条key")` 而不要直接调 `L()`，否则列定义又绑回 hook、失去模块级常量的资格：
+
+```tsx
+col.display({
+  id: "fullName",
+  header: columnHeader("Admin:FullName"),
+  cell: ({ row }) => <FullNameCell name={row.original.name} surname={row.original.surname} />,
+})
+```
+
+列定义的类型是 `TableColumnDef<TDto>`（v9 的原生 `ColumnDef` 首个泛型位是 `TFeatures` 不是 `TData`，直接用会报 `TS2559`；`TableColumnDef` 是已绑好特性集的别名）。列 `meta` 支持 `align` / `className` / `label` 三个键，经 `baseFeatureMap` 的 `columnMeta` 类型槽按表声明——要加自己的键，传 `columnMeta: {} as TableColumnMeta & { mine: X }` 到 `features`，不要用全局 `declare module`。
 
 关联字段（如 `authorName`）、枚举字段（如 `type`）大多不支持服务端排序，记得给 `enableSorting: false`；后端没排过序的列硬允许排序，点了也是空转。
 

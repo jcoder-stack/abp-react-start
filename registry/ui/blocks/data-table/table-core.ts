@@ -12,12 +12,27 @@ import {
 } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 
-/** 基础特性映射；供 DataTable 与调用方追加特性时做加法合并。 */
+/** 列 `meta` 的形状。经 `baseFeatureMap` 的 `columnMeta` 槽按表声明，不走全局 `declare module`：
+ *  本文件是 copy-in 分发的，全局增广会污染下游项目的类型空间，下游再增广同一接口即冲突。 */
+export interface TableColumnMeta {
+  align?: "left" | "right" | "center";
+  className?: string;
+  label?: ReactNode;
+}
+
+/** 基础特性映射；供 DataTable 与调用方追加特性时做加法合并。
+ *
+ *  `columnMeta` 必须挂在这里而不是 `tableFeatures()` 调用处：`useDataTable` 用
+ *  `tableFeatures({ ...baseFeatureMap, ...opts.features })` 做加法合并，槽写在调用处的话，
+ *  调用方一传 `features` 就把它挤掉了。挂在 map 上则天然幸存，并顺带给下游一个扩展点——
+ *  传 `columnMeta: {} as TableColumnMeta & { mine: X }` 即可加自己的键。 */
 export const baseFeatureMap = {
   rowSortingFeature,
   rowPaginationFeature,
   columnVisibilityFeature,
   rowSelectionFeature,
+  // 幻影值：运行时被剥离，只有类型参与推断。
+  columnMeta: {} as TableColumnMeta,
 };
 
 /** 全表共用的 v9 特性集；少注册一个对应方法即编译期消失。 */
@@ -42,11 +57,3 @@ export type TableColumnDef<TData extends RowData> = ColumnDef<TableFeatures, TDa
 
 export const createTableColumnHelper = <TData extends RowData>() =>
   createColumnHelper<TableFeatures, TData>();
-
-declare module "@tanstack/react-table" {
-  interface ColumnMeta<TFeatures, TData, TValue> {
-    align?: "left" | "right" | "center";
-    className?: string;
-    label?: ReactNode;
-  }
-}
