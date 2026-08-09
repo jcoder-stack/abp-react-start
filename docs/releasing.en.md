@@ -25,7 +25,15 @@ Historically (0.1.0 → 0.1.3) three, one `version` per package:
 - `packages/cli/package.json`
 - `registry/package.json`
 
-**Crossing a minor adds a fourth**: `registry/package.json`'s `dependencies["@jcoder-stack/abp-react"]`. It currently reads `^0.1.0`, and caret ranges **exclude prerelease versions wholesale**. Measured:
+**There is a fourth**: `registry/package.json`'s `dependencies["@jcoder-stack/abp-react"]`. The three packages release in lockstep, so this range must be realigned to `^<the version being released>` every time.
+
+`publish-smoke.sh` enforces it (CI runs the script on tag push), failing like this:
+
+```
+ERROR: registry/package.json 的 dependencies.@jcoder-stack/abp-react 是 "^0.1.0"，应为 "^0.2.0-rc.1"
+```
+
+Realigning every time — rather than leaving a wide range on the theory that it still admits the version — is necessary because caret ranges **exclude prereleases wholesale**. Measured:
 
 ```
 0.2.0-rc.1  satisfies ^0.1.0      -> false
@@ -34,9 +42,7 @@ Historically (0.1.0 → 0.1.3) three, one `version` per package:
 0.2.0       satisfies ^0.2.0-rc.1 -> true
 ```
 
-Leave it alone and `registry@0.2.0-rc.1` resolves `abp-react` to the **previous stable**, making the acceptance run worthless — and it fails as "installs fine, wrong version", which is harder to notice than a failed install.
-
-`publish-smoke.sh` will not catch this. It only greps for leftover `workspace:` ranges; it does not verify that cross-package ranges resolve to each other.
+Leave the range on an old version and `registry` resolves `abp-react` to the **previous stable**, making the acceptance run worthless — and it presents as "installs fine, wrong version", harder to notice than a failed install.
 
 ## What else moves with a version
 
@@ -107,6 +113,6 @@ Three things to confirm, at minimum:
 
 ### After it passes
 
-Set the version to `X.Y.0`, tighten `registry`'s dependency range to `^X.Y.0`, tag again, and `npm publish` without `--tag` so it lands on `latest`.
+Set the version to `X.Y.0`, realign `registry`'s dependency range to `^X.Y.0` (`publish-smoke.sh` fails otherwise), tag again, and `npm publish` without `--tag` so it lands on `latest`.
 
 If it fails, fix on `main` and cut `-rc.N+1`. **A burnt rc number stays burnt** — npm won't allow reuse, and don't `unpublish`: that breaks the lockfile of anyone who already installed it.

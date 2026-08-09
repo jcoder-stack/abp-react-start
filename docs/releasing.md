@@ -25,7 +25,15 @@
 - `packages/cli/package.json`
 - `registry/package.json`
 
-**跨 minor 时还有第 4 处**：`registry/package.json` 的 `dependencies["@jcoder-stack/abp-react"]`。它现在是 `^0.1.0`，而 caret 区间**整体排除预发布版本**——实测：
+**还有第 4 处**：`registry/package.json` 的 `dependencies["@jcoder-stack/abp-react"]`。三个包锁步同版发布，这个区间必须逐次对齐成 `^<本次版本>`。
+
+`publish-smoke.sh` 会拦（CI 在推标签时跑它），报错长这样：
+
+```
+ERROR: registry/package.json 的 dependencies.@jcoder-stack/abp-react 是 "^0.1.0"，应为 "^0.2.0-rc.1"
+```
+
+之所以要逐次对齐、而不是留一个宽区间「反正容得下」，是因为 caret 区间**整体排除预发布版本**——实测：
 
 ```
 0.2.0-rc.1  satisfies ^0.1.0      -> false
@@ -34,9 +42,7 @@
 0.2.0       satisfies ^0.2.0-rc.1 -> true
 ```
 
-不同步改这处，`registry@0.2.0-rc.1` 会去解析**上一个正式版**的 `abp-react`，验收等于白做，而且症状是「装得下来但装错了版本」，比装不下来更难发现。
-
-`publish-smoke.sh` 抓不到这件事——它只 grep `workspace:` 残留，不验证跨包区间能否互相解析。
+区间停在旧版时，`registry` 会去解析**上一个正式版**的 `abp-react`，验收等于白做，而且症状是「装得下来但装错版本」，比装不下来更难发现。
 
 ## 还要跟着改的东西
 
@@ -107,6 +113,6 @@ bun run dev && bun run build
 
 ### 通过之后
 
-版本改成 `X.Y.0`，把 `registry` 的依赖区间收成 `^X.Y.0`，重新打标签、`npm publish`（不带 `--tag`，默认进 `latest`）。
+版本改成 `X.Y.0`，把 `registry` 的依赖区间同步成 `^X.Y.0`（不同步 `publish-smoke.sh` 会拦），重新打标签、`npm publish`（不带 `--tag`，默认进 `latest`）。
 
 不通过就在 `main` 上修完发 `-rc.N+1`。**rc 版本号烧掉就是烧掉**，npm 不允许复用，也不要 `unpublish`——它会破坏已经装过该版本的人的 lockfile。
