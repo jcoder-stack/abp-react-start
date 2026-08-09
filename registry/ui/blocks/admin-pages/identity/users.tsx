@@ -2,7 +2,7 @@ import { formatPersonName } from "@jcoder-stack/abp-react/i18n";
 import { useCulture, useLocalization, usePermissionChecker } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -22,10 +22,9 @@ import type {
 import { requirePermission } from "@/auth";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
-import { StatusBadge } from "@/components/abp/table/status-badge";
+import { columnHeader, createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
-import type { TableColumnDef } from "@/components/data-table/table-core";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { IdentityPermissions } from "@/permissions";
 
@@ -119,9 +118,31 @@ function toUpdateInput(value: UserFormValues): VoloAbpIdentityIdentityUserUpdate
   };
 }
 
+/** 姓名顺序随文化而变（中日韩姓在前），`useCulture` 是 hook，只能在渲染期读。
+ *  收进单元格组件后，列定义就不再依赖任何 hook，可以留在模块级。 */
+function FullNameCell(props: { name?: string | null; surname?: string | null }) {
+  const culture = useCulture();
+  return <>{formatPersonName({ name: props.name, surname: props.surname, culture })}</>;
+}
+
+const col = createAbpColumns<VoloAbpIdentityIdentityUserDto>();
+const columns = [
+  col.text("userName", "AbpIdentity::UserName"),
+  col.display({
+    id: "fullName",
+    header: columnHeader("Admin:FullName"),
+    enableSorting: false,
+    cell: ({ row }) => <FullNameCell name={row.original.name} surname={row.original.surname} />,
+  }),
+  col.text("email", "AbpIdentity::DisplayName:Email"),
+  col.bool("isActive", "AbpIdentity::DisplayName:IsActive", {
+    trueStatus: "success",
+    enableSorting: false,
+  }),
+];
+
 function UsersPage() {
   const L = useLocalization();
-  const culture = useCulture();
   const can = usePermissionChecker();
   const canManagePermissions = can(IdentityPermissions.Users.ManagePermissions);
   const [permissionsFor, setPermissionsFor] = useState<VoloAbpIdentityIdentityUserDto | null>(null);
@@ -136,31 +157,6 @@ function UsersPage() {
         </DropdownMenuItem>
       ) : null,
     [canManagePermissions, L],
-  );
-
-  const columns = useMemo<TableColumnDef<VoloAbpIdentityIdentityUserDto>[]>(
-    () => [
-      { accessorKey: "userName", header: () => L("AbpIdentity::UserName") },
-      {
-        id: "fullName",
-        header: () => L("Admin:FullName"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          formatPersonName({ name: row.original.name, surname: row.original.surname, culture }),
-      },
-      { accessorKey: "email", header: () => L("AbpIdentity::DisplayName:Email") },
-      {
-        accessorKey: "isActive",
-        header: () => L("AbpIdentity::DisplayName:IsActive"),
-        enableSorting: false,
-        cell: ({ getValue }) => (
-          <StatusBadge status={getValue() ? "success" : "neutral"}>
-            {getValue() ? L("Admin:Yes") : L("Admin:No")}
-          </StatusBadge>
-        ),
-      },
-    ],
-    [L, culture],
   );
 
   const sheet = useAbpSheet(userService, {

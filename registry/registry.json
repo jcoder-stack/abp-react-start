@@ -489,6 +489,11 @@
           "path": "ui/blocks/abp-table/status-badge.tsx",
           "type": "registry:component",
           "target": "components/abp/table/status-badge.tsx"
+        },
+        {
+          "path": "ui/blocks/abp-table/column-presets.tsx",
+          "type": "registry:component",
+          "target": "components/abp/table/column-presets.tsx"
         }
       ]
     },

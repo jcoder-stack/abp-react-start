@@ -1,13 +1,12 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
+import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
-import type { TableColumnDef } from "@/components/data-table/table-core";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -80,6 +79,21 @@ const BOOK_TYPE_VALUES = Object.keys(BOOK_TYPE_KEYS).map(Number);
 function bookTypeLabelKey(value: number | undefined): string {
   return BOOK_TYPE_KEYS[value ?? 0] ?? "App::BookTypeUndefined";
 }
+
+// 列定义走词条 key 而非 L()，因此不依赖 hook，可以留在模块级：引用天然稳定，
+// 不必再包 useMemo，也就不存在「每渲染新数组重建列模型」那类退化。
+const col = createAbpColumns<AbpSwaggerBooksBookDto>();
+const columns = [
+  col.text("name", "App::BookName"),
+  col.text("authorName", "App::BookAuthor", { enableSorting: false }),
+  col.enum("type", "App::BookType", {
+    map: BOOK_TYPE_KEYS,
+    fallback: "App::BookTypeUndefined",
+    enableSorting: false,
+  }),
+  col.date("publishDate", "App::BookPublishDate"),
+  col.money("price", "App::BookPrice", { digits: 2 }),
+];
 
 interface BookFormValues {
   name: string;
@@ -164,37 +178,6 @@ function BooksPage() {
         },
       ]
     : [];
-
-  const columns = useMemo<TableColumnDef<AbpSwaggerBooksBookDto>[]>(
-    () => [
-      { accessorKey: "name", header: () => L("App::BookName") },
-      { accessorKey: "authorName", header: () => L("App::BookAuthor"), enableSorting: false },
-      {
-        accessorKey: "type",
-        header: () => L("App::BookType"),
-        enableSorting: false,
-        cell: ({ getValue }) => L(bookTypeLabelKey(getValue() as number | undefined)),
-      },
-      {
-        accessorKey: "publishDate",
-        header: () => L("App::BookPublishDate"),
-        cell: ({ getValue }) => {
-          const value = getValue() as string | undefined;
-          return value ? value.slice(0, 10) : "";
-        },
-      },
-      {
-        accessorKey: "price",
-        header: () => L("App::BookPrice"),
-        meta: { align: "right" },
-        cell: ({ getValue }) => {
-          const value = getValue() as number | undefined;
-          return typeof value === "number" ? value.toFixed(2) : "";
-        },
-      },
-    ],
-    [L],
-  );
 
   // `GetApiAppBookParams` 只有 Name/MinPublishDate 两个端点自有查询参数，没有 MaxPublishDate
   // 上界字段（`docs/guides/abp-table.md` 的 QueryDateRange 示例特地注明那是假设端点多一个字段
