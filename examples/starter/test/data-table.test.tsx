@@ -679,6 +679,27 @@ describe("DataTableToolbar v2", () => {
     const back = screen.getByPlaceholderText("Search…") as HTMLInputElement;
     expect(back.value).toBe("alp");
   });
+
+  // 左区活在 SelectedCount 的子树里，而 SelectedCount 的组件身份必须跨渲染不变：React 按
+  // element.type 做 reconciliation，类型每渲染都换就等于卸载重挂整棵子树，正在打字的输入框
+  // 会丢焦点。防抖提交是它唯一会被外部渲染撞上的时机，也就是这里复现的场景。
+  it("keeps focus in the search box when the debounced commit re-renders the page", async () => {
+    renderToolbarHarness({ bulk: <span>BULK-REGION</span>, selectable: true });
+    const input = await screen.findByPlaceholderText("Search…");
+    input.focus();
+    vi.useFakeTimers();
+    try {
+      fireEvent.change(input, { target: { value: "a" } });
+      fireEvent.change(input, { target: { value: "al" } });
+      fireEvent.change(input, { target: { value: "alp" } });
+      await act(async () => {
+        vi.advanceTimersByTime(450);
+      });
+      expect(document.activeElement).toBe(screen.getByPlaceholderText("Search…"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("useDataTable search debounce", () => {

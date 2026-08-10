@@ -78,6 +78,9 @@ export function AbpTableView<TDto extends { id?: string }>(props: AbpTableViewPr
       // 面板展开时让出搜索框：面板里是更精确的字段筛选，同屏再摆一个模糊搜索是重复入口。
       search={t.searchEnabled && !expanded}
       searchPlaceholder={searchPlaceholder}
+      // 这里再订阅一次是刻意的：顶部条那层 SelectedCount 只负责「左区该显示什么」，
+      // 计数是批量条自己的数据。把数字从顶部条传下来会让「计数从哪来」重新耦合进
+      // DataTableToolbar 的 props，而这一层的立意正是谁要计数谁自己订阅。
       bulk={
         <t.SelectedCount>
           {(count) => (

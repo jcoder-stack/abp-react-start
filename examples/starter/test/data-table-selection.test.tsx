@@ -31,12 +31,6 @@ function Harness(props: { data?: Row[] }) {
   return (
     <>
       <dt.SelectedCount>{(n) => <span data-testid="count">{n}</span>}</dt.SelectedCount>
-      <span data-testid="names">
-        {dt
-          .getSelectedRows()
-          .map((r) => r.name)
-          .join(",")}
-      </span>
       <button type="button" onClick={() => dt.clearSelection()}>
         clear
       </button>
@@ -51,6 +45,12 @@ function Harness(props: { data?: Row[] }) {
         onClick={() => state.onPaginationChange((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))}
       >
         next-page
+      </button>
+      <button type="button" onClick={() => state.commitSearch("alpha")}>
+        commit-search
+      </button>
+      <button type="button" onClick={() => state.resetPaging()}>
+        reset-paging
       </button>
       <DataTable table={dt} />
     </>
@@ -86,6 +86,24 @@ describe("选中态由表持有", () => {
     const boxes = await screen.findAllByLabelText("Select row");
     fireEvent.click(boxes[0]);
     fireEvent.click(screen.getByRole("button", { name: "next-page" }));
+    expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+
+  // 第 1 页是 resetPaging 的退化分支：pageIndex 本来就是 0，写回同值，只有 filter 变了。
+  // 作用域少算 filter 的话这两条会漏掉清空，用户会带着上一语境的选中行去点批量删除。
+  it("在第 1 页提交搜索后选中态清空", async () => {
+    renderWithProviders(<Harness />, { messages: tableMessages });
+    const boxes = await screen.findAllByLabelText("Select row");
+    fireEvent.click(boxes[0]);
+    fireEvent.click(screen.getByRole("button", { name: "commit-search" }));
+    expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+
+  it("在第 1 页调用 resetPaging 后选中态清空", async () => {
+    renderWithProviders(<Harness />, { messages: tableMessages });
+    const boxes = await screen.findAllByLabelText("Select row");
+    fireEvent.click(boxes[0]);
+    fireEvent.click(screen.getByRole("button", { name: "reset-paging" }));
     expect(screen.getByTestId("count").textContent).toBe("0");
   });
 

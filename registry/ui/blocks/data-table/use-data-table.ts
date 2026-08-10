@@ -181,10 +181,12 @@ export function useDataTable<TData extends RowData>(
   const { Subscribe, getSelectedRowModel, resetRowSelection, setRowSelection } = table;
   const rowSelectionAtom = table.atoms.rowSelection;
 
-  // 翻页/排序会换一批在场行，页内选择随之作废。这条不变式原先在状态机里，
+  // 翻页/排序/换查询语境会换一批在场行，页内选择随之作废。这条不变式原先在状态机里，
   // 但那里拿不到表实例；所有权交给表之后只能在这里承接。
+  // scopeEpoch 不可省：搜索与查询面板提交都走 resetPaging，用户本来就在第 1 页时
+  // 分页与排序可以一起纹丝不动，只比这两样会让选中态跨查询语境残留。
   const { pageIndex, pageSize } = state.pagination;
-  const scopeKey = `${pageIndex}:${pageSize}:${state.sorting.map((s) => `${s.id}:${s.desc}`).join(",")}`;
+  const scopeKey = `${pageIndex}:${pageSize}:${state.scopeEpoch}:${state.sorting.map((s) => `${s.id}:${s.desc}`).join(",")}`;
   const lastScope = useRef(scopeKey);
   useEffect(() => {
     // 挂载帧不算「翻页/排序变了」：不跳过就会在首次 effect 里清一次选择，把挂载前经
