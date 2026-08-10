@@ -47,9 +47,15 @@ interface DataTableRowProps<TData extends RowData>
 /** 表体的一行。整行包在自己那一行的选中订阅里：`data-state` 是 `<TableRow>` 上的属性，
  *  而宿主的 `useTable` selector 已把 rowSelection 摘出去、不再因勾选重渲染，只有把整行
  *  放进订阅，选中底色才跟得上。刻意不加 `React.memo`：订阅本就没有比较面，加了反而把
- *  `rowProps` / `onRowClick` 的「不需要引用稳定」契约拖下水。 */
+ *  `rowProps` / `onRowClick` 的「不需要引用稳定」契约拖下水。
+ *
+ *  这份订阅与选择列 cell 里那份（见 `use-data-table.ts` 的 `selectionColumn`）在当前组合下
+ *  是重叠的——本组件把整行连同各 cell 一起包住，删掉任意一份，测试都还全绿。重叠是有意的，
+ *  两份都不能删：本组件负责 `<tr>` 的 `data-state`，是列定义碰不到的；`selectionColumn`
+ *  则要能独立成立，它的契约不该是「只有被 DataTableRow 包着才会刷新」——`UseDataTableOptions`
+ *  的 `features` TSDoc 正教着下游改本文件的表体。 */
 function DataTableRow<TData extends RowData>(props: DataTableRowProps<TData>) {
-  const { row, selectionAtom, onRowClick } = props;
+  const { row, selectionAtom, rowProps, onRowClick } = props;
   return (
     <Subscribe source={selectionAtom} selector={(s) => Boolean(s?.[row.id])}>
       {(selected) => (
@@ -59,7 +65,7 @@ function DataTableRow<TData extends RowData>(props: DataTableRowProps<TData>) {
             "group hover:bg-muted/50 data-[state=selected]:bg-row-selected",
             onRowClick &&
               "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-            props.rowProps?.(row.original)?.className,
+            rowProps?.(row.original)?.className,
           )}
           tabIndex={onRowClick ? 0 : undefined}
           onClick={() => onRowClick?.(row.original)}

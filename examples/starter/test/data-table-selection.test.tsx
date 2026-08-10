@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { columnOrderingFeature } from "@tanstack/react-table";
 import { fireEvent, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
@@ -54,6 +55,39 @@ function Harness(props: { data?: Row[] }) {
       </button>
       <button type="button" onClick={() => dt.table.setColumnVisibility({ name: false })}>
         hide-name
+      </button>
+      <DataTable table={dt} />
+    </>
+  );
+}
+
+// features 的契约是引用必须稳定，模块级常量是它唯一正当的写法。
+const extraFeatures = { columnOrderingFeature };
+
+/** `TableInstance` 按基础特性定型，`opts.features` 追加进来的 API 不在它的类型里。
+ *  这正是本用例要覆盖的处境：类型上看不见，但那片状态必须真的被宿主订阅。 */
+type ColumnOrderingApi = { setColumnOrder: (order: string[]) => void };
+
+function OrderingHarness() {
+  const state = useDataTableState();
+  const dt = useDataTable({
+    state,
+    columns,
+    data: twoRows,
+    selectable: true,
+    getRowId: (r) => r.id,
+    features: extraFeatures,
+  });
+  return (
+    <>
+      <span data-testid="slices">{Object.keys(dt.table.state).sort().join(",")}</span>
+      <button
+        type="button"
+        onClick={() =>
+          (dt.table as unknown as ColumnOrderingApi).setColumnOrder(["name", "select"])
+        }
+      >
+        reorder
       </button>
       <DataTable table={dt} />
     </>
@@ -167,7 +201,7 @@ describe("选中态的定点订阅", () => {
 
   // 上面四条在「宿主订阅全部切片」时也全绿——那正是本次要去掉的成本。用重渲染的行数把它
   // 钉住：宿主一旦重新订阅 rowSelection，勾一行就会带着满页行陪跑，这条立刻红。
-  it("勾一行只重渲染那一行，重渲染量不随行数放大", async () => {
+  it("勾一行只重渲染那一行", async () => {
     const cellRenders = { count: 0 };
     const countingColumns: TableColumnDef<Row>[] = [
       {
@@ -199,6 +233,23 @@ describe("选中态的定点订阅", () => {
     cellRenders.count = 0;
     fireEvent.click(boxes[0]);
     expect(cellRenders.count).toBe(1);
+  });
+
+  // 上一条只钉住「columnVisibility 得被订阅」，列全三片的列举法照样能过。真正的硬要求是
+  // 排除法：features 加法合并，调用方追加的特性带来的切片必须自动落进宿主的订阅面。
+  // 这里用 columnOrderingFeature 当代表——它的 columnOrder 只影响表现层，改了就该看得见。
+  it("调用方追加的特性，其状态切片被宿主订阅且能驱动 UI", async () => {
+    const { container } = renderWithProviders(<OrderingHarness />, { messages: tableMessages });
+    expect((await screen.findByTestId("slices")).textContent).toContain("columnOrder");
+    const selectIsFirst = () =>
+      Boolean(
+        container
+          .querySelector("thead th:first-child")
+          ?.querySelector('[aria-label="Select all rows"]'),
+      );
+    expect(selectIsFirst()).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "reorder" }));
+    expect(selectIsFirst()).toBe(false);
   });
 
   // 反证宿主 selector 用的是排除法而非列举法：列举法漏掉调用方追加特性带来的切片时，

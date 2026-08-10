@@ -55,7 +55,12 @@ interface SelectionIdentitySubscribeProps {
  *  用独立导出的 `Subscribe` 而非 `table.Subscribe`——列的 header/cell 上下文给的是核心
  *  `Table`，`Subscribe` 只挂在 `useTable` 另行 memo 出的返回对象上，这里拿不到。
  *  本文件统一用它（含下方的 `SelectedCount`）：`table.Subscribe` 只是同一组件补了个默认
- *  source，我们每处都显式给 source，同名两份反而只会在阅读时混淆。 */
+ *  source，我们每处都显式给 source，同名两份反而只会在阅读时混淆。
+ *
+ *  cell 这份订阅与 `data-table.tsx` 的 `DataTableRow` 那份在当前组合下是重叠的——整行已被
+ *  包在同样的订阅里，删掉这一份测试也全绿。重叠是有意的：本列定义要能独立成立，契约不该是
+ *  「只有被 `DataTableRow` 包着才会刷新」，而 `UseDataTableOptions.features` 的 TSDoc 正教着
+ *  下游去改 `data-table.tsx` 的表体。代价只是每行多一个订阅。 */
 function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TData> {
   return {
     id: "select",
