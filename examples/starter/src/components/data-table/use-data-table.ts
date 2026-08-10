@@ -1,12 +1,14 @@
 import { type Localize, useLocalization } from "@jcoder-stack/abp-react/react";
+import { type RowData, type TableOptions, tableFeatures, useTable } from "@tanstack/react-table";
 import {
-  type RowData,
-  type RowSelectionState,
-  type TableOptions,
-  tableFeatures,
-  useTable,
-} from "@tanstack/react-table";
-import { createElement, type MouseEvent, useEffect, useMemo, useRef } from "react";
+  createElement,
+  type MouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { devWarn } from "@/components/data-table/dev-warn";
 import {
   baseFeatureMap,
@@ -21,9 +23,16 @@ import {
 } from "@/components/data-table/use-data-table-state";
 import { Checkbox } from "@/components/ui/checkbox";
 
-/** 共享的空选择态。写成 `?? {}` 每渲染都新建对象，TanStack 按身份比对会当成受控 state 变了，
- *  在「未受控 rowSelection + 其它受控 prop 变化」的组合下自持重渲染。 */
-const EMPTY_ROW_SELECTION: RowSelectionState = {};
+type SelectionAtom = TableInstance<RowData>["atoms"]["rowSelection"];
+
+/** `table.Subscribe` 的「单一 source + selector」那条重载对应的 props 形状。
+ *  本文件是 .ts（文件名进了 registry 清单），写不了 JSX，只能 createElement；而
+ *  createElement 会把重载塌成最后一条（全 store，不收 source），显式给出 props 才选得对。 */
+interface SelectionSubscribeProps {
+  source: SelectionAtom;
+  selector: (state: ReturnType<SelectionAtom["get"]>) => number;
+  children: (count: number) => ReactNode;
+}
 
 /** 页内选择列：表头全选（含 indeterminate），行内单选；checked→事件由调用方 handler 消费 `event.target.checked`。 */
 function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TData> {
@@ -89,9 +98,14 @@ export interface UseDataTableOptions<TData extends RowData> {
 export interface DataTableInstance<TData extends RowData> {
   table: TableInstance<TData>;
   state: DataTableState;
-  selectedRows: TData[];
+  /** 当前选中行，调用时取值。选中态归表所有，页面不再随它重渲染，
+   *  渲染期读到的快照会陈旧——只在动作处理函数里调它。 */
+  getSelectedRows: () => TData[];
+  clearSelection: () => void;
   /** 只保留这些行选中；部分失败时回填用。ids 是 `getRowId` 产出的行 ID。 */
   keepSelected: (ids: string[]) => void;
+  /** 订阅选中态并把计数交给 children，用于渲染期显示计数。 */
+  SelectedCount: (props: { children: (count: number) => ReactNode }) => ReactNode;
   pageCount: number;
   rowCount?: number;
   selectable: boolean;
@@ -147,44 +161,92 @@ export function useDataTable<TData extends RowData>(
     pageCount: opts.pageCount ?? 1,
     onPaginationChange: state.onPaginationChange,
     onSortingChange: state.onSortingChange,
-    onRowSelectionChange: state.onRowSelectionChange,
     enableRowSelection: opts.selectable ?? false,
     manualPagination: true,
     manualSorting: true,
     getRowId: opts.getRowId,
     ...opts.tableOptions,
     // 一层合并而非整体覆盖：tableOptions.state 只能按键覆盖/追加受管切片，
-    // 不会把 pagination/sorting/rowSelection 整体挤掉造成组件渲染与表状态失步。
+    // 不会把 pagination/sorting 整体挤掉造成组件渲染与表状态失步。
+    // rowSelection 刻意缺席：那一片归表自己所有，见下方的 SelectedCount / getSelectedRows。
     state: {
       pagination: state.pagination,
       sorting: state.sorting,
-      rowSelection: state.rowSelection ?? EMPTY_ROW_SELECTION,
       ...opts.tableOptions?.state,
     },
   });
 
+  // 全部取自表实例但绕开 table 本身：useTable 每渲染都返回一份新的表对象（options 是渲染期
+  // 新建的），拿 table 当依赖等于没 memo；而这些方法与原子建表时就定下，引用恒定。
+  const { Subscribe, getSelectedRowModel, resetRowSelection, setRowSelection } = table;
+  const rowSelectionAtom = table.atoms.rowSelection;
+
+  // 翻页/排序会换一批在场行，页内选择随之作废。这条不变式原先在状态机里，
+  // 但那里拿不到表实例；所有权交给表之后只能在这里承接。
+  const { pageIndex, pageSize } = state.pagination;
+  const scopeKey = `${pageIndex}:${pageSize}:${state.sorting.map((s) => `${s.id}:${s.desc}`).join(",")}`;
+  const lastScope = useRef(scopeKey);
+  useEffect(() => {
+    // 挂载帧不算「翻页/排序变了」：不跳过就会在首次 effect 里清一次选择，把挂载前经
+    // keepSelected 回填的结果立刻抹掉。用「上次作用域」而非「是不是首帧」记这件事，
+    // 顺带扛住依赖抖动——resetRowSelection 每次写入的都是新对象，多跑一次就再触发一次
+    // 渲染，真被无谓地重跑就是死循环。
+    if (lastScope.current === scopeKey) return;
+    lastScope.current = scopeKey;
+    resetRowSelection();
+  }, [scopeKey, resetRowSelection]);
+
   // 行离场（删除后 refetch、外部 invalidate）时剔除对应的选中 id。选中数有两个口径：
   // 批量条显隐看 state 键数，内容看在场行数，不剪枝就会分裂出「已选 0 项」的幽灵批量条。
   // 剪枝只看当前 data，跟 keepPreviousData 天然兼容，fetching 期间旧行还在场，不会误清。
-  const { data, getRowId } = opts;
-  const { rowSelection, onRowSelectionChange } = state;
   useEffect(() => {
-    const selected = Object.keys(rowSelection);
+    // 从原子读而非从渲染期快照读：上面那条清空 effect 先跑，翻页同时换数据时快照已经过期。
+    // table.atoms 的键是必需的（Atoms<TFeatures> 用了 -?），rowSelectionFeature 已在
+    // baseFeatureMap 里注册，所以这里不需要可选链；?? {} 只兜住切片值本身的 undefined。
+    const current = rowSelectionAtom.get() ?? {};
+    const selected = Object.keys(current);
     if (selected.length === 0) return;
-    const present = new Set(data.map((row, index) => getRowId?.(row, index) ?? String(index)));
-    if (selected.every((id) => present.has(id))) return;
-    onRowSelectionChange(
-      Object.fromEntries(Object.entries(rowSelection).filter(([id]) => present.has(id))),
+    const present = new Set(
+      opts.data.map((row, index) => opts.getRowId?.(row, index) ?? String(index)),
     );
-  }, [data, rowSelection, onRowSelectionChange, getRowId]);
+    if (selected.every((id) => present.has(id))) return;
+    setRowSelection(Object.fromEntries(Object.entries(current).filter(([id]) => present.has(id))));
+  }, [opts.data, opts.getRowId, rowSelectionAtom, setRowSelection]);
 
-  const selectedRows = table.getSelectedRowModel().rows.map((r) => r.original);
+  const getSelectedRows = useCallback(
+    () => getSelectedRowModel().rows.map((r) => r.original),
+    [getSelectedRowModel],
+  );
+  const clearSelection = useCallback(() => resetRowSelection(), [resetRowSelection]);
+  const keepSelected = useCallback(
+    (ids: string[]) => setRowSelection(Object.fromEntries(ids.map((id) => [id, true]))),
+    [setRowSelection],
+  );
+
+  /** 订阅选中态并把计数交给 children。用它而不是在渲染期读快照——
+   *  所有权在表里之后，页面不再因选中变化重渲染，快照会陈旧。
+   *  组件身份必须稳定，否则每渲染都是一个新组件类型，React 会把它整棵子树卸载重挂
+   *  （工具条要把搜索框放进它的 children，重挂就丢焦点和已输入内容）。 */
+  const SelectedCount = useMemo(
+    () =>
+      function SelectedCount(p: { children: (count: number) => ReactNode }) {
+        return createElement<SelectionSubscribeProps>(Subscribe, {
+          source: rowSelectionAtom,
+          selector: (s) => Object.keys(s ?? {}).length,
+          // biome-ignore lint/correctness/noChildrenProp: Subscribe 的 children 是 render prop（收计数返回节点），createElement 的可变子参数只收 ReactNode，塞不进去
+          children: p.children,
+        });
+      },
+    [Subscribe, rowSelectionAtom],
+  );
 
   return {
     table,
     state,
-    selectedRows,
-    keepSelected: state.keepSelected,
+    getSelectedRows,
+    clearSelection,
+    keepSelected,
+    SelectedCount,
     pageCount: opts.pageCount ?? 1,
     rowCount: opts.rowCount,
     selectable: opts.selectable ?? false,
