@@ -566,23 +566,33 @@ row: {
 
 `t.BulkDelete` brings its own confirmation dialog, per-item deletion, result summary, and selection backfill — zero page wiring. It renders `null` when `source.can.delete` is false; no need to wrap it in `{t.source.can.delete && …}`.
 
-Other bulk actions you still write yourself — `t.selectedRows` (`TDto[]`) and `t.keepSelected` (`(ids: string[]) => void`) are the entry points, placed beside the built-in delete:
+Other bulk actions you still write yourself — selection ownership lives on the table instance, so render time has no live snapshot to read: to show the count, subscribe to `t.SelectedCount`; to get the rows themselves, call `t.getSelectedRows()` inside the action callback. `t.keepSelected` (`(ids: string[]) => void`) is there for keeping failed rows selected after a partial failure. Place all three beside the built-in delete:
 
 ```tsx
 <t.BulkBar>
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={() => toast.success(L("App::ExportSelected", t.selectedRows.length))}
-  >
-    {L("App::ExportSelected", t.selectedRows.length)}
-  </Button>
+  <t.SelectedCount>
+    {(count) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          exportRows(t.getSelectedRows());
+          toast.success(L("App::ExportSelected", count));
+        }}
+      >
+        {L("App::ExportSelected", count)}
+      </Button>
+    )}
+  </t.SelectedCount>
   <t.BulkDelete />
 </t.BulkBar>
 ```
 
+`exportRows` is your own export function (illustrative).
+
 Key points:
 
+- **Why subscribe-or-pull, not a plain field read at render time**: selection ownership has moved from page state to the table instance itself (`table.atoms.rowSelection`), so the page no longer re-renders when a checkbox is toggled — that's the entire point of this design, and where the speedup over the old version comes from. The trade-off is that "which rows are selected" is no longer a stable value you can read during render: `t.SelectedCount` is a subscribing component that uses `table.Subscribe` internally so only that small subtree re-renders when the count changes; `t.getSelectedRows()` is a pull method callable only from event/action callbacks — calling it during render returns a stale snapshot from the previous render that won't update as the user keeps selecting. The two aren't interchangeable: subscribe for a count, pull inside an action for the row data.
 - **Why N single deletes**: this ABP backend has no bulk-delete endpoint anywhere (all `DELETE /{id}`), so `t.BulkDelete` calls `source.delete` serially, never concurrently — ABP deletes often cascade related cleanup, and concurrent submits trip the backend's concurrency/deadlock protection, misreporting "backend refused" as "this row can't be deleted".
 - **One toast only**: bulk goes through a separate mutation instance without callbacks. Single-delete's `onSuccess`/`onError` fire per item; reusing it for N rows means N toasts and N invalidation refetches. The batch invalidates once at the end.
 - **Results summarized in three branches**: all succeeded `Crud:Deleted`; all failed `Crud:OperationFailed`; partial `Crud:BulkDeletePartialFailure` (`{0}` succeeded, `{1}` failed) — never report just "failed" and drop how many made it.
@@ -764,6 +774,38 @@ If a field uses an ABP built-in resource entry (say `AbpIdentity::UserName`), us
 2. **Give each new page one component-level CRUD-flow smoke test**. Unit tests can't catch seam defects of the "third-party runtime × real Web APIs × multi-step user sequences" kind. You don't need one per entity from scratch — follow the pattern of [`examples/starter/test/crud-flow.test.tsx`](../../examples/starter/test/crud-flow.test.tsx) (`createCrudService` + `useAbpSheet` + `useAbpTable` combined, an in-memory mock service, running the open→reopen, field-error→edit→resubmit, and delete→204→invalidate sequences) and clone it onto your entity.
 
 3. **A pure create page can exist without `useAbpSheet`**: [`books/new.tsx`](../../examples/starter/src/routes/_layout/_authed/books/new.tsx) is the long-form escape hatch — no drawer, just `useAppForm(abpFormOptions({...}))` on a standalone page. Such pages never "open an existing record for backfill" and are untouched by any form-side reset timing details.
+
+## Breaking changes: migrating from an earlier version
+
+0.2.0 hands selection ownership back from page-level React state to the table instance itself (TanStack Table's `table.atoms.rowSelection`), and sinks the search box's live input value into the toolbar's own state — fixing the "typing a letter / ticking a checkbox re-renders every row in the table" performance problem. Replace old usages per the tables below:
+
+**On the instance returned by `useDataTable(...)` / `useAbpTable(...)`:**
+
+| Old | New | Notes |
+|---|---|---|
+| `selectedRows: TData[]` | `getSelectedRows(): TData[]` | Pull-based, callable only in event/action callbacks — a render-time call returns a stale snapshot |
+| (none) | `SelectedCount` | Subscribing component. Showing a count at render time **requires** it: `<t.SelectedCount>{(count) => …}</t.SelectedCount>` |
+| `state.clearSelection()` | `clearSelection()` | Moved onto the instance |
+| `state.keepSelected(ids)` | `keepSelected(ids)` | Moved onto the instance |
+| `state.selectedCount` | Subscribe via `SelectedCount` | No longer a snapshot field |
+
+**On the `DataTableState` returned by `useDataTableState()`:**
+
+| Old | New |
+|---|---|
+| `searchInput` / `setSearch(v)` / `flushSearch()` | Removed. The live value now lives in `DataTableToolbar` itself, debouncing included; the state machine only takes the committed value |
+| (none) | `commitSearch(value: string)` — commits the filter value immediately and resets to page 1 |
+| (none) | `scopeEpoch: number` — a version counter; `resetPaging` bumps it to signal "the query context changed, clear the in-page selection" |
+| `rowSelection` / `onRowSelectionChange` | Removed (ownership belongs to the table) |
+
+**On block-exported component props:**
+
+| Component | Change |
+|---|---|
+| `AbpBulkDeleteView` | `selectedRows: TDto[]` → `getSelectedRows: () => TDto[]` |
+| `AbpBulkBarView` | `selectedCount: number` unchanged — it's a pure presentational component; the caller passes the count in from inside its own subscription |
+
+Pages built purely on the `useAbpTable`/`useAbpSheet` assembly layer are unaffected — the migration already happened inside the assembly components. Custom tables assembled directly from `useDataTableState`/`useDataTable` (the L2 tier in "Choosing a tier") that read `selectedRows`/`state.selectedCount`/`state.clearSelection`/`state.keepSelected`/`searchInput` need to update per the tables above.
 
 ## Complete references
 
