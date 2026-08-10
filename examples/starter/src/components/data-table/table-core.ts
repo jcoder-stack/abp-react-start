@@ -55,8 +55,9 @@ export type TableInstance<TData extends RowData> = ReactTable<TableFeatures, TDa
  * `FlexRender` 只挂在 `useTable()` 另行 memo 出的返回对象上，cell 上下文永远拿不到。故行内插槽
  * （`AbpTableRowConfig` 的 `actions`/`menu`，喂给 `RowActionsMenu` 的 `rowActions`/`items` 属性）
  * 一律用这个类型，宁可少承诺也不给说谎的类型；
- * 要读当前状态走 `table.state`（渲染期）或 `table.atoms.<slice>.get()`（快照），
- * 要订阅走 `table.Subscribe`；`table.store` 在 v9 已废弃，勿用。要完整
+ * 要读当前状态走 `table.atoms.<slice>.get()`（快照），要订阅用从 `@tanstack/react-table`
+ * 直接导入的 `Subscribe` 配 `source={table.atoms.<slice>}`——`table.state` / `table.Subscribe`
+ * 只挂在 `useTable()` 的返回对象上，这里没有；`table.store` 在 v9 已废弃，勿用。要完整
  * 实例走调用方自己持有的 `dt.table` 或 `DataTable` 的 `footer` 回调。 */
 export type CellTableInstance<TData extends RowData> = Table<TableFeatures, TData>;
 

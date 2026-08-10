@@ -707,7 +707,7 @@ L2 层刻意维持「显式传实例」的社区惯用形态（`table={dt}`）�
 - **错误态保留查询区/搜索框**，且带同参「重试」按钮（瞬时错误如网络抖动/500，参数不变、点重试即重发；改输入触发的 400 走改参数这条路径，二者互不影响）。
 - **末页删空后自动钳制页码**：删到当前页清空时，页码自动回退到新的末页而不是停在越界空页；仅在取数完成（非 pending/fetching/error）时生效。
 - **批量删除内建**：`t.BulkDelete`（放在 `t.BulkBar` 里）自带二次确认、串行删除、结果三分支提示与失败项回填，页面零接线；无删除权限时自渲染为 `null`。
-- **删除后选中态自动剪枝**：勾选的行被删除或因数据变动离场后，`rowSelection` 自动清理对应 id，不会出现「已选 0 项」的幽灵批量条。
+- **删除后选中态自动剪枝**：勾选的行被删除或因数据变动离场后，表实例的选中态自动清理对应 id，不会出现「已选 0 项」的幽灵批量条。
 - **筛选/排序/搜索变化自动回第 1 页并清空选择**。
 - **`concurrencyStamp` 自动回传**：`sheet` 内部从行记录读出并附加到 update 请求，页面的 `toUpdate` 不需要手动拼这个字段。
 - **服务端校验错误自动落位到对应字段**：走 `abpSubmitValidator`，与客户端 zod 校验同链渲染。
@@ -785,6 +785,7 @@ import { Book } from "lucide-react";
 | `state.clearSelection()` | `clearSelection()` | 移到实例上 |
 | `state.keepSelected(ids)` | `keepSelected(ids)` | 移到实例上 |
 | `state.selectedCount` | 用 `SelectedCount` 订阅 | 不再有快照字段 |
+| `dt.table.state.rowSelection` | `dt.table.atoms.rowSelection.get()`（快照）/ `dt.table.Subscribe`（订阅）/ `dt.SelectedCount`（只要计数） | `TableInstance` 的宿主状态投影已排除该切片（新类型 `HostTableState`），这个键类型与运行期均不存在——自建工具条/页脚（L2 逃生层拿 `dt.table`，或 `DataTable` 的 `footer(ctx.table)` 回调）里读过它的要照此改 |
 
 **`useDataTableState()` 返回的 `DataTableState`：**
 
@@ -802,7 +803,7 @@ import { Book } from "lucide-react";
 | `AbpBulkDeleteView` | `selectedRows: TDto[]` → `getSelectedRows: () => TDto[]` |
 | `AbpBulkBarView` | `selectedCount: number` 保持不变（它是纯展示件，由调用方在订阅内把 count 传进来） |
 
-只用 `useAbpTable`/`useAbpSheet` 装配层的页面不受影响——以上迁移已经在装配组件内部做完。自己直接用 `useDataTableState`/`useDataTable` 拼装的自定义表（对照「选层指南」的 L2）如果读过 `selectedRows`/`state.selectedCount`/`state.clearSelection`/`state.keepSelected`/`searchInput` 这些字段，要照上表逐个改。
+只用 `useAbpTable`/`useAbpSheet` 装配层的页面不受影响——以上迁移已经在装配组件内部做完。自己直接用 `useDataTableState`/`useDataTable` 拼装的自定义表（对照「选层指南」的 L2）如果读过 `selectedRows`/`state.selectedCount`/`state.clearSelection`/`state.keepSelected`/`searchInput`/`dt.table.state.rowSelection` 这些字段，要照上表逐个改。
 
 ## 完整参照
 

@@ -53,7 +53,7 @@ interface SelectionIdentitySubscribeProps {
  *  两个复选框都包在 `Subscribe` 里而不是渲染期直接读：宿主的 `useTable` selector 已把
  *  rowSelection 摘出订阅，勾选不再重渲染 DataTable，渲染期读到的是永远停在初始态的快照。
  *  用独立导出的 `Subscribe` 而非 `table.Subscribe`——列的 header/cell 上下文给的是核心
- *  `Table`，`Subscribe` 只挂在 `useTable` 另行 memo 出的返回对象上，这里拿不到。
+ *  `Table`，`Subscribe` 只挂在 `useTable` 另行 memo 出的返回对象上，这里类型上拿不到。
  *  本文件统一用它（含下方的 `SelectedCount`）：`table.Subscribe` 只是同一组件补了个默认
  *  source，我们每处都显式给 source，同名两份反而只会在阅读时混淆。
  *

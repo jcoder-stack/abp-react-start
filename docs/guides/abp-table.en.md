@@ -710,7 +710,7 @@ These invariants are maintained inside the framework; page code neither needs to
 - **Error states keep the query area/search box**, with a same-params Retry button (transient errors — network blips, 500s — retry with unchanged params; input-triggered 400s take the change-the-params path; the two don't interfere).
 - **Page clamping after emptying the last page**: deleting the current page empty steps the page number back to the new last page instead of parking on an out-of-range empty one; applies only once fetching settles (not pending/fetching/error).
 - **Bulk delete built in**: `t.BulkDelete` (inside `t.BulkBar`) with confirmation, serial deletion, three-branch result messaging, and failure backfill — zero wiring; renders `null` without delete permission.
-- **Selection pruning after deletes**: rows removed by deletion or data changes are cleaned out of `rowSelection` automatically — no ghost bulk bar showing "0 selected".
+- **Selection pruning after deletes**: rows removed by deletion or data changes are cleaned out of the table instance's selection state automatically — no ghost bulk bar showing "0 selected".
 - **Filter/sort/search changes reset to page 1 and clear the selection.**
 - **`concurrencyStamp` round-trips automatically**: the sheet reads it off the row record and attaches it to update requests; your `toUpdate` never assembles it.
 - **Server validation errors land on their fields automatically**: via `abpSubmitValidator`, rendered through the same chain as client zod validation.
@@ -788,6 +788,7 @@ If a field uses an ABP built-in resource entry (say `AbpIdentity::UserName`), us
 | `state.clearSelection()` | `clearSelection()` | Moved onto the instance |
 | `state.keepSelected(ids)` | `keepSelected(ids)` | Moved onto the instance |
 | `state.selectedCount` | Subscribe via `SelectedCount` | No longer a snapshot field |
+| `dt.table.state.rowSelection` | `dt.table.atoms.rowSelection.get()` (snapshot) / `dt.table.Subscribe` (subscription) / `dt.SelectedCount` (count only) | `TableInstance`'s host state projection excludes this slice (new type `HostTableState`) — the key doesn't exist at the type level or at runtime. Update any hand-rolled toolbar/footer (the L2 escape tier holding `dt.table`, or `DataTable`'s `footer(ctx.table)` callback) that reads it |
 
 **On the `DataTableState` returned by `useDataTableState()`:**
 
@@ -805,7 +806,7 @@ If a field uses an ABP built-in resource entry (say `AbpIdentity::UserName`), us
 | `AbpBulkDeleteView` | `selectedRows: TDto[]` → `getSelectedRows: () => TDto[]` |
 | `AbpBulkBarView` | `selectedCount: number` unchanged — it's a pure presentational component; the caller passes the count in from inside its own subscription |
 
-Pages built purely on the `useAbpTable`/`useAbpSheet` assembly layer are unaffected — the migration already happened inside the assembly components. Custom tables assembled directly from `useDataTableState`/`useDataTable` (the L2 tier in "Choosing a tier") that read `selectedRows`/`state.selectedCount`/`state.clearSelection`/`state.keepSelected`/`searchInput` need to update per the tables above.
+Pages built purely on the `useAbpTable`/`useAbpSheet` assembly layer are unaffected — the migration already happened inside the assembly components. Custom tables assembled directly from `useDataTableState`/`useDataTable` (the L2 tier in "Choosing a tier") that read `selectedRows`/`state.selectedCount`/`state.clearSelection`/`state.keepSelected`/`searchInput`/`dt.table.state.rowSelection` need to update per the tables above.
 
 ## Complete references
 
