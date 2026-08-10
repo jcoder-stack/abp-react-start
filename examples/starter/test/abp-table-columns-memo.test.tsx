@@ -62,10 +62,12 @@ describe("useAbpTable columns memo (I1 regression)", () => {
     // 页面（都授予了 update/delete）上误报。columns 用模块级稳定引用，bump 强制父级
     // 重渲染若干次，churn 告警不应出现。
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const seen: unknown[] = [];
 
     function ChurnHarness() {
       const [, setBump] = useState(0);
       const t = useAbpTable(service, { columns, onOpen: openNoop });
+      seen.push(t.table.options.columns);
       return (
         <>
           <button type="button" onClick={() => setBump((b) => b + 1)}>
@@ -91,6 +93,11 @@ describe("useAbpTable columns memo (I1 regression)", () => {
 
     const hits = warn.mock.calls.filter((c) => String(c[0]).includes("columns"));
     expect(hits).toHaveLength(0);
+
+    // 直接断言引用稳定，不再只依赖 churn 告警——那条断言耦合了告警阈值（>=3）与
+    // 这里的 bump 次数，阈值一调它会在 bug 在场时静默通过。
+    expect(seen.length).toBeGreaterThan(1);
+    expect(new Set(seen).size).toBe(1);
 
     warn.mockRestore();
   });
