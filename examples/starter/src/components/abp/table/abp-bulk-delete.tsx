@@ -19,7 +19,8 @@ import { Button } from "@/components/ui/button";
 
 export interface AbpBulkDeleteViewProps<TDto extends { id?: string }> {
   source: AbpTableSource<TDto>;
-  selectedRows: TDto[];
+  /** 确认时才取选中行：选中态归表所有，渲染期读到的快照会陈旧。 */
+  getSelectedRows: () => TDto[];
   keepSelected: (ids: string[]) => void;
 }
 
@@ -65,7 +66,8 @@ export function AbpBulkDeleteView<TDto extends { id?: string }>(
             onClick={async () => {
               // 无 id 的行进不了删除端点，先剔除，否则会被算进「成功」的分母，
               // 让一次什么都没删的操作报成功。
-              const ids = props.selectedRows
+              const ids = props
+                .getSelectedRows()
                 .map((row) => row.id)
                 .filter((id): id is string => id !== undefined);
               try {

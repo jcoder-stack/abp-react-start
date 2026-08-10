@@ -427,7 +427,7 @@ export function useAbpTable<
     const BulkDelete = () =>
       createElement(AbpBulkDeleteView<TDto>, {
         source: read().self.source,
-        selectedRows: read().self.selectedRows,
+        getSelectedRows: read().self.getSelectedRows,
         keepSelected: read().self.keepSelected,
       });
     const Table = (p: AbpTableViewOwnProps<TDto> & { children?: ReactNode }) => {

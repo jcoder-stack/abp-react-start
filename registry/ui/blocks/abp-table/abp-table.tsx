@@ -79,12 +79,13 @@ export function AbpTableView<TDto extends { id?: string }>(props: AbpTableViewPr
       search={t.searchEnabled && !expanded}
       searchPlaceholder={searchPlaceholder}
       bulk={
-        <AbpBulkBarView
-          selectedCount={t.selectedRows.length}
-          onClear={() => t.state.clearSelection()}
-        >
-          {slots.bulkBar}
-        </AbpBulkBarView>
+        <t.SelectedCount>
+          {(count) => (
+            <AbpBulkBarView selectedCount={count} onClear={t.clearSelection}>
+              {slots.bulkBar}
+            </AbpBulkBarView>
+          )}
+        </t.SelectedCount>
       }
       onRefresh={t.source.listQuery.refetch ? () => void t.source.listQuery.refetch?.() : undefined}
       refreshing={t.source.listQuery.isFetching}

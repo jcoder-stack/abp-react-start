@@ -102,7 +102,7 @@ function Harness({
     <div>
       <span data-testid="filter">{dt.state.params.filter}</span>
       <span data-testid="page">{dt.state.params.pageIndex}</span>
-      <span data-testid="selected">{dt.state.selectedCount}</span>
+      <dt.SelectedCount>{(n) => <span data-testid="selected">{n}</span>}</dt.SelectedCount>
       <DataTable
         table={dt}
         onRowClick={onRowClick}
@@ -664,6 +664,20 @@ describe("DataTableToolbar v2", () => {
     fireEvent.click(checks[0]);
     expect(screen.getByText("BULK-REGION")).toBeDefined();
     expect(screen.queryByPlaceholderText("Search…")).toBeNull();
+  });
+
+  it("keeps what was typed in the search box across entering and leaving bulk mode", async () => {
+    renderToolbarHarness({ bulk: <span>BULK-REGION</span>, selectable: true });
+    const input = await screen.findByPlaceholderText("Search…");
+    fireEvent.change(input, { target: { value: "alp" } });
+
+    const checks = screen.getAllByRole("checkbox");
+    fireEvent.click(checks[0]);
+    expect(screen.getByText("BULK-REGION")).toBeDefined();
+    fireEvent.click(checks[0]);
+
+    const back = screen.getByPlaceholderText("Search…") as HTMLInputElement;
+    expect(back.value).toBe("alp");
   });
 });
 

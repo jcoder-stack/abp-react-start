@@ -38,10 +38,9 @@ describe("useDataTable", () => {
       ({ data }) => useDataTable({ columns, data, selectable: true, getRowId: (r: Row) => r.id }),
       { initialProps: { data: rows(["a", "b"]) }, wrapper },
     );
-    act(() => result.current.state.onRowSelectionChange({ a: true, b: true }));
+    act(() => result.current.table.setRowSelection({ a: true, b: true }));
     rerender({ data: rows(["b"]) });
-    expect(result.current.state.rowSelection).toEqual({ b: true });
-    expect(result.current.selectedRows.map((r) => r.id)).toEqual(["b"]);
+    expect(result.current.getSelectedRows().map((r) => r.id)).toEqual(["b"]);
   });
 
   it("省略 state 时内部自建", () => {

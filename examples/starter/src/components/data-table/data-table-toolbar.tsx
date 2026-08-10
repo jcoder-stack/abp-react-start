@@ -47,9 +47,8 @@ export interface DataTableToolbarProps<TData extends RowData> {
  * （actions │ utilityLeading · 刷新 · 导出 · 密度 · trailing）。Enter 立即提交搜索。 */
 export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarProps<TData>) {
   const L = useLocalization();
-  const { state } = props.table;
+  const { state, SelectedCount } = props.table;
   const showSearch = props.search ?? true;
-  const bulkActive = props.bulk !== undefined && props.table.selectedRows.length > 0;
 
   // 即时值持有在组件本体而非条件子树：批量态会把整个左区换成 props.bulk，
   // 若把这份 state 放进搜索框所在的三元分支，批量态一进一出输入内容就丢了。
@@ -70,18 +69,25 @@ export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarP
     commitSearch(searchInput);
   };
 
-  const left = bulkActive
-    ? props.bulk
-    : (props.left ??
-      (showSearch ? (
-        <Input
-          className="h-8 w-56"
-          value={searchInput}
-          placeholder={props.searchPlaceholder ?? L("Table:Search")}
-          onChange={(e) => onSearchChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && flushSearch()}
-        />
-      ) : null));
+  const idle =
+    props.left ??
+    (showSearch ? (
+      <Input
+        className="h-8 w-56"
+        value={searchInput}
+        placeholder={props.searchPlaceholder ?? L("Table:Search")}
+        onChange={(e) => onSearchChange(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && flushSearch()}
+      />
+    ) : null);
+
+  // 只有在给了 bulk 内容时才订阅选中态：没有批量内容的表，左区恒定，多挂一个订阅者没有意义。
+  const left =
+    props.bulk === undefined ? (
+      idle
+    ) : (
+      <SelectedCount>{(count) => (count > 0 ? props.bulk : idle)}</SelectedCount>
+    );
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">

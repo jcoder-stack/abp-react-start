@@ -46,6 +46,12 @@ function Harness(props: { data?: Row[] }) {
       <button type="button" onClick={() => state.onSortingChange([{ id: "name", desc: false }])}>
         sort
       </button>
+      <button
+        type="button"
+        onClick={() => state.onPaginationChange((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))}
+      >
+        next-page
+      </button>
       <DataTable table={dt} />
     </>
   );
@@ -73,6 +79,14 @@ describe("选中态由表持有", () => {
     fireEvent.click(boxes[0]);
     fireEvent.click(screen.getByRole("button", { name: "keep2" }));
     expect(screen.getByTestId("count").textContent).toBe("1");
+  });
+
+  it("翻页后选中态清空", async () => {
+    renderWithProviders(<Harness />, { messages: tableMessages });
+    const boxes = await screen.findAllByLabelText("Select row");
+    fireEvent.click(boxes[0]);
+    fireEvent.click(screen.getByRole("button", { name: "next-page" }));
+    expect(screen.getByTestId("count").textContent).toBe("0");
   });
 
   it("排序变化后选中态清空", async () => {
