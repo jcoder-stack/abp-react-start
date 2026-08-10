@@ -2,6 +2,7 @@ import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { RowData } from "@tanstack/react-table";
 import { Download, RefreshCw, Rows3 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 /** 顶部条功能图标钮的共同外观：ghost 32px 方钮、静态色比正文更轻，hover 才提亮。 */
 const UTILITY_ICON_CLASS = "size-8 text-muted-foreground";
+const SEARCH_DEBOUNCE_MS = 400;
 
 export interface DataTableToolbarProps<TData extends RowData> {
   table: DataTableInstance<TData>;
@@ -49,16 +51,35 @@ export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarP
   const showSearch = props.search ?? true;
   const bulkActive = props.bulk !== undefined && props.table.selectedRows.length > 0;
 
+  // 即时值持有在组件本体而非条件子树：批量态会把整个左区换成 props.bulk，
+  // 若把这份 state 放进搜索框所在的三元分支，批量态一进一出输入内容就丢了。
+  const [searchInput, setSearchInput] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const { commitSearch } = state;
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const onSearchChange = (value: string) => {
+    setSearchInput(value);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => commitSearch(value), SEARCH_DEBOUNCE_MS);
+  };
+
+  const flushSearch = () => {
+    clearTimeout(timer.current);
+    commitSearch(searchInput);
+  };
+
   const left = bulkActive
     ? props.bulk
     : (props.left ??
       (showSearch ? (
         <Input
           className="h-8 w-56"
-          value={state.searchInput}
+          value={searchInput}
           placeholder={props.searchPlaceholder ?? L("Table:Search")}
-          onChange={(e) => state.setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && state.flushSearch()}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && flushSearch()}
         />
       ) : null));
 

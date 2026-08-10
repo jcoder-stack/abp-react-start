@@ -5,15 +5,14 @@ import type {
   SortingState,
   Updater,
 } from "@tanstack/react-table";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-const SEARCH_DEBOUNCE_MS = 400;
+import { useCallback, useState } from "react";
 
 export type TableDensity = "comfortable" | "compact";
 
 /**
- * 服务端分页表格的状态机：分页/排序/防抖搜索/页内行选择；filter 为已提交的搜索值，
- * searchInput 为输入框即时值。rowSelection 页内作用域，翻页/排序/提交搜索均清空。
+ * 服务端分页表格的状态机：分页/排序/已提交搜索值/页内行选择；filter 为已提交的搜索值，
+ * 输入框即时值与防抖由工具条自己持有（见 DataTableToolbar），状态机只接收提交结果。
+ * rowSelection 页内作用域，翻页/排序/提交搜索均清空。
  * 结构化查询参数不归这里管，那是 useAbpTable 的表单实例自己持有的东西。
  */
 export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
@@ -22,11 +21,9 @@ export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
     pageSize: opts.defaultPageSize ?? 10,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [searchInput, setSearchInput] = useState("");
   const [filter, setFilter] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [density, setDensity] = useState<TableDensity>("comfortable");
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const clearSelection = useCallback(() => setRowSelection({}), []);
 
@@ -36,29 +33,16 @@ export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
     setRowSelection({});
   }, []);
 
-  const commit = useCallback(
+  /** 提交搜索值：写入已提交的 filter 并回到第 1 页。防抖由调用方负责——
+   *  输入节奏是输入框自己的事，放进状态机就必须把即时值也留在页面级，
+   *  那正是「敲一个字母整表重画」的来源。 */
+  const commitSearch = useCallback(
     (value: string) => {
       setFilter(value);
       resetPaging();
     },
     [resetPaging],
   );
-
-  const setSearch = useCallback(
-    (value: string) => {
-      setSearchInput(value);
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => commit(value), SEARCH_DEBOUNCE_MS);
-    },
-    [commit],
-  );
-
-  const flushSearch = useCallback(() => {
-    clearTimeout(timer.current);
-    commit(searchInput);
-  }, [commit, searchInput]);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
 
   const onPaginationChange = useCallback((updater: Updater<PaginationState>) => {
     setPagination(updater);
@@ -81,9 +65,7 @@ export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
     params: { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize, sorting, filter },
     pagination,
     sorting,
-    searchInput,
-    setSearch,
-    flushSearch,
+    commitSearch,
     resetPaging,
     onPaginationChange,
     onSortingChange,
