@@ -1,5 +1,9 @@
 name: ci
 # 平时不自动跑：lint/typecheck/test/build 在本地每次改动后都会跑一遍，CI 再跑是重复消耗。
+# 注：两份镜像（examples/starter ↔ registry/ui/blocks）是否逐字一致，由
+# examples/starter/test/registry-mirror.test.ts 断言——它跟着 `bun run test` 走，
+# 所以本地每次都查，不必等到这里。放测试里而非只放 CI，是因为漂移在日常开发中引入，
+# 而本工作流只在推发版标签时跑，等到那时才发现意味着带病提交已经在 main 上待了很久。
 # 但发版必跑——那是唯一「记错了代价最大」的时刻，而下面的 registry 漂移检查恰恰只在这里出现，
 # publish-smoke 不做这件事。想在别的时候要一份干净机器上的复核（换 Node/bun 版本、怀疑
 # lockfile 有问题），在 Actions 页面手动触发。
