@@ -249,7 +249,9 @@ export function useAbpTable<
     validators: opts.query?.validators,
     onSubmit: ({ value }) => {
       setParams(pruneEmpty(value as Record<string, unknown>));
-      // 筛选变化必回第 1 页并清选择，这条不变式只在 useDataTableState.resetPaging 里实现。
+      // 筛选变化必回第 1 页并清选择。回第 1 页由 resetPaging 自己做；清选择由它递增的
+      // scopeEpoch 触发，落在 useDataTable 的 scopeKey effect 里（选中态归表所有，
+      // 状态机够不着）。用户本来就在第 1 页时 pageIndex 写回同值，全靠那个版本号发信号。
       state.resetPaging();
     },
   });
@@ -427,7 +429,7 @@ export function useAbpTable<
     const BulkDelete = () =>
       createElement(AbpBulkDeleteView<TDto>, {
         source: read().self.source,
-        selectedRows: read().self.selectedRows,
+        getSelectedRows: read().self.getSelectedRows,
         keepSelected: read().self.keepSelected,
       });
     const Table = (p: AbpTableViewOwnProps<TDto> & { children?: ReactNode }) => {

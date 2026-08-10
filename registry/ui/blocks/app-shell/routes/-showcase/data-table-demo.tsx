@@ -83,21 +83,25 @@ export function DataTableDemo() {
   });
 
   const bulk = (
-    <div className="flex min-h-8 flex-wrap items-center gap-3 text-sm">
-      <span className="text-muted-foreground">{L("Table:NSelected", dt.selectedRows.length)}</span>
-      <Separator orientation="vertical" className="!h-4" />
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => toast.success(L("Showcase:BulkExport", dt.selectedRows.length))}
-      >
-        {L("Showcase:BulkExport", dt.selectedRows.length)}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => state.clearSelection()}>
-        {L("Table:Clear")}
-      </Button>
-    </div>
+    <dt.SelectedCount>
+      {(count) => (
+        <div className="flex min-h-8 flex-wrap items-center gap-3 text-sm">
+          <span className="text-muted-foreground">{L("Table:NSelected", count)}</span>
+          <Separator orientation="vertical" className="!h-4" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => toast.success(L("Showcase:BulkExport", count))}
+          >
+            {L("Showcase:BulkExport", count)}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={dt.clearSelection}>
+            {L("Table:Clear")}
+          </Button>
+        </div>
+      )}
+    </dt.SelectedCount>
   );
 
   return (

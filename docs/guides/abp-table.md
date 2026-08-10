@@ -563,23 +563,33 @@ row: {
 
 `t.BulkDelete` 自带二次确认对话框、逐条删除、结果汇总与选择态回填，页面零接线。它在 `source.can.delete` 为假时自渲染为 `null`，不必再套 `{t.source.can.delete && …}`。
 
-其余批量动作仍然自己写——`t.selectedRows`（`TDto[]`）与 `t.keepSelected`（`(ids: string[]) => void`）是入口，和内置删除并排放即可：
+其余批量动作仍然自己写——选中态归表实例所有，渲染期读不到实时快照：要显示计数订阅 `t.SelectedCount`，要拿选中行本身在动作回调里调 `t.getSelectedRows()`；`t.keepSelected`（`(ids: string[]) => void`）留给部分失败时把失败的行留在选中态用，三者和内置删除并排放即可：
 
 ```tsx
 <t.BulkBar>
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={() => toast.success(L("App::ExportSelected", t.selectedRows.length))}
-  >
-    {L("App::ExportSelected", t.selectedRows.length)}
-  </Button>
+  <t.SelectedCount>
+    {(count) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          exportRows(t.getSelectedRows());
+          toast.success(L("App::ExportSelected", count));
+        }}
+      >
+        {L("App::ExportSelected", count)}
+      </Button>
+    )}
+  </t.SelectedCount>
   <t.BulkDelete />
 </t.BulkBar>
 ```
 
+`exportRows` 是业务自己实现的导出函数（示意）。
+
 几个要点：
 
+- **为什么是订阅 + 按需读，而不是渲染期直接读字段**：选中态的所有权已经从页面 state 交还给了表实例本体（`table.atoms.rowSelection`），页面不再因为勾选变化而重渲染——这正是这一整套装配存在的原因，也是它比旧版快的地方。代价是「选中了哪些行」不再是渲染期能直接拿到的稳定值：`t.SelectedCount` 是订阅组件，内部用 `table.Subscribe` 只让自己这一小段随选中数变化重渲染；`t.getSelectedRows()` 是按需读的方法，只能在事件/动作回调里调用——渲染期调用拿到的是上一次渲染时的陈旧快照，不会随后续勾选自动更新。两者不能互相顶替：想要计数就订阅，想要行数据就在动作里现取。
 - **为什么是 N 次单删**：这套 ABP 后端没有任何批删端点（全是 `DELETE /{id}`），`t.BulkDelete` 逐条串行调用 `source.delete`，不并发——ABP 的删除常连带关联清理，并发提交容易撞上后端的并发/死锁保护，把「后端拒绝」误算成「这条删不掉」。
 - **只发一条提示**：批量走的是另一个不带回调的 mutation 实例。单条删除的 `onSuccess`/`onError` 是逐条触发的，复用它删 N 条就会弹 N 个 toast、发 N 次失效重取；整批只在结束后失效一次。
 - **结果按三分支汇总**：全成功 `Crud:Deleted`；全失败 `Crud:OperationFailed`；部分失败 `Crud:BulkDeletePartialFailure`（`{0}` 成功数 `{1}` 失败数）——不能只报「失败」而把成功了几条丢掉。
@@ -697,7 +707,7 @@ L2 层刻意维持「显式传实例」的社区惯用形态（`table={dt}`）�
 - **错误态保留查询区/搜索框**，且带同参「重试」按钮（瞬时错误如网络抖动/500，参数不变、点重试即重发；改输入触发的 400 走改参数这条路径，二者互不影响）。
 - **末页删空后自动钳制页码**：删到当前页清空时，页码自动回退到新的末页而不是停在越界空页；仅在取数完成（非 pending/fetching/error）时生效。
 - **批量删除内建**：`t.BulkDelete`（放在 `t.BulkBar` 里）自带二次确认、串行删除、结果三分支提示与失败项回填，页面零接线；无删除权限时自渲染为 `null`。
-- **删除后选中态自动剪枝**：勾选的行被删除或因数据变动离场后，`rowSelection` 自动清理对应 id，不会出现「已选 0 项」的幽灵批量条。
+- **删除后选中态自动剪枝**：勾选的行被删除或因数据变动离场后，表实例的选中态自动清理对应 id，不会出现「已选 0 项」的幽灵批量条。
 - **筛选/排序/搜索变化自动回第 1 页并清空选择**。
 - **`concurrencyStamp` 自动回传**：`sheet` 内部从行记录读出并附加到 update 请求，页面的 `toUpdate` 不需要手动拼这个字段。
 - **服务端校验错误自动落位到对应字段**：走 `abpSubmitValidator`，与客户端 zod 校验同链渲染。
@@ -761,6 +771,39 @@ import { Book } from "lucide-react";
 2. **给新页面补一条 CRUD 链路组件级冒烟测试**。单元测试测不出「三方库运行时 × 真实 Web API × 多步用户序列」这类接缝缺陷。不需要每个新实体都单独写一份，照 [`examples/starter/test/crud-flow.test.tsx`](../../examples/starter/test/crud-flow.test.tsx) 的模式（`createCrudService` + `useAbpSheet` + `useAbpTable` 组合、内存 mock service，跑 open→reopen、字段错误→改值→重提交、delete→204→invalidate 三条序列）复刻一份挂到自己的实体上。
 
 3. **纯创建页可以不经 `useAbpSheet` 单独存在**：[`books/new.tsx`](../../examples/starter/src/routes/_layout/_authed/books/new.tsx) 是长表单逃生舱示范——不走侧滑抽屉，直接用 `useAppForm(abpFormOptions({...}))` 接一个独立页面。这类页面不涉及「打开已有记录回填」，不受表单侧任何 reset 时序细节影响。
+
+## 破坏性变更：从旧版迁移
+
+0.2.0 把选中态的所有权从页面级 React state 交还给了表实例本体（TanStack Table 的 `table.atoms.rowSelection`），顺带把搜索框的即时输入值下沉进工具条自己的 state——修的是「敲一个字母 / 勾一个复选框，整张表所有行跟着重渲染」的性能问题。旧写法照下表逐条替换：
+
+**`useDataTable(...)` / `useAbpTable(...)` 返回的实例：**
+
+| 旧 | 新 | 说明 |
+|---|---|---|
+| `selectedRows: TData[]` | `getSelectedRows(): TData[]` | 按需读取，只能在事件/动作回调里调用——渲染期读到的是陈旧快照 |
+| （无） | `SelectedCount` | 订阅组件。渲染期要显示计数**只能**用它：`<t.SelectedCount>{(count) => …}</t.SelectedCount>` |
+| `state.clearSelection()` | `clearSelection()` | 移到实例上 |
+| `state.keepSelected(ids)` | `keepSelected(ids)` | 移到实例上 |
+| `state.selectedCount` | 用 `SelectedCount` 订阅 | 不再有快照字段 |
+| `dt.table.state.rowSelection` | `dt.table.atoms.rowSelection.get()`（快照）/ `dt.table.Subscribe`（订阅）/ `dt.SelectedCount`（只要计数） | `TableInstance` 的宿主状态投影已排除该切片（新类型 `HostTableState`），这个键类型与运行期均不存在——自建工具条/页脚（L2 逃生层拿 `dt.table`，或 `DataTable` 的 `footer(ctx.table)` 回调）里读过它的要照此改 |
+
+**`useDataTableState()` 返回的 `DataTableState`：**
+
+| 旧 | 新 |
+|---|---|
+| `searchInput` / `setSearch(v)` / `flushSearch()` | 已移除。即时值现由 `DataTableToolbar` 自持，防抖也在那里；状态机只收已提交值 |
+| （无） | `commitSearch(value: string)`——立即提交筛选值并回第 1 页 |
+| （无） | `scopeEpoch: number`——版本号，`resetPaging` 递增它来通知「查询语境变了，清空页内选择」 |
+| `rowSelection` / `onRowSelectionChange` | 已移除（所有权归表） |
+
+**块的对外组件 props：**
+
+| 组件 | 变更 |
+|---|---|
+| `AbpBulkDeleteView` | `selectedRows: TDto[]` → `getSelectedRows: () => TDto[]` |
+| `AbpBulkBarView` | `selectedCount: number` 保持不变（它是纯展示件，由调用方在订阅内把 count 传进来） |
+
+只用 `useAbpTable`/`useAbpSheet` 装配层的页面不受影响——以上迁移已经在装配组件内部做完。自己直接用 `useDataTableState`/`useDataTable` 拼装的自定义表（对照「选层指南」的 L2）如果读过 `selectedRows`/`state.selectedCount`/`state.clearSelection`/`state.keepSelected`/`searchInput`/`dt.table.state.rowSelection` 这些字段，要照上表逐个改。
 
 ## 完整参照
 

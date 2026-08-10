@@ -102,7 +102,7 @@ function Harness({
     <div>
       <span data-testid="filter">{dt.state.params.filter}</span>
       <span data-testid="page">{dt.state.params.pageIndex}</span>
-      <span data-testid="selected">{dt.state.selectedCount}</span>
+      <dt.SelectedCount>{(n) => <span data-testid="selected">{n}</span>}</dt.SelectedCount>
       <DataTable
         table={dt}
         onRowClick={onRowClick}
@@ -664,6 +664,41 @@ describe("DataTableToolbar v2", () => {
     fireEvent.click(checks[0]);
     expect(screen.getByText("BULK-REGION")).toBeDefined();
     expect(screen.queryByPlaceholderText("Search…")).toBeNull();
+  });
+
+  it("keeps what was typed in the search box across entering and leaving bulk mode", async () => {
+    renderToolbarHarness({ bulk: <span>BULK-REGION</span>, selectable: true });
+    const input = await screen.findByPlaceholderText("Search…");
+    fireEvent.change(input, { target: { value: "alp" } });
+
+    const checks = screen.getAllByRole("checkbox");
+    fireEvent.click(checks[0]);
+    expect(screen.getByText("BULK-REGION")).toBeDefined();
+    fireEvent.click(checks[0]);
+
+    const back = screen.getByPlaceholderText("Search…") as HTMLInputElement;
+    expect(back.value).toBe("alp");
+  });
+
+  // 左区活在 SelectedCount 的子树里，而 SelectedCount 的组件身份必须跨渲染不变：React 按
+  // element.type 做 reconciliation，类型每渲染都换就等于卸载重挂整棵子树，正在打字的输入框
+  // 会丢焦点。防抖提交是它唯一会被外部渲染撞上的时机，也就是这里复现的场景。
+  it("keeps focus in the search box when the debounced commit re-renders the page", async () => {
+    renderToolbarHarness({ bulk: <span>BULK-REGION</span>, selectable: true });
+    const input = await screen.findByPlaceholderText("Search…");
+    input.focus();
+    vi.useFakeTimers();
+    try {
+      fireEvent.change(input, { target: { value: "a" } });
+      fireEvent.change(input, { target: { value: "al" } });
+      fireEvent.change(input, { target: { value: "alp" } });
+      await act(async () => {
+        vi.advanceTimersByTime(450);
+      });
+      expect(document.activeElement).toBe(screen.getByPlaceholderText("Search…"));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

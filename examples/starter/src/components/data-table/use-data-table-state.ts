@@ -1,19 +1,12 @@
-import type {
-  OnChangeFn,
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-  Updater,
-} from "@tanstack/react-table";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-const SEARCH_DEBOUNCE_MS = 400;
+import type { PaginationState, SortingState, Updater } from "@tanstack/react-table";
+import { useCallback, useState } from "react";
 
 export type TableDensity = "comfortable" | "compact";
 
 /**
- * 服务端分页表格的状态机：分页/排序/防抖搜索/页内行选择；filter 为已提交的搜索值，
- * searchInput 为输入框即时值。rowSelection 页内作用域，翻页/排序/提交搜索均清空。
+ * 服务端分页表格的状态机：分页/排序/已提交搜索值；filter 为已提交的搜索值，
+ * 输入框即时值与防抖由工具条自己持有（见 DataTableToolbar），状态机只接收提交结果。
+ * 行选择不在这里——所有权在表实例上（`table.atoms.rowSelection`），经 `useDataTable` 暴露。
  * 结构化查询参数不归这里管，那是 useAbpTable 的表单实例自己持有的东西。
  */
 export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
@@ -22,21 +15,25 @@ export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
     pageSize: opts.defaultPageSize ?? 10,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [searchInput, setSearchInput] = useState("");
   const [filter, setFilter] = useState("");
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [density, setDensity] = useState<TableDensity>("comfortable");
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const clearSelection = useCallback(() => setRowSelection({}), []);
+  // 「当前这一页的语境」的版本号。resetPaging 每次都递增，哪怕 pageIndex 写回同值：
+  // 用户本来就在第 1 页时分页/排序/搜索三者可以一起纹丝不动（查询面板提交只改结构化参数），
+  // 光比这三样看不出语境换过，页内选择就会跨语境残留。选中态归表所有，清空动作在
+  // useDataTable 里按这个版本号触发（见那边的 scopeKey effect）。
+  const [scopeEpoch, setScopeEpoch] = useState(0);
 
   const resetPaging = useCallback(() => {
-    // 新查询从第一页开始，否则会停留在越界页；页内选择同时作废
+    // 新查询从第一页开始，否则会停留在越界页
     setPagination((p) => ({ ...p, pageIndex: 0 }));
-    setRowSelection({});
+    setScopeEpoch((n) => n + 1);
   }, []);
 
-  const commit = useCallback(
+  /** 提交搜索值：写入已提交的 filter 并回到第 1 页。防抖由调用方负责——
+   *  输入节奏是输入框自己的事，放进状态机就必须把即时值也留在页面级，
+   *  那正是「敲一个字母整表重画」的来源。 */
+  const commitSearch = useCallback(
     (value: string) => {
       setFilter(value);
       resetPaging();
@@ -44,54 +41,22 @@ export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
     [resetPaging],
   );
 
-  const setSearch = useCallback(
-    (value: string) => {
-      setSearchInput(value);
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => commit(value), SEARCH_DEBOUNCE_MS);
-    },
-    [commit],
-  );
-
-  const flushSearch = useCallback(() => {
-    clearTimeout(timer.current);
-    commit(searchInput);
-  }, [commit, searchInput]);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
-
   const onPaginationChange = useCallback((updater: Updater<PaginationState>) => {
     setPagination(updater);
-    setRowSelection({});
   }, []);
   const onSortingChange = useCallback((updater: Updater<SortingState>) => {
     setSorting(updater);
-    setRowSelection({});
-  }, []);
-  const onRowSelectionChange = useCallback<OnChangeFn<RowSelectionState>>((updater) => {
-    setRowSelection(updater);
-  }, []);
-
-  /** 只保留指定行选中；批量操作部分失败回填用。ids 为 getRowId 产出的行 ID。 */
-  const keepSelected = useCallback((ids: string[]) => {
-    setRowSelection(Object.fromEntries(ids.map((id) => [id, true])));
   }, []);
 
   return {
     params: { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize, sorting, filter },
     pagination,
     sorting,
-    searchInput,
-    setSearch,
-    flushSearch,
+    scopeEpoch,
+    commitSearch,
     resetPaging,
     onPaginationChange,
     onSortingChange,
-    rowSelection,
-    onRowSelectionChange,
-    selectedCount: Object.keys(rowSelection).length,
-    clearSelection,
-    keepSelected,
     density,
     setDensity,
   };

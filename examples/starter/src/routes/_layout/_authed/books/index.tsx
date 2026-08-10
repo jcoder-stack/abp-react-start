@@ -210,13 +210,17 @@ function BooksPage() {
             </t.QueryForm>
 
             <t.BulkBar>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toast.success(L("App::ExportSelected", t.selectedRows.length))}
-              >
-                {L("App::ExportSelected", t.selectedRows.length)}
-              </Button>
+              <t.SelectedCount>
+                {(count) => (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toast.success(L("App::ExportSelected", count))}
+                  >
+                    {L("App::ExportSelected", count)}
+                  </Button>
+                )}
+              </t.SelectedCount>
               <t.BulkDelete />
             </t.BulkBar>
           </t.Table>
