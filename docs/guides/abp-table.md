@@ -311,6 +311,8 @@ const t = useAbpTable(bookService, {
 });
 ```
 
+`selectable: true` 打开勾选列，是批量条与批量删除的前提（见第⑨步）；不需要批量能力就整项省略，省略时表格没有勾选列。
+
 `onOpen` 接 `sheet.open`（跨 hook 的唯一一根接线）就是表格侧对「打开表单」的全部认知——`t` 不知道、也不需要知道 `sheet` 内部长什么样；不接 `onOpen` 就是纯列表页（查看/编辑项不渲染，症状可见非静默，不是悄悄没反应）。
 
 `t` 返回的绑定成员按 JSX 里的位置分工：
@@ -552,6 +554,18 @@ row: {
 **接管排列**：`row.menu`/`row.actions` 只能「加」，不能重排「···」菜单外壳本身或彻底改变菜单/常驻插槽的相对位置——要做到这一步，见文末「选层指南」里的 L3（fork `abp-table.tsx`）。
 
 ## ⑨ 批量条
+
+**前提：`useAbpTable` 的 `selectable: true`。** 这一项是整套批量能力的开关——不开就没有勾选列，选中数恒为 0，于是 `t.BulkBar` 里写什么都不会出现。**这个失败是静默的**：不报错、不告警，页面看起来就是「批量功能没做」。照本节抄了代码却什么都没有，先回第⑤步确认这一项开了没有。
+
+```tsx
+const t = useAbpTable(userService, {
+  columns,
+  selectable: true,   // ← 没有它，下面整节都不生效
+  onOpen: sheet.open,
+});
+```
+
+**选中态按行 id 记账，而 `useAbpTable` 自动取 `record.id`**，不需要你传 `getRowId`。但如果 DTO 没有 `id` 字段，它会退化成用数组下标当行 id——那样翻页或重新取数之后，「第 0 行」指向的已经是另一条记录，选中态会张冠李戴。ABP 的实体 DTO 都带 `id`，正常不会踩到；自定义 source 返回的形状里若没有 `id`，就得自己保证有一个稳定标识。（直接用 `useDataTable` 的场景不同：那一层的 `getRowId` 要调用方自己传。）
 
 `t.BulkBar` 是批量态的容器，选中数 > 0 时自动出现，内容由页面决定。批量删除有内置实现 `t.BulkDelete`——删除 mutation 与列表失效都已经在 source 上，页面再写一遍就是把同一份样板抄进每个 CRUD 页：
 

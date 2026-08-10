@@ -313,6 +313,8 @@ const t = useAbpTable(bookService, {
 });
 ```
 
+`selectable: true` turns on the checkbox column and is the prerequisite for the bulk bar and bulk delete (see step ⑨); omit it entirely when you don't need bulk actions, and the table renders without checkboxes.
+
 `onOpen: sheet.open` (the single wire between the two hooks) is everything the table side knows about "open the form" — `t` doesn't know or need to know what `sheet` looks like inside. No `onOpen` means a pure list page (the view/edit items don't render — a visible symptom, not a silent dead click).
 
 `t`'s bound members, by their JSX position:
@@ -555,6 +557,18 @@ row: {
 **Taking over the arrangement**: `row.menu`/`row.actions` can only *add* — they cannot rearrange the "···" menu chrome itself or move the menu/inline slots relative to each other. For that, see L3 in the "Choosing a tier" section (forking `abp-table.tsx`).
 
 ## ⑨ The bulk bar
+
+**Prerequisite: `selectable: true` on `useAbpTable`.** It is the switch for the whole bulk feature — without it there is no checkbox column, the selected count stays at zero, and nothing you put inside `t.BulkBar` ever appears. **The failure is silent**: no error, no warning, the page simply looks like bulk actions were never built. If you copied this section and got nothing, go back to step ⑤ and check that flag first.
+
+```tsx
+const t = useAbpTable(userService, {
+  columns,
+  selectable: true,   // without this, none of this section takes effect
+  onOpen: sheet.open,
+});
+```
+
+**Selection is keyed by row id, and `useAbpTable` takes `record.id` for you** — you do not pass `getRowId`. If the DTO has no `id` field it falls back to the array index, and then paging or a refetch leaves "row 0" pointing at a different record while its selection sticks. ABP entity DTOs always carry `id`, so this rarely bites; a custom source returning a shape without one has to supply its own stable identifier. (Reaching for `useDataTable` directly is a different story: at that layer `getRowId` is the caller's to pass.)
 
 `t.BulkBar` is the bulk-mode container, appearing automatically when selection > 0, with page-determined contents. Bulk delete has a built-in, `t.BulkDelete` — the delete mutation and list invalidation are already on the source; writing it again per page would copy the same boilerplate into every CRUD page:
 
