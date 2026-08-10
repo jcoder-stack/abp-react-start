@@ -52,6 +52,9 @@ function Harness(props: { data?: Row[] }) {
       <button type="button" onClick={() => state.resetPaging()}>
         reset-paging
       </button>
+      <button type="button" onClick={() => dt.table.setColumnVisibility({ name: false })}>
+        hide-name
+      </button>
       <DataTable table={dt} />
     </>
   );
@@ -132,5 +135,78 @@ describe("选中态由表持有", () => {
     fireEvent.click(boxes[0]);
     fireEvent.click(screen.getByRole("button", { name: "drop-first" }));
     expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+});
+
+// 宿主已用 selector 把 rowSelection 摘出订阅，勾选不再重渲染 DataTable。以下每条都对着
+// 一处「原本在渲染期读快照」的位置：漏掉任何一处的表现都是静默的——勾得动，界面不动。
+describe("选中态的定点订阅", () => {
+  it("勾一行后该行复选框呈勾选态，其余行不变", async () => {
+    renderWithProviders(<Harness />, { messages: tableMessages });
+    fireEvent.click((await screen.findAllByLabelText("Select row"))[0]);
+    const boxes = screen.getAllByLabelText("Select row");
+    expect(boxes[0].getAttribute("aria-checked")).toBe("true");
+    expect(boxes[1].getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("勾一行后只有该行的 tr 带 data-state=selected", async () => {
+    const { container } = renderWithProviders(<Harness />, { messages: tableMessages });
+    fireEvent.click((await screen.findAllByLabelText("Select row"))[0]);
+    const rows = container.querySelectorAll("tbody tr");
+    expect(rows[0].getAttribute("data-state")).toBe("selected");
+    expect(rows[1].getAttribute("data-state")).toBe(null);
+  });
+
+  it("表头全选框部分选中为 indeterminate、全选为勾选", async () => {
+    renderWithProviders(<Harness />, { messages: tableMessages });
+    fireEvent.click((await screen.findAllByLabelText("Select row"))[0]);
+    expect(screen.getByLabelText("Select all rows").getAttribute("aria-checked")).toBe("mixed");
+    fireEvent.click(screen.getAllByLabelText("Select row")[1]);
+    expect(screen.getByLabelText("Select all rows").getAttribute("aria-checked")).toBe("true");
+  });
+
+  // 上面四条在「宿主订阅全部切片」时也全绿——那正是本次要去掉的成本。用重渲染的行数把它
+  // 钉住：宿主一旦重新订阅 rowSelection，勾一行就会带着满页行陪跑，这条立刻红。
+  it("勾一行只重渲染那一行，重渲染量不随行数放大", async () => {
+    const cellRenders = { count: 0 };
+    const countingColumns: TableColumnDef<Row>[] = [
+      {
+        accessorKey: "name",
+        header: "Name",
+        cell: ({ row }) => {
+          cellRenders.count += 1;
+          return row.original.name;
+        },
+      },
+    ];
+    const manyRows: Row[] = Array.from({ length: 50 }, (_, i) => ({
+      id: String(i),
+      name: `Row ${i}`,
+    }));
+    function ManyRows() {
+      const state = useDataTableState();
+      const dt = useDataTable({
+        state,
+        columns: countingColumns,
+        data: manyRows,
+        selectable: true,
+        getRowId: (r) => r.id,
+      });
+      return <DataTable table={dt} />;
+    }
+    renderWithProviders(<ManyRows />, { messages: tableMessages });
+    const boxes = await screen.findAllByLabelText("Select row");
+    cellRenders.count = 0;
+    fireEvent.click(boxes[0]);
+    expect(cellRenders.count).toBe(1);
+  });
+
+  // 反证宿主 selector 用的是排除法而非列举法：列举法漏掉调用方追加特性带来的切片时，
+  // 那些切片的 UI 会静默失灵，这里拿基础集里的 columnVisibility 当哨兵。
+  it("勾选之后隐藏列仍然生效", async () => {
+    renderWithProviders(<Harness />, { messages: tableMessages });
+    fireEvent.click((await screen.findAllByLabelText("Select row"))[0]);
+    fireEvent.click(screen.getByRole("button", { name: "hide-name" }));
+    expect(screen.queryByRole("columnheader", { name: "Name" })).toBeNull();
   });
 });

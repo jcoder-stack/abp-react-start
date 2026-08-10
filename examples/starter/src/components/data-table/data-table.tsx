@@ -1,9 +1,15 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
-import { flexRender, type PaginationState, type RowData } from "@tanstack/react-table";
+import {
+  flexRender,
+  type PaginationState,
+  type Row,
+  type RowData,
+  Subscribe,
+} from "@tanstack/react-table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { type ReactNode, useId } from "react";
 import { DataTableFooter } from "@/components/data-table/data-table-footer";
-import type { TableInstance } from "@/components/data-table/table-core";
+import type { TableFeatures, TableInstance } from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -30,6 +36,62 @@ function justifyClass(align?: "left" | "right" | "center") {
   if (align === "right") return "justify-end";
   if (align === "center") return "justify-center";
   return "justify-start";
+}
+
+interface DataTableRowProps<TData extends RowData>
+  extends Pick<DataTableProps<TData>, "rowProps" | "onRowClick"> {
+  row: Row<TableFeatures, TData>;
+  selectionAtom: TableInstance<TData>["atoms"]["rowSelection"];
+}
+
+/** 表体的一行。整行包在自己那一行的选中订阅里：`data-state` 是 `<TableRow>` 上的属性，
+ *  而宿主的 `useTable` selector 已把 rowSelection 摘出去、不再因勾选重渲染，只有把整行
+ *  放进订阅，选中底色才跟得上。刻意不加 `React.memo`：订阅本就没有比较面，加了反而把
+ *  `rowProps` / `onRowClick` 的「不需要引用稳定」契约拖下水。 */
+function DataTableRow<TData extends RowData>(props: DataTableRowProps<TData>) {
+  const { row, selectionAtom, onRowClick } = props;
+  return (
+    <Subscribe source={selectionAtom} selector={(s) => Boolean(s?.[row.id])}>
+      {(selected) => (
+        <TableRow
+          data-state={selected ? "selected" : undefined}
+          className={cn(
+            "group hover:bg-muted/50 data-[state=selected]:bg-row-selected",
+            onRowClick &&
+              "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+            props.rowProps?.(row.original)?.className,
+          )}
+          tabIndex={onRowClick ? 0 : undefined}
+          onClick={() => onRowClick?.(row.original)}
+          onKeyDown={
+            onRowClick &&
+            ((e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                // 两个都要 preventDefault。Space 默认滚动页面；Enter 会在本次按键继续合成
+                // 一次 click，落到激活后新获得焦点的元素上（详情抽屉里的「编辑」按钮），
+                // 键盘激活就越过详情态直接进了编辑态。
+                // 行操作菜单已在自己的 onKeyDown 里 stopPropagation，不会误触发行激活。
+                e.preventDefault();
+                onRowClick(row.original);
+              }
+            })
+          }
+        >
+          {row.getVisibleCells().map((cell) => (
+            <TableCell
+              key={cell.id}
+              className={cn(
+                alignClass(cell.column.columnDef.meta?.align),
+                cell.column.columnDef.meta?.className,
+              )}
+            >
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      )}
+    </Subscribe>
+  );
 }
 
 export interface DataTableProps<TData extends RowData> {
@@ -217,45 +279,17 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
               </TableCell>
             </TableRow>
           ) : (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() ? "selected" : undefined}
-                className={cn(
-                  "group hover:bg-muted/50 data-[state=selected]:bg-row-selected",
-                  props.onRowClick &&
-                    "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                  props.rowProps?.(row.original)?.className,
-                )}
-                tabIndex={props.onRowClick ? 0 : undefined}
-                onClick={() => props.onRowClick?.(row.original)}
-                onKeyDown={
-                  props.onRowClick &&
-                  ((e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      // 两个都要 preventDefault。Space 默认滚动页面；Enter 会在本次按键继续合成
-                      // 一次 click，落到激活后新获得焦点的元素上（详情抽屉里的「编辑」按钮），
-                      // 键盘激活就越过详情态直接进了编辑态。
-                      // 行操作菜单已在自己的 onKeyDown 里 stopPropagation，不会误触发行激活。
-                      e.preventDefault();
-                      props.onRowClick?.(row.original);
-                    }
-                  })
-                }
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      alignClass(cell.column.columnDef.meta?.align),
-                      cell.column.columnDef.meta?.className,
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            table
+              .getRowModel()
+              .rows.map((row) => (
+                <DataTableRow
+                  key={row.id}
+                  row={row}
+                  selectionAtom={table.atoms.rowSelection}
+                  rowProps={props.rowProps}
+                  onRowClick={props.onRowClick}
+                />
+              ))
           )}
         </TableBody>
       </Table>

@@ -1,5 +1,11 @@
 import { type Localize, useLocalization } from "@jcoder-stack/abp-react/react";
-import { type RowData, type TableOptions, tableFeatures, useTable } from "@tanstack/react-table";
+import {
+  type RowData,
+  Subscribe,
+  type TableOptions,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import {
   createElement,
   type MouseEvent,
@@ -24,17 +30,32 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 
 type SelectionAtom = TableInstance<RowData>["atoms"]["rowSelection"];
+type SelectionState = ReturnType<SelectionAtom["get"]>;
 
-/** `table.Subscribe` 的「单一 source + selector」那条重载对应的 props 形状。
+/** `Subscribe` 的「单一 source + selector」那条重载对应的 props 形状。
  *  本文件是 .ts（文件名进了 registry 清单），写不了 JSX，只能 createElement；而
  *  createElement 会把重载塌成最后一条（全 store，不收 source），显式给出 props 才选得对。 */
-interface SelectionSubscribeProps {
+interface SelectionSubscribeProps<TSelected> {
   source: SelectionAtom;
-  selector: (state: ReturnType<SelectionAtom["get"]>) => number;
-  children: (count: number) => ReactNode;
+  selector: (state: SelectionState) => TSelected;
+  children: (selected: TSelected) => ReactNode;
 }
 
-/** 页内选择列：表头全选（含 indeterminate），行内单选；checked→事件由调用方 handler 消费 `event.target.checked`。 */
+/** 同上，对应「单一 source、无 selector」那条重载：整片选中映射按浅比较驱动重渲染。 */
+interface SelectionIdentitySubscribeProps {
+  source: SelectionAtom;
+  selector?: undefined;
+  children: (state: SelectionState) => ReactNode;
+}
+
+/** 页内选择列：表头全选（含 indeterminate），行内单选；checked→事件由调用方 handler 消费 `event.target.checked`。
+ *
+ *  两个复选框都包在 `Subscribe` 里而不是渲染期直接读：宿主的 `useTable` selector 已把
+ *  rowSelection 摘出订阅，勾选不再重渲染 DataTable，渲染期读到的是永远停在初始态的快照。
+ *  用独立导出的 `Subscribe` 而非 `table.Subscribe`——列的 header/cell 上下文给的是核心
+ *  `Table`，`Subscribe` 只挂在 `useTable` 另行 memo 出的返回对象上，这里拿不到。
+ *  本文件统一用它（含下方的 `SelectedCount`）：`table.Subscribe` 只是同一组件补了个默认
+ *  source，我们每处都显式给 source，同名两份反而只会在阅读时混淆。 */
 function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TData> {
   return {
     id: "select",
@@ -43,29 +64,42 @@ function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TDa
     enableHiding: false,
     meta: { className: "w-10" },
     header: ({ table }) =>
-      createElement(Checkbox, {
-        checked: table.getIsAllPageRowsSelected()
-          ? true
-          : table.getIsSomePageRowsSelected()
-            ? "indeterminate"
-            : false,
-        onCheckedChange: (value: boolean | "indeterminate") =>
-          table.getToggleAllPageRowsSelectedHandler()({ target: { checked: value === true } }),
-        "aria-label": L("Table:SelectAll"),
-        // 半选只隐藏对勾，保留 indeterminate。对勾表示「全选」，拿它表示「部分」会误导；
-        // aria-checked="mixed" 得留着，否则读屏会把「已选 2 行」播报成「未选中」。
-        // 选了几行由紧邻上方的批量条给出。
-        // tree 块的 TriStateCheckbox 半选画横线，跟这里不一样，别当不一致来「修」：
-        // 那边把「部分授予」误读成「全部授予」是授权问题，这里只影响感知，不值得为它加依赖。
-        className: "data-[state=indeterminate]:[&_[data-slot=checkbox-indicator]]:opacity-0",
+      createElement<SelectionIdentitySubscribeProps>(Subscribe, {
+        source: table.atoms.rowSelection,
+        // 整片订阅而非投影：全选框的三态还取决于当前页在场哪些行，selector 只拿得到选中映射，
+        // 算不出来；三态在回调里现算，那两个 getter 都直接读原子，读到的是最新值。
+        // biome-ignore lint/correctness/noChildrenProp: Subscribe 的 children 是 render prop，createElement 的可变子参数只收 ReactNode，塞不进去
+        children: () =>
+          createElement(Checkbox, {
+            checked: table.getIsAllPageRowsSelected()
+              ? true
+              : table.getIsSomePageRowsSelected()
+                ? "indeterminate"
+                : false,
+            onCheckedChange: (value: boolean | "indeterminate") =>
+              table.getToggleAllPageRowsSelectedHandler()({ target: { checked: value === true } }),
+            "aria-label": L("Table:SelectAll"),
+            // 半选只隐藏对勾，保留 indeterminate。对勾表示「全选」，拿它表示「部分」会误导；
+            // aria-checked="mixed" 得留着，否则读屏会把「已选 2 行」播报成「未选中」。
+            // 选了几行由紧邻上方的批量条给出。
+            // tree 块的 TriStateCheckbox 半选画横线，跟这里不一样，别当不一致来「修」：
+            // 那边把「部分授予」误读成「全部授予」是授权问题，这里只影响感知，不值得为它加依赖。
+            className: "data-[state=indeterminate]:[&_[data-slot=checkbox-indicator]]:opacity-0",
+          }),
       }),
-    cell: ({ row }) =>
-      createElement(Checkbox, {
-        checked: row.getIsSelected(),
-        onCheckedChange: (value: boolean | "indeterminate") =>
-          row.getToggleSelectedHandler()({ target: { checked: value === true } }),
-        onClick: (e: MouseEvent) => e.stopPropagation(),
-        "aria-label": L("Table:SelectRow"),
+    cell: ({ row, table }) =>
+      createElement<SelectionSubscribeProps<boolean>>(Subscribe, {
+        source: table.atoms.rowSelection,
+        selector: (s) => Boolean(s?.[row.id]),
+        // biome-ignore lint/correctness/noChildrenProp: 同上
+        children: (selected) =>
+          createElement(Checkbox, {
+            checked: selected,
+            onCheckedChange: (value: boolean | "indeterminate") =>
+              row.getToggleSelectedHandler()({ target: { checked: value === true } }),
+            onClick: (e: MouseEvent) => e.stopPropagation(),
+            "aria-label": L("Table:SelectRow"),
+          }),
       }),
   };
 }
@@ -154,31 +188,42 @@ export function useDataTable<TData extends RowData>(
       );
     }
   });
-  const table = useTable({
-    features: tableFeatureSet,
-    data: opts.data,
-    columns,
-    pageCount: opts.pageCount ?? 1,
-    onPaginationChange: state.onPaginationChange,
-    onSortingChange: state.onSortingChange,
-    enableRowSelection: opts.selectable ?? false,
-    manualPagination: true,
-    manualSorting: true,
-    getRowId: opts.getRowId,
-    ...opts.tableOptions,
-    // 一层合并而非整体覆盖：tableOptions.state 只能按键覆盖/追加受管切片，
-    // 不会把 pagination/sorting 整体挤掉造成组件渲染与表状态失步。
-    // rowSelection 刻意缺席：那一片归表自己所有，见下方的 SelectedCount / getSelectedRows。
-    state: {
-      pagination: state.pagination,
-      sorting: state.sorting,
-      ...opts.tableOptions?.state,
+  const table = useTable(
+    {
+      features: tableFeatureSet,
+      data: opts.data,
+      columns,
+      pageCount: opts.pageCount ?? 1,
+      onPaginationChange: state.onPaginationChange,
+      onSortingChange: state.onSortingChange,
+      enableRowSelection: opts.selectable ?? false,
+      manualPagination: true,
+      manualSorting: true,
+      getRowId: opts.getRowId,
+      ...opts.tableOptions,
+      // 一层合并而非整体覆盖：tableOptions.state 只能按键覆盖/追加受管切片，
+      // 不会把 pagination/sorting 整体挤掉造成组件渲染与表状态失步。
+      // rowSelection 刻意缺席：那一片归表自己所有，见下方的 SelectedCount / getSelectedRows。
+      state: {
+        pagination: state.pagination,
+        sorting: state.sorting,
+        ...opts.tableOptions?.state,
+      },
     },
-  });
+    // 省略 selector 等于订阅全部切片，勾一个复选框就要重渲染整张表，成本随行数放大。
+    // 摘掉 rowSelection 之后它由表头/行内/SelectedCount 各自定点订阅，宿主不再为它重渲染。
+    // 用排除法而非列举需要的切片：features 是加法合并的，调用方追加特性带来的切片
+    // （如 columnFilteringFeature 的 columnFilters）不在列举里就永远不触发重渲染，
+    // 他们的筛选 UI 会静默失灵。返回新对象不会每渲染都重渲染——结果走浅比较。
+    (tableState) => {
+      const { rowSelection: _rowSelection, ...rest } = tableState;
+      return rest;
+    },
+  );
 
   // 全部取自表实例但绕开 table 本身：useTable 每渲染都返回一份新的表对象（options 是渲染期
   // 新建的），拿 table 当依赖等于没 memo；而这些方法与原子建表时就定下，引用恒定。
-  const { Subscribe, getSelectedRowModel, resetRowSelection, setRowSelection } = table;
+  const { getSelectedRowModel, resetRowSelection, setRowSelection } = table;
   const rowSelectionAtom = table.atoms.rowSelection;
 
   // 翻页/排序/换查询语境会换一批在场行，页内选择随之作废。这条不变式原先在状态机里，
@@ -232,14 +277,14 @@ export function useDataTable<TData extends RowData>(
   const SelectedCount = useMemo(
     () =>
       function SelectedCount(p: { children: (count: number) => ReactNode }) {
-        return createElement<SelectionSubscribeProps>(Subscribe, {
+        return createElement<SelectionSubscribeProps<number>>(Subscribe, {
           source: rowSelectionAtom,
           selector: (s) => Object.keys(s ?? {}).length,
           // biome-ignore lint/correctness/noChildrenProp: Subscribe 的 children 是 render prop（收计数返回节点），createElement 的可变子参数只收 ReactNode，塞不进去
           children: p.children,
         });
       },
-    [Subscribe, rowSelectionAtom],
+    [rowSelectionAtom],
   );
 
   return {
