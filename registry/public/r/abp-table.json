@@ -6,7 +6,7 @@
   "dependencies": [
     "@jcoder-stack/abp-react",
     "@tanstack/react-query",
-    "@tanstack/react-table@9.1.2",
+    "@tanstack/react-table@9.2.4",
     "@tanstack/react-form",
     "sonner",
     "lucide-react"

@@ -249,7 +249,7 @@
         "separator"
       ],
       "dependencies": [
-        "@tanstack/react-table@9.1.2",
+        "@tanstack/react-table@9.2.4",
         "@jcoder-stack/abp-react",
         "lucide-react"
       ],
@@ -444,7 +444,7 @@
       "dependencies": [
         "@jcoder-stack/abp-react",
         "@tanstack/react-query",
-        "@tanstack/react-table@9.1.2",
+        "@tanstack/react-table@9.2.4",
         "@tanstack/react-form",
         "sonner",
         "lucide-react"
@@ -702,7 +702,7 @@
         "@jcoder-stack/abp-react",
         "@tanstack/react-form",
         "@tanstack/react-query",
-        "@tanstack/react-table@9.1.2",
+        "@tanstack/react-table@9.2.4",
         "sonner",
         "lucide-react",
         "zod"
