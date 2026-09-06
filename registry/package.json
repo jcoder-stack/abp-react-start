@@ -20,8 +20,8 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@tanstack/react-form": "^1.33.2",
-    "@tanstack/react-table": "9.1.2",
+    "@tanstack/react-form": "^1.33.5",
+    "@tanstack/react-table": "9.2.4",
     "date-fns": "^4.4.0",
     "lucide-react": "^0.525.0",
     "radix-ui": "^1.6.4",

@@ -181,14 +181,14 @@ Round-tripping concurrency-control fields like `concurrencyStamp` lives in the `
 
 ## One constraint you must know
 
-`useAppForm` is a **wrapper** over the native TanStack hook: on the submit path it automatically clears the errors injected by the previous round's `onSubmitAsync` (the `onSubmit` slot). This works around a deadlock in `@tanstack/react-form@1.33.2` — natively, **field-level** errors injected by `onSubmitAsync` are not cleared on "resubmit without editing the field" (the framework's cleanup branch only recognizes `cause !== 'submit'`), leaving submits permanently short-circuited by stale errors. The wrapper guards with a module-level `WeakSet` so each form instance is patched exactly once (StrictMode-safe).
+`useAppForm` is a **wrapper** over the native TanStack hook: on the submit path it automatically clears the errors injected by the previous round's `onSubmitAsync` (the `onSubmit` slot). This works around a deadlock in `@tanstack/react-form@1.33.5` — natively, **field-level** errors injected by `onSubmitAsync` are not cleared on "resubmit without editing the field" (the framework's cleanup branch only recognizes `cause !== 'submit'`), leaving submits permanently short-circuited by stale errors. The wrapper guards with a module-level `WeakSet` so each form instance is patched exactly once (StrictMode-safe).
 
 **The cost, and the convention**: the `onSubmit` slot is reserved for server errors only. Therefore:
 
 - Client validation **always goes through `validators.onDynamic`** (with `revalidateLogic`) — don't hang an `onSubmit` validator on an individual field; its errors would be cleared along with the rest on submit.
 - After a major TanStack Form upgrade, re-verify the `form-hook.test.tsx` case "failed submit, no edits, resubmit → errors cleared + onSubmit fires once".
 
-> Version facts (as of 2026-07): the latest published `@tanstack/react-form` is `1.33.2`, and the field-level submit-error non-clearing behavior has no upstream fix to replace this; the wrapper's `clearServerSubmitErrors` patch must stay. After a major upgrade, re-run the deadlock regression in `form-hook.test.tsx` as above.
+> Version facts (as of 2026-09): the latest published `@tanstack/react-form` is `1.33.5`, and the field-level submit-error non-clearing behavior has no upstream fix to replace this; the wrapper's `clearServerSubmitErrors` patch must stay. After a major upgrade, re-run the deadlock regression in `form-hook.test.tsx` as above.
 
 ## Using it against other backends, without ABP
 

@@ -188,14 +188,14 @@ const form = useAppForm({
 
 ## 一个必须知道的约束
 
-`useAppForm` 是对 TanStack 原生 hook 的**包装**:它在提交路径会自动清掉上一轮 `onSubmitAsync` 注入的错误(`onSubmit` 槽位)。这是为绕开 `@tanstack/react-form@1.33.2` 的一个死锁——原生行为下,`onSubmitAsync` 注入的**字段级**错误在「不编辑字段直接重提交」时不会自动清除(框架的清理分支只认 `cause !== 'submit'`),会让提交被残留错误永久短路。包装层用模块级 `WeakSet` 守卫保证每个 form 实例只 patch 一次(StrictMode 安全)。
+`useAppForm` 是对 TanStack 原生 hook 的**包装**:它在提交路径会自动清掉上一轮 `onSubmitAsync` 注入的错误(`onSubmit` 槽位)。这是为绕开 `@tanstack/react-form@1.33.5` 的一个死锁——原生行为下,`onSubmitAsync` 注入的**字段级**错误在「不编辑字段直接重提交」时不会自动清除(框架的清理分支只认 `cause !== 'submit'`),会让提交被残留错误永久短路。包装层用模块级 `WeakSet` 守卫保证每个 form 实例只 patch 一次(StrictMode 安全)。
 
 **代价与约定**:这个 `onSubmit` 槽位被约定为「只承载服务端错误」。因此:
 
 - 客户端校验**一律走 `validators.onDynamic`**(配 `revalidateLogic`),不要给某个 field 单独挂 `onSubmit` 校验器——它的错误会被提交路径一并清掉。
 - 升级 TanStack Form 大版本后,要重新验证 `form-hook.test.tsx` 里那条「失败后不编辑直接重提交 → 错误清除 + onSubmit 触发一次」的用例。
 
-> 版本事实(截至 2026-07):`@tanstack/react-form` 最新发布版即 `1.33.2`,该字段级 submit 错误不自清的行为无上游修复可替代,故本包装层的 `clearServerSubmitErrors` patch 必须保留。升级大版本后按上文重验 `form-hook.test.tsx` 的死锁回归用例。
+> 版本事实(截至 2026-09):`@tanstack/react-form` 最新发布版即 `1.33.5`,该字段级 submit 错误不自清的行为无上游修复可替代,故本包装层的 `clearServerSubmitErrors` patch 必须保留。升级大版本后按上文重验 `form-hook.test.tsx` 的死锁回归用例。
 
 ## 脱离 ABP 用于其它后端
 

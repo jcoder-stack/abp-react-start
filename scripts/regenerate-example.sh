@@ -107,18 +107,18 @@ pkg.dependencies["zod"] = "^4.0.0";
 // 新版 @tanstack/cli 脚手架把部分依赖写成 "latest"、并不再带 SSR/router 周边包；
 // 锁回与 starter 提交态一致的版本保证重放可复现（有意升级时改这份 pin 表）。
 Object.assign(pkg.dependencies, {
-  "@tanstack/react-devtools": "^0.10.8",
-  "@tanstack/react-router": "^1.170.24",
+  "@tanstack/react-devtools": "^0.10.12",
+  "@tanstack/react-router": "^1.170.32",
   "@tanstack/react-router-devtools": "^1.167.1",
-  "@tanstack/react-router-ssr-query": "^1.167.1",
-  "@tanstack/react-start": "^1.168.41",
+  "@tanstack/react-router-ssr-query": "^1.167.2",
+  "@tanstack/react-start": "^1.168.49",
   "@tanstack/router-plugin": "^1.132.0",
   "lucide-react": "^0.545.0",
   "radix-ui": "^1.6.4",
 });
 Object.assign(pkg.devDependencies, {
   "@tailwindcss/typography": "^0.5.16",
-  "@tanstack/devtools-vite": "^0.8.1",
+  "@tanstack/devtools-vite": "^0.8.5",
 });
 pkg.devDependencies["@jcoder-stack/cli"] = "workspace:*";
 pkg.devDependencies["@jcoder-stack/registry"] = "workspace:*";
