@@ -16,6 +16,7 @@ import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/serve
 import { z } from "zod";
 import { authMiddleware } from "./middleware";
 import { getAuthRuntime } from "./runtime";
+import { unpackUpload } from "./upload-payload";
 
 /** SSR 一次取数喂两张嘴：config（AppConfigProvider）+ identity（SessionProvider）。 */
 export const getAppStateFn = createServerFn({ method: "GET" })
@@ -87,29 +88,49 @@ const abpRequestSchema = z.object({
   body: z.string().optional(),
 });
 
-/** 业务 API 的唯一请求边界：orval mutator → 此 server fn → 代理网关。 */
+/** 代理调用 + Set-Cookie 落地 + 响应归一，两个请求边界共用。 */
+async function forwardToAbp(
+  req: Parameters<typeof callAbpWithSession>[3],
+  context: { session: Parameters<typeof callAbpWithSession>[1]; cookieHeader: string | null },
+) {
+  const rt = getAuthRuntime();
+  let res: Awaited<ReturnType<typeof callAbpWithSession>>;
+  try {
+    res = await callAbpWithSession(rt, context.session, context.cookieHeader, req);
+  } catch (error) {
+    // 失败也要把过程中刷新出的会话 cookie 落到响应，否则轮换型 IdP 下用户被静默登出。
+    if (error instanceof AbpProxyError && error.setCookies.length > 0)
+      setResponseHeader("Set-Cookie", error.setCookies);
+    throw error;
+  }
+  if (res.setCookies.length > 0) setResponseHeader("Set-Cookie", res.setCookies);
+  return {
+    status: res.status,
+    contentType: res.headers.get("content-type"),
+    body: typeof res.body === "string" ? res.body : undefined,
+    bodyBase64: typeof res.body === "string" ? undefined : toBase64(res.body),
+  };
+}
+
+/** 业务 API 的文本请求边界：orval mutator → 此 server fn → 代理网关。 */
 export const abpRequestFn = createServerFn({ method: "POST" })
   .validator(abpRequestSchema)
   .middleware([authMiddleware])
-  .handler(async ({ data, context }) => {
-    const rt = getAuthRuntime();
-    let res: Awaited<ReturnType<typeof callAbpWithSession>>;
-    try {
-      res = await callAbpWithSession(rt, context.session, context.cookieHeader, data);
-    } catch (error) {
-      // 失败也要把过程中刷新出的会话 cookie 落到响应，否则轮换型 IdP 下用户被静默登出。
-      if (error instanceof AbpProxyError && error.setCookies.length > 0)
-        setResponseHeader("Set-Cookie", error.setCookies);
-      throw error;
-    }
-    if (res.setCookies.length > 0) setResponseHeader("Set-Cookie", res.setCookies);
-    return {
-      status: res.status,
-      contentType: res.headers.get("content-type"),
-      body: typeof res.body === "string" ? res.body : undefined,
-      bodyBase64: typeof res.body === "string" ? undefined : toBase64(res.body),
-    };
-  });
+  .handler(({ data, context }) => forwardToAbp(data, context));
+
+/** 二进制请求边界：multipart 上传与裸字节直传。
+ *
+ *  单独一个 server fn 而非让 `abpRequestFn` 双模：Start 只在**整个** payload 就是 FormData 时
+ *  才走原生 multipart（`data instanceof FormData`），混不进 JSON 对象里。分开还能让文本那条
+ *  路径的 zod schema 一个字不改——所有既有 CRUD 调用不受本次改动影响。
+ *
+ *  刻意不走 base64 塞进 JSON：seroval 对 typed array 的往返在 1MB 就会抛
+ *  `SerovalDeserializationError`，而 base64 成字符串虽能过，10MB 文件要变成 13.3MB 字符串
+ *  再经两端 JSON 解析。原生 multipart 让文件字节全程不进 JSON。 */
+export const abpUploadFn = createServerFn({ method: "POST" })
+  .validator((data: FormData) => data)
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }) => forwardToAbp(await unpackUpload(data), context));
 
 // server fn 边界只序列化 JSON，二进制体转 base64 过桥，abpFetch 端解码还原字节。
 function toBase64(buffer: ArrayBuffer): string {

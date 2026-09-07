@@ -322,3 +322,93 @@ describe("createAbpProxy", () => {
     expect(error.cause).toBeDefined();
   });
 });
+
+describe("createAbpProxy non-text bodies", () => {
+  it("forwards a FormData body untouched so the transport can generate the boundary", async () => {
+    const { fetchFn, calls } = fakeFetch(new Response(null, { status: 204 }));
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const form = new FormData();
+    form.append("file", new Blob(["col-a,col-b"], { type: "text/csv" }), "import.csv");
+    await proxy.send({ path: "/api/app/books/import", method: "POST", body: form }, noRefresh);
+    expect(calls[0]?.init?.body).toBe(form);
+  });
+
+  // 调用方带来的 content-type 里是它那份 FormData 的旧 boundary；透传下去上游会按错的
+  // 分隔符解析，正文永远读不出字段。必须由传输层重新编码时自己写。
+  it("drops the caller content-type when the body is FormData", async () => {
+    const { fetchFn, calls } = fakeFetch(new Response(null, { status: 204 }));
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    await proxy.send(
+      {
+        path: "/api/app/books/import",
+        method: "POST",
+        headers: { "content-type": "multipart/form-data; boundary=----stale" },
+        body: new FormData(),
+      },
+      noRefresh,
+    );
+    expect(new Headers(calls[0]?.init?.headers).get("content-type")).toBeNull();
+  });
+
+  it("forwards raw bytes and keeps an explicit octet-stream content-type", async () => {
+    const { fetchFn, calls } = fakeFetch(new Response(null, { status: 201 }));
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const bytes = new Uint8Array([0, 1, 2, 253, 254, 255]);
+    await proxy.send(
+      {
+        path: "/api/app/files",
+        method: "PUT",
+        headers: { "content-type": "application/octet-stream" },
+        body: bytes,
+      },
+      noRefresh,
+    );
+    expect(calls[0]?.init?.body).toBe(bytes);
+    expect(new Headers(calls[0]?.init?.headers).get("content-type")).toBe(
+      "application/octet-stream",
+    );
+  });
+
+  // 401→刷新→重放是代理的核心能力。body 若在首次尝试时被消费掉，重放会静默发出空正文，
+  // 上游只会看到一个内容缺失的请求，而不是一个错误。
+  it("replays the same byte body after a refresh instead of sending an empty one", async () => {
+    const { fetchFn, calls } = fakeFetch(
+      new Response(null, { status: 401 }),
+      new Response(null, { status: 201 }),
+    );
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const bytes = new Uint8Array([7, 8, 9]);
+    const res = await proxy.send(
+      { path: "/api/app/files", method: "POST", body: bytes },
+      { session, refresh: async () => ({ session: fresh, setCookies: ["s=2"] }) },
+    );
+    expect(res.status).toBe(201);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.init?.body).toBe(bytes);
+  });
+
+  // 流只能消费一次，收下它等于让 401 重放与幂等重试静默失效——宁可在入口拒绝。
+  it("rejects a ReadableStream body instead of silently breaking replay", async () => {
+    const { fetchFn, calls } = fakeFetch(new Response(null, { status: 200 }));
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const stream = new ReadableStream<Uint8Array>({
+      start: (controller) => controller.close(),
+    });
+    await expect(
+      proxy.send(
+        { path: "/api/app/files", method: "POST", body: stream as unknown as Uint8Array },
+        noRefresh,
+      ),
+    ).rejects.toThrow(/stream/i);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects a body larger than maxBodyBytes without reaching the network", async () => {
+    const { fetchFn, calls } = fakeFetch(new Response(null, { status: 200 }));
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn, maxBodyBytes: 8 });
+    await expect(
+      proxy.send({ path: "/api/app/files", method: "POST", body: new Uint8Array(9) }, noRefresh),
+    ).rejects.toThrow(/too large/i);
+    expect(calls).toHaveLength(0);
+  });
+});
