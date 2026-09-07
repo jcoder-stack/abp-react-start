@@ -27,7 +27,7 @@ TanStack Start 的 `createServerFn` / `createMiddleware` 不是普通函数，�
 ```
 auth.config.ts   ★ 唯一预期你会改的：createAbpAuthRuntime(process.env, {…覆盖项})
 runtime.ts         进程级单例，server 侧 getAuthRuntime()
-server-fns.ts      getAppStateFn / getIdentityFn / abpRequestFn  ← 编译约束
+server-fns.ts      getAppStateFn / getIdentityFn / abpRequestFn / abpUploadFn  ← 编译约束
 middleware.ts      authMiddleware（取会话、过期就刷新并回写 cookie）← 编译约束
 ```
 
@@ -76,7 +76,7 @@ middleware.ts      authMiddleware（取会话、过期就刷新并回写 cookie�
   │  ① orval 生成的 react-query hook 调 fetchFn
   ▼
 src/api/abp-fetch.ts        （app-shell 块分发的桥接）
-  │  ② 转成 abpRequestFn 调用
+  │  ② 文本正文转 abpRequestFn；FormData 与字节转 abpUploadFn
   ▼
 src/auth/server-fns.ts      ← 编译边界，往下都在服务端
   │  ③ authMiddleware 取会话，过期就刷新并回写 Set-Cookie
@@ -93,6 +93,8 @@ ABP 后端
 - **代理永不因状态码 throw**，状态码原样透传。要不要把 403 当异常，是调用方的事。
 - **401 只重放一次**。刷新失败就是失败，不做二次尝试——那只会把一次登录过期放大成三次往返。
 - **策略头有优先级**：租户走会话优先、cookie 兜底；文化走 cookie 优先——用户显式切语言应该胜过登录时的快照。
+- **正文必须可重发**，所以只收 `string`、字节、`FormData`，不收 `ReadableStream`。上面第 ⑤ 步的 401 重放与幂等重试都要把同一个 body 再发一次，而流只能消费一次——收下它会让这两条路径静默退化成「重放一个空正文」，上游看到的是内容缺失的请求而不是错误。
+- **二进制不走 JSON 边界**。文件字节经 `abpUploadFn` 以原生 multipart 过桥，不塞进 server fn 的 JSON 载荷：seroval 对 typed array 的往返在 1MB 就会抛错，而 base64 成字符串会让 10MB 的文件变成 13.3MB 再经两端 JSON 解析。
 - **SSR 一次取数喂两张嘴**：`getAppStateFn` 一趟返回 config 与 identity，分别喂 `AppConfigProvider` 与 `SessionProvider`，避免首屏两次往返。
 
 ## 会话

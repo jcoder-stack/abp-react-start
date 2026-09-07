@@ -7,11 +7,19 @@ import {
   upstreamUnreachableMessage,
 } from "./tls-trust";
 
+/**
+ * 请求正文。四种形状的共同点是**可重发**：401→刷新→重放与幂等重试都要把同一个 body 再发一次。
+ *
+ * `ReadableStream` 刻意不在其中。它只能消费一次，收下它会让上述两条路径静默退化成「重放一个
+ * 空正文」——上游看到的是内容缺失的请求而不是错误，最难查。要传流请先自行缓冲成字节。
+ */
+export type AbpProxyBody = string | Uint8Array | ArrayBuffer | FormData;
+
 export interface AbpProxyRequest {
   path: string;
   method?: string;
   headers?: Record<string, string>;
-  body?: string;
+  body?: AbpProxyBody;
   /** 调用方的取消信号（如宿主的 `request.signal`）；触发后当前尝试立即中止且不再重试。 */
   signal?: AbortSignal;
 }
@@ -90,11 +98,47 @@ function exposeHeaders(headers: Headers): Headers {
   return out;
 }
 
-function sanitizeHeaders(headers: Record<string, string> | undefined): Record<string, string> {
+function sanitizeHeaders(
+  headers: Record<string, string> | undefined,
+  body: AbpProxyBody | undefined,
+): Record<string, string> {
   if (headers === undefined) return {};
+  // FormData 由传输层重新编码，boundary 是它现生成的。调用方带来的 content-type 里是**上一份**
+  // FormData 的旧 boundary，透传下去上游会按错的分隔符解析，正文永远读不出字段——症状是
+  // 「请求到了、参数全空」，不是报错。故这一种形状下由传输层独占 content-type。
+  const dropContentType = typeof FormData !== "undefined" && body instanceof FormData;
   return Object.fromEntries(
-    Object.entries(headers).filter(([key]) => FORWARDABLE.has(key.toLowerCase())),
+    Object.entries(headers).filter(
+      ([key]) =>
+        FORWARDABLE.has(key.toLowerCase()) &&
+        !(dropContentType && key.toLowerCase() === "content-type"),
+    ),
   );
+}
+
+/** 默认上传上限：够跑 ABP 导入类端点的 Excel/CSV，又不至于让单个请求吃穿 server 进程内存。 */
+const DEFAULT_MAX_BODY_BYTES = 10 * 1024 * 1024;
+
+const isStreamLike = (body: unknown): boolean =>
+  typeof (body as { getReader?: unknown } | null | undefined)?.getReader === "function";
+
+/**
+ * 可测的正文字节数；`null` 表示不做限制判断。
+ *
+ * 字符串刻意不测：那是 JSON 热路径，`TextEncoder` 会为每个请求多拷一份，而上限本就是为上传设的。
+ */
+function measurableBodyBytes(body: AbpProxyBody | undefined): number | null {
+  if (body === undefined || typeof body === "string") return null;
+  if (body instanceof ArrayBuffer) return body.byteLength;
+  if (ArrayBuffer.isView(body)) return body.byteLength;
+  let total = 0;
+  // forEach 而非 for..of：仓库的 lib 是 ["ES2022", "DOM"]，没有 DOM.Iterable，
+  // FormData 在类型上不可迭代。为一处遍历放宽全仓库的 lib 不值当。
+  body.forEach((value, name) => {
+    total += name.length;
+    total += typeof value === "string" ? value.length : value.size;
+  });
+  return total;
 }
 
 // 绝对 URL 与 `//host` 协议相对 URL 会让 new URL(path, base) 丢弃 base，Bearer 会被贴到任意主机（SSRF + token 外泄）。
@@ -123,13 +167,27 @@ export function createAbpProxy(opts: {
   retry?: { retries: number };
   /** 含重试与退避在内的总预算；默认不设，此时最坏耗时是 (retries+1)×timeoutMs 加退避。 */
   totalTimeoutMs?: number;
+  /** 可测正文（字节/FormData）的上限，默认 10MB。字符串正文不参与判断，见 `measurableBodyBytes`。 */
+  maxBodyBytes?: number;
   logger?: Logger;
 }): AbpProxy {
   const fetchFn = opts.fetchFn ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const retries = opts.retry?.retries ?? 2;
+  const maxBodyBytes = opts.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   return {
     async send(req, auth) {
+      // 两道入口守卫都在任何网络动作之前：流会静默废掉重放，超限会吃穿内存，
+      // 让它们先发出去再失败，代价是一次白跑的上传。
+      if (isStreamLike(req.body)) {
+        throw new Error(
+          "abp proxy: a ReadableStream body cannot be replayed after a 401 refresh or an idempotent retry; buffer it into bytes first",
+        );
+      }
+      const bodyBytes = measurableBodyBytes(req.body);
+      if (bodyBytes !== null && bodyBytes > maxBodyBytes) {
+        throw new Error(`abp proxy: request body too large (${bodyBytes} > ${maxBodyBytes} bytes)`);
+      }
       const method = (req.method ?? "GET").toUpperCase();
       const maxRetries = IDEMPOTENT.has(method) ? retries : 0;
       const url = resolveTargetUrl(req.path, opts.baseUrl);
@@ -156,12 +214,15 @@ export function createAbpProxy(opts: {
           res = await fetchFn(url, {
             method,
             headers: {
-              ...sanitizeHeaders(req.headers),
+              ...sanitizeHeaders(req.headers, req.body),
               ...(session === null
                 ? {}
                 : { Authorization: `Bearer ${session.tokens.accessToken}` }),
             },
-            body: req.body,
+            // AbpProxyBody 的四种形状运行时都是合法的 fetch 正文。TS 5.7 起 Uint8Array 带上了
+            // ArrayBufferLike 泛型参数，而 BodyInit 只认 ArrayBuffer 背衬的那支；把泛型参数写进
+            // 公开类型能消掉这次转换，但会反过来拒掉调用方最常写的裸 `Uint8Array` 标注。
+            body: req.body as BodyInit | undefined,
             signal: AbortSignal.any([...stops, AbortSignal.timeout(timeoutMs)]),
           });
         } catch (error) {

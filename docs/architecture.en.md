@@ -27,7 +27,7 @@ So the four files under `src/auth/` are forced by a compile-time constraint, not
 ```
 auth.config.ts   ★ the only one you're expected to edit: createAbpAuthRuntime(process.env, {…overrides})
 runtime.ts         process-level singleton, getAuthRuntime() on the server side
-server-fns.ts      getAppStateFn / getIdentityFn / abpRequestFn  ← compile-time constraint
+server-fns.ts      getAppStateFn / getIdentityFn / abpRequestFn / abpUploadFn  ← compile-time constraint
 middleware.ts      authMiddleware (reads the session; refreshes and re-writes the cookie when expired)  ← compile-time constraint
 ```
 
@@ -76,7 +76,7 @@ Browser
   │  ① an orval-generated react-query hook calls the fetchFn
   ▼
 src/api/abp-fetch.ts        (the bridge distributed by the app-shell block)
-  │  ② translated into an abpRequestFn call
+  │  ② text bodies become an abpRequestFn call; FormData and bytes an abpUploadFn call
   ▼
 src/auth/server-fns.ts      ← the compile boundary; everything below runs on the server
   │  ③ authMiddleware reads the session; refreshes and re-writes Set-Cookie when expired
@@ -93,6 +93,8 @@ Several deliberate choices:
 - **The proxy never throws on a status code**; statuses pass through as-is. Whether a 403 is an exception is the caller's business.
 - **A 401 replays exactly once.** A failed refresh is a failure — no second attempt, which would only amplify one expired login into three round trips.
 - **Policy headers have precedence**: tenant prefers the session with the cookie as fallback; culture prefers the cookie — an explicit language switch should beat the snapshot taken at sign-in.
+- **Bodies must be replayable**, so only `string`, bytes and `FormData` are accepted — never a `ReadableStream`. Step ⑤ above replays the same body after a 401 and on an idempotent retry, and a stream can only be consumed once: accepting one would silently degrade both paths into replaying an empty body, so the upstream sees a request missing its content rather than an error.
+- **Binary never crosses the JSON boundary.** File bytes travel through `abpUploadFn` as native multipart rather than inside the server function's JSON payload: seroval's typed-array round trip already throws at 1MB, and base64-as-string would turn a 10MB file into a 13.3MB string parsed on both ends.
 - **One SSR fetch feeds two mouths**: `getAppStateFn` returns config and identity in one trip, feeding `AppConfigProvider` and `SessionProvider` respectively, avoiding two first-paint round trips.
 
 ## Sessions

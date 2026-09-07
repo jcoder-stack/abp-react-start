@@ -35,6 +35,7 @@ export {
 export {
   type AbpProxy,
   type AbpProxyAuth,
+  type AbpProxyBody,
   AbpProxyError,
   type AbpProxyRequest,
   type AbpProxyResponse,
