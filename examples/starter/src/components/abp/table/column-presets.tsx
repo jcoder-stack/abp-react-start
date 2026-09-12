@@ -23,11 +23,13 @@ function LocalizedText(props: { entry: string }) {
   return <>{L(props.entry)}</>;
 }
 
-function BoolBadge(props: { value: boolean | undefined; status: Status }) {
+function BoolCell(props: { value: boolean | undefined; status: Status | undefined }) {
   const L = useLocalization();
-  return (
-    <StatusBadge status={props.status}>{L(props.value ? "Table:Yes" : "Table:No")}</StatusBadge>
-  );
+  const text = L(props.value ? "Table:Yes" : "Table:No");
+  if (props.status === undefined) {
+    return <span className={props.value ? undefined : "text-muted-foreground"}>{text}</span>;
+  }
+  return <StatusBadge status={props.status}>{text}</StatusBadge>;
 }
 
 /** 把列标签转成 `ColumnDef["header"]` 渲染器。预设内部用它；手写 `accessor`/`display` 列时
@@ -130,18 +132,22 @@ export function createAbpColumns<TData extends RowData>() {
     key: FieldsOf<TData, boolean>,
     label: ColumnLabel,
     opts?: {
-      /** 值为真时的徽章语义色，默认 `info`。用 `success` 表示「启用/健康」这类正向状态。 */
+      /** 值为真时的徽章语义色。不传就渲染成普通文字（否为 muted）——布尔字段多数是**属性**
+       *  （isDefault、isPublic），徽章的含义是「这条记录当前处于某状态」，套在属性上既夸大了它，
+       *  又逼着为它挑一个说不出理由的颜色。只有「启用/健康」这类真正的状态才传 `success`。 */
       trueStatus?: Status;
+      /** 值为假时的徽章语义色；仅在 `trueStatus` 给出时生效，默认 `neutral`。 */
       falseStatus?: Status;
     } & ColumnOverrides<TData>,
   ): TableColumnDef<TData> => {
-    const { trueStatus = "info", falseStatus = "neutral", ...overrides } = opts ?? {};
+    const { trueStatus, falseStatus = "neutral", ...overrides } = opts ?? {};
     return {
       accessorKey: key,
       header: columnHeader(label),
       cell: ({ row }) => {
         const value = row.original[key] as boolean | undefined;
-        return <BoolBadge value={value} status={value ? trueStatus : falseStatus} />;
+        const status = trueStatus === undefined ? undefined : value ? trueStatus : falseStatus;
+        return <BoolCell value={value} status={status} />;
       },
       ...overrides,
     };

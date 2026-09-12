@@ -23,6 +23,11 @@ export type AbpSheetOptions<
   /** record → 表单值；可异步（预取关联数据）；返回 null 表示取消打开（调用方自行提示）。 */
   toValues?: (record: TDto, mode: SheetFormMode) => TValues | Promise<TValues | null>;
   schema?: (mode: SheetFormMode) => FormValidateOrFn<TValues>;
+  /** 抽屉标题。缺省是「新增 / 编辑 / 查看」这样的裸动词——没有宾语，读者不知道在新增什么，
+   *  所以有实体名的页都该给一个（「新建图书」）。查看态通常直接用记录本身当标题。 */
+  title?: (mode: SheetFormMode, record: TDto | undefined) => string;
+  /** 标题下的记录标识，例如「刘慈欣 · 2008-01-01」。返回 undefined 则不占那一行。 */
+  subtitle?: (mode: SheetFormMode, record: TDto | undefined) => string | undefined;
 } & (TValues extends TCreate
   ? { toCreate?: (value: TValues) => TCreate }
   : { toCreate: (value: TValues) => TCreate }) &
@@ -87,6 +92,8 @@ export function useAbpSheet<
     }),
   );
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  // 关闭前是否需要拦一道：只有真改过东西才值得打断，查看态永远不拦。
+  const isDirty = useStore(form.store, (state) => state.isDirty);
 
   // 调用方的 opts 多是内联字面量、每渲染新建，钉在 ref 上 open 才能引用稳定。
   // 这是硬要求：AbpTable 的 columns memo 依赖 onOpen，它一变整张表的列模型就重建，
@@ -133,13 +140,15 @@ export function useAbpSheet<
     onOpenChange: (nextOpen: boolean) => {
       if (!nextOpen) setSheet(null);
     },
-    title: L(
-      mode === "edit" ? "Crud:EditTitle" : mode === "view" ? "Crud:ViewTitle" : "Crud:Create",
-    ),
+    title:
+      opts.title?.(mode ?? "create", sheet?.record) ??
+      L(mode === "edit" ? "Crud:EditTitle" : mode === "view" ? "Crud:ViewTitle" : "Crud:Create"),
+    subtitle: opts.subtitle?.(mode ?? "create", sheet?.record),
     onSubmit: () => {
       void form.handleSubmit();
     },
     pending: isSubmitting,
+    dirty: isDirty && mode !== "view",
     canEdit: allow(service.resolvedPolicies.update),
     onEdit: () => {
       if (sheet) setSheet({ ...sheet, mode: "edit" });

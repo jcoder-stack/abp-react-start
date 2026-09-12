@@ -33,6 +33,13 @@
     "BooksTierL1": "L1 · source callback",
     "BooksTierL2": "L2 · plain DataTable",
     "BooksTierL1Hint": "Reference for custom data sources: a source callback passed to useAbpTable, no service descriptor.",
-    "BooksTierL2Hint": "Below the ABP layer: the generic server-paged table on raw hooks."
+    "BooksTierL2Hint": "Below the ABP layer: the generic server-paged table on raw hooks.",
+    "BookCreateTitle": "New book",
+    "BookNamePlaceholder": "e.g. Three-Body",
+    "BookTypeHint": "Leave empty to keep it unclassified; you can set it later",
+    "BookPricePlaceholder": "0.00",
+    "UserCreateTitle": "New user",
+    "RoleCreateTitle": "New role",
+    "TenantCreateTitle": "New tenant"
   }
 }
