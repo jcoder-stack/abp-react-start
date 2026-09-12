@@ -161,13 +161,15 @@ describe("useAbpSheet", () => {
     expect(screen.queryByLabelText(/Name/)).toBeNull();
   });
 
-  it("view 模式:readOnly 生效,字段 disabled", async () => {
+  it("view 模式:字段渲染成键值行而不是禁用控件", async () => {
     const service = makeService();
     const openRef: { current: OpenFn | null } = { current: null };
     renderWithProviders(<Harness service={service} openRef={openRef} />, { messages });
     await callOpen(openRef, "view", { id: "1", name: "RO" });
-    const input = await screen.findByLabelText(/Name/);
-    expect((input as HTMLInputElement).disabled).toBe(true);
+    // 值以文本呈现：禁用控件的对比度是 WCAG 豁免的，豁免的前提就是它不承载内容
+    expect(await screen.findByText("RO")).toBeTruthy();
+    // 且不再有可聚焦的输入框——查看一条记录不该让人以为能改
+    expect(screen.queryByRole("textbox")).toBeNull();
   });
 
   it("服务端校验错误落字段,sheet 保持打开", async () => {
