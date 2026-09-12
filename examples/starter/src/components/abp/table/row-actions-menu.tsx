@@ -91,7 +91,7 @@ export function RowActionsMenu<TDto extends { id?: string }>(props: RowActionsMe
   ) : hasMenu ? (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" aria-label={L("Table:Actions")}>
+        <Button variant="ghost" size="icon" className="size-7" aria-label={L("Table:Actions")}>
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>

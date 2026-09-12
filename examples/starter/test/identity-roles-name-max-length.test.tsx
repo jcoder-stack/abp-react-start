@@ -112,7 +112,7 @@ describe("identity roles page: name max length", () => {
     await screen.findByText("editor");
     fireEvent.click(screen.getByRole("button", { name: /create/i }));
 
-    const nameInput = (await screen.findByLabelText("Name")) as HTMLInputElement;
+    const nameInput = (await screen.findByLabelText(/^Name/)) as HTMLInputElement;
     fireEvent.change(nameInput, {
       target: { value: "a".repeat(postApiIdentityRolesBodyNameMax + 1) },
     });

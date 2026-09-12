@@ -318,6 +318,7 @@
       "description": "Sheet-based form shell with server field-error mapping, wired to @tanstack/react-form.",
       "registryDependencies": [
         "sheet",
+        "alert-dialog",
         "button",
         "alert",
         "field",
@@ -351,9 +352,9 @@
           "target": "components/form/form-section.tsx"
         },
         {
-          "path": "ui/blocks/form/required-mark.tsx",
+          "path": "ui/blocks/form/optional-mark.tsx",
           "type": "registry:component",
-          "target": "components/form/required-mark.tsx"
+          "target": "components/form/optional-mark.tsx"
         },
         {
           "path": "ui/blocks/form/server-errors.ts",

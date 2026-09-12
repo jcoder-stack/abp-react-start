@@ -652,9 +652,10 @@ describe("DataTableToolbar v2", () => {
     renderToolbarHarness({});
     fireEvent.pointerDown(await screen.findByRole("button", { name: "Density" }));
     fireEvent.click(await screen.findByRole("menuitemradio", { name: "Compact" }));
-    // jsdom 测不了真实行高，只能断言组件应用的紧凑 padding 类名作为行为代理
+    // jsdom 测不了真实行高，只能断言组件切到了紧凑档的行高类作为行为代理
     const cell = screen.getAllByRole("cell")[0];
-    expect(cell.closest("table")?.className).toContain("[&_td]:py-1");
+    expect(cell.closest("table")?.className).toContain("[&_td]:h-8");
+    expect(cell.closest("table")?.className).not.toContain("[&_td]:h-10");
   });
 
   it("replaces the left region with bulk content while rows are selected", async () => {

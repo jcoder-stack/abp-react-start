@@ -245,14 +245,14 @@ function SiteNav({ L, authed }: { L: Localizer; authed: boolean }) {
 
 function Hero({ L, authed, userName }: { L: Localizer; authed: boolean; userName: string }) {
   return (
-    <section className="relative overflow-hidden border-b">
+    <section className="relative overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 -top-40 flex justify-center"
       >
         <div className="size-[38rem] rounded-full bg-primary/15 blur-[120px]" />
       </div>
-      <Shell className="relative flex flex-col items-center py-24 text-center">
+      <Shell className="relative flex flex-col items-center py-12 text-center md:py-24">
         <span className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-3 py-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
           <span className="size-1.5 rounded-full bg-primary" />
           {L("Landing:HeroEyebrow")}
@@ -325,7 +325,7 @@ function SectionEyebrow({ eyebrow, title }: { eyebrow: string; title: string }) 
 
 function Features({ L }: { L: Localizer }) {
   return (
-    <section id="features" className="border-b py-20">
+    <section id="features" className="py-12 md:py-24">
       <Shell>
         <SectionEyebrow eyebrow={L("Landing:FeaturesEyebrow")} title={L("Landing:FeaturesTitle")} />
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -346,7 +346,7 @@ function Features({ L }: { L: Localizer }) {
 
 function InAction({ L }: { L: Localizer }) {
   return (
-    <section id="in-action" className="border-b bg-muted/20 py-24">
+    <section id="in-action" className="bg-muted/20 py-12 md:py-24">
       <Shell>
         <SectionEyebrow eyebrow={L("Landing:InActionEyebrow")} title={L("Landing:InActionTitle")} />
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-relaxed text-muted-foreground">
@@ -378,7 +378,7 @@ function InAction({ L }: { L: Localizer }) {
 
 function Usage({ L }: { L: Localizer }) {
   return (
-    <section className="border-b py-24">
+    <section className="py-12 md:py-24">
       <Shell>
         <SectionEyebrow eyebrow={L("Landing:UsageEyebrow")} title={L("Landing:UsageTitle")} />
         <div className="mt-16 space-y-20 sm:space-y-24">
@@ -401,7 +401,7 @@ function Usage({ L }: { L: Localizer }) {
 
 function StackSection({ L }: { L: Localizer }) {
   return (
-    <section className="border-b bg-muted/20 py-20">
+    <section className="bg-muted/20 py-12 md:py-24">
       <Shell>
         <SectionEyebrow eyebrow={L("Landing:StackEyebrow")} title={L("Landing:StackTitle")} />
         <div className="mx-auto mt-12 grid max-w-4xl gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -421,7 +421,7 @@ function StackSection({ L }: { L: Localizer }) {
 
 function CtaBand({ L, authed }: { L: Localizer; authed: boolean }) {
   return (
-    <section className="border-b py-20">
+    <section className="py-12 md:py-24">
       <Shell className="flex flex-col items-center text-center">
         <h2 className="max-w-2xl text-2xl font-normal sm:text-3xl">{L("Landing:CtaTitle")}</h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
@@ -441,7 +441,7 @@ function CtaBand({ L, authed }: { L: Localizer; authed: boolean }) {
 
 function SiteFooter({ L }: { L: Localizer }) {
   return (
-    <footer className="py-10">
+    <footer className="py-16">
       <Shell className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <Brand />
         <p className="text-xs text-muted-foreground">{L("Landing:FooterTagline")}</p>

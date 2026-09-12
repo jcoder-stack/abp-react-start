@@ -108,7 +108,9 @@ const EMPTY_VALUES: BookFormValues = {
   authorId: "",
   type: "0",
   publishDate: "",
-  price: 0,
+  // 不预填 0：它能通过非空校验，那个必填标记就永远不会触发，用户还得先把 0 删掉。
+  // NumberField 把空输入映射成 NaN，默认值同样给 NaN，字段才是真的空。
+  price: Number.NaN,
 };
 
 /** 不能走默认：SelectField 是 string 值域（枚举 String/Number 往返）、publishDate 需 date-only 切片。 */
@@ -161,6 +163,11 @@ function BooksPage() {
     toCreate: toInput,
     toUpdate: toInput,
     schema: () => bookSchema,
+    title: (mode, record) => (mode === "create" ? L("App::BookCreateTitle") : (record?.name ?? "")),
+    subtitle: (mode, record) =>
+      mode === "create" || record === undefined
+        ? undefined
+        : [record.authorName, record.publishDate?.slice(0, 10)].filter(Boolean).join(" · "),
   });
 
   // 编辑/详情态已选作者名回显：AbpSwaggerBooksBookDto 自带 authorName（列表/详情复用同一 DTO，
@@ -241,7 +248,12 @@ function BooksPage() {
 
         <sheet.form.AppField name="name">
           {(field) => (
-            <field.TextField label={L("App::BookName")} required disabled={sheet.readOnly} />
+            <field.TextField
+              label={L("App::BookName")}
+              placeholder={L("App::BookNamePlaceholder")}
+              required
+              disabled={sheet.readOnly}
+            />
           )}
         </sheet.form.AppField>
 
@@ -262,6 +274,7 @@ function BooksPage() {
           {(field) => (
             <field.SelectField
               label={L("App::BookType")}
+              description={L("App::BookTypeHint")}
               options={BOOK_TYPE_VALUES.map((value) => ({
                 value: String(value),
                 label: L(bookTypeLabelKey(value)),
@@ -273,12 +286,7 @@ function BooksPage() {
 
         <sheet.form.AppField name="publishDate">
           {(field) => (
-            <field.TextField
-              label={L("App::BookPublishDate")}
-              type="date"
-              required
-              disabled={sheet.readOnly}
-            />
+            <field.DateField label={L("App::BookPublishDate")} required disabled={sheet.readOnly} />
           )}
         </sheet.form.AppField>
 
@@ -286,6 +294,7 @@ function BooksPage() {
           {(field) => (
             <field.NumberField
               label={L("App::BookPrice")}
+              placeholder={L("App::BookPricePlaceholder")}
               step="0.01"
               required
               disabled={sheet.readOnly}

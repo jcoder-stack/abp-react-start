@@ -197,6 +197,10 @@ function UsersPage() {
         roleNames: z.array(z.string()),
       });
     },
+    // 新建态给宾语；编辑/查看态以记录本身领衔，标识（邮箱）放副标题，让人确认自己在看哪一条。
+    title: (mode, record) =>
+      mode === "create" ? L("App::UserCreateTitle") : (record?.userName ?? ""),
+    subtitle: (mode, record) => (mode === "create" ? undefined : (record?.email ?? undefined)),
   });
 
   const t = useAbpTable(userService, {
