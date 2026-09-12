@@ -64,10 +64,11 @@ describe("DateField", () => {
     expect(onSubmit.mock.calls[0][0]).toEqual({ publishDate: `${MONTH_PREFIX}-21` });
   }, 8000);
 
-  it("required：label 有星号且提交空值走校验链", async () => {
+  it("required：aria-required 为真、不挂「选填」标记，且提交空值走校验链", async () => {
     const user = userEvent.setup();
     renderWithProviders(<DateHarness defaultValue="" />, { messages: mergeMessages() });
-    expect(await screen.findByText("*")).toBeTruthy();
+    // 必填的视觉契约是「没有选填标记」，语义契约是 aria-required——后者才是读屏真正读到的
+    expect(screen.queryByText("Optional")).toBeNull();
     const trigger = await screen.findByLabelText(/Publish/, {}, { timeout: 5000 });
     expect(trigger.getAttribute("aria-required")).toBe("true");
     expect(screen.queryByText("required")).toBeNull();

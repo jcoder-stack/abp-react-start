@@ -33,6 +33,13 @@
     "BooksTierL1": "L1 · source 回调",
     "BooksTierL2": "L2 · 纯 DataTable",
     "BooksTierL1Hint": "自定义数据源的参考实现：向 useAbpTable 传入 source 回调，不经 service 描述符。",
-    "BooksTierL2Hint": "ABP 层之下：裸 hooks 驱动的通用服务端分页表。"
+    "BooksTierL2Hint": "ABP 层之下：裸 hooks 驱动的通用服务端分页表。",
+    "BookCreateTitle": "新建图书",
+    "BookNamePlaceholder": "例如：三体",
+    "BookTypeHint": "留空表示未分类，之后可随时补上",
+    "BookPricePlaceholder": "0.00",
+    "UserCreateTitle": "新建用户",
+    "RoleCreateTitle": "新建角色",
+    "TenantCreateTitle": "新建租户"
   }
 }
