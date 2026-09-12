@@ -1,6 +1,9 @@
-import { parseCookieHeader, parseCultureCookie } from "@jcoder-stack/abp-react/auth";
+import {
+  CULTURE_COOKIE,
+  parseCookieHeader,
+  parseCultureCookie,
+} from "@jcoder-stack/abp-react/auth";
 import type { FrontendCatalog } from "@jcoder-stack/abp-react/i18n";
-import { CULTURE_COOKIE } from "@jcoder-stack/abp-react/proxy";
 import { type ErrorComponentProps, Link } from "@tanstack/react-router";
 import { Component, type ReactNode, useCallback, useEffect, useState } from "react";
 import shellMessages from "./_layout/shell-messages.json";
