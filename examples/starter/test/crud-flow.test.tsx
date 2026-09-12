@@ -130,14 +130,14 @@ describe("crud flow smoke", () => {
     fireEvent.pointerDown(within(rowOf("Book One")).getByRole("button", { name: "Actions" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: /edit/i }));
 
-    const nameInput = (await screen.findByLabelText("Name")) as HTMLInputElement;
+    const nameInput = (await screen.findByLabelText(/^Name/)) as HTMLInputElement;
     expect(nameInput.value).toBe("Book One");
 
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-    await waitFor(() => expect(screen.queryByLabelText("Name")).toBeNull());
+    await waitFor(() => expect(screen.queryByLabelText(/^Name/)).toBeNull());
 
     fireEvent.click(screen.getByRole("button", { name: /create/i }));
-    const nameInputAfterCreate = (await screen.findByLabelText("Name")) as HTMLInputElement;
+    const nameInputAfterCreate = (await screen.findByLabelText(/^Name/)) as HTMLInputElement;
     expect(nameInputAfterCreate.value).toBe("");
   });
 
@@ -157,7 +157,7 @@ describe("crud flow smoke", () => {
     await screen.findByText("Book One");
     fireEvent.click(screen.getByRole("button", { name: /create/i }));
 
-    const nameInput = (await screen.findByLabelText("Name")) as HTMLInputElement;
+    const nameInput = (await screen.findByLabelText(/^Name/)) as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: "Duplicate" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 

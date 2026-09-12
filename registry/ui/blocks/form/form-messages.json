@@ -8,7 +8,15 @@
       "Form:SubmitFailed": "Submission failed",
       "Form:Required": "This field is required",
       "Form:InvalidEmail": "Enter a valid email address",
-      "Form:MaxLength": "Up to {0} characters"
+      "Form:MaxLength": "Up to {0} characters",
+      "Form:Optional": "Optional",
+      "Form:Empty": "Not set",
+      "Form:Yes": "Yes",
+      "Form:No": "No",
+      "Form:DiscardTitle": "Discard your changes?",
+      "Form:DiscardBody": "What you have filled in has not been saved. Closing now loses it.",
+      "Form:Discard": "Discard",
+      "Form:KeepEditing": "Keep editing"
     }
   },
   "zh-Hans": {
@@ -20,7 +28,15 @@
       "Form:SubmitFailed": "提交失败",
       "Form:Required": "此项为必填",
       "Form:InvalidEmail": "请输入有效的邮箱地址",
-      "Form:MaxLength": "最多 {0} 个字符"
+      "Form:MaxLength": "最多 {0} 个字符",
+      "Form:Optional": "选填",
+      "Form:Empty": "未填写",
+      "Form:Yes": "是",
+      "Form:No": "否",
+      "Form:DiscardTitle": "放弃未保存的修改？",
+      "Form:DiscardBody": "已填写的内容尚未保存，现在关闭会丢失。",
+      "Form:Discard": "放弃",
+      "Form:KeepEditing": "继续编辑"
     }
   }
 }

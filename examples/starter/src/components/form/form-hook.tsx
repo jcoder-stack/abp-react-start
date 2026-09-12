@@ -1,13 +1,14 @@
+import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import type { ReactNode } from "react";
-import { lazy, Suspense } from "react";
+import { createContext, lazy, Suspense, useContext } from "react";
 import { Combobox } from "@/components/combobox/combobox";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
 import { formatIso, ISO_DATE, ISO_DATE_TIME, parseIso } from "@/components/date-picker/date-io";
 import { FormErrorSummary } from "@/components/form/form-error-summary";
-import { RequiredMark } from "@/components/form/required-mark";
+import { OptionalMark } from "@/components/form/optional-mark";
 import { Badge } from "@/components/ui/badge";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 const MultiCombobox = lazy(() =>
   import("@/components/combobox/multi-combobox").then((m) => ({ default: m.MultiCombobox })),
@@ -72,20 +74,89 @@ function clearServerSubmitErrors(form: ServerErrorForm): void {
   form.setErrorMap({ onSubmit: undefined });
 }
 
+/**
+ * 「选填」标记开关。
+ *
+ * 标少数派才有意义，而少数派是谁取决于**整张表单的构成**，不是单个字段：录入表单里多数字段
+ * 必填，标出那一两个选填的很有用；查询表单里字段本来就全是选填，逐个标等于每个标签都挂一句
+ * 废话。所以这个决定放在表单层——SheetForm 打开它，查询表单不打开。
+ */
+const OptionalMarksContext = createContext(false);
+
+/**
+ * 只读渲染开关。打开后字段不再渲染「禁用的控件」，而是渲染一行「键 / 值」。
+ *
+ * 禁用控件的对比度是 WCAG 明确豁免的——豁免的前提正是它**不承载内容**。用一排灰掉的输入框
+ * 展示一条记录，既难读又像坏了，用户还会去点那些框。
+ *
+ * 渲染归字段管（只有它知道该把枚举值、日期、布尔显示成什么），容器归表单管，调用方的写法
+ * 一个字都不用改。
+ */
+const ReadOnlyContext = createContext(false);
+
+export function ReadOnlyFields(props: { children: ReactNode }) {
+  return <ReadOnlyContext.Provider value={true}>{props.children}</ReadOnlyContext.Provider>;
+}
+
+/** 只读态的一行：左键右值，行高与表格同源（40px），值右对齐排成一条竖线。 */
+function FieldRow(props: { label: string; display: ReactNode }) {
+  const L = useLocalization();
+  const empty =
+    props.display === undefined ||
+    props.display === null ||
+    props.display === "" ||
+    (typeof props.display === "number" && Number.isNaN(props.display));
+  return (
+    <div className="flex min-h-10 items-center justify-between gap-4 px-3 py-2">
+      <dt className="shrink-0 text-sm text-muted-foreground">{props.label}</dt>
+      <dd className={cn("text-right text-sm", empty && "text-muted-foreground")}>
+        {empty ? L("Form:Empty") : props.display}
+      </dd>
+    </div>
+  );
+}
+
+export function OptionalMarks(props: { children: ReactNode }) {
+  return (
+    <OptionalMarksContext.Provider value={true}>{props.children}</OptionalMarksContext.Provider>
+  );
+}
+
+/**
+ * 字段外壳：标签 → 说明 → 控件 → 错误，顺序恒定。
+ *
+ * 说明刻意放在控件**之上**：控件下方是错误信息的位置，两者挤在一起时，出错那一刻要么说明
+ * 被顶走、要么错误被推到看不见的地方。
+ */
 function FieldShell(props: {
   label: string;
   required?: boolean;
+  description?: string;
+  /**
+   * 只读态下这个字段该显示成什么。
+   *
+   * `null` 表示「接了只读渲染，但此刻没有值」——渲染成「未填写」那一行。
+   * `undefined` 表示「这个字段还没接只读渲染」，回退到禁用控件。两者不能混用：空值若传
+   * undefined，就会在只读的键值卡里冒出一个控件，把整张卡的排版撑坏。
+   */
+  display?: ReactNode;
   orientation?: "vertical" | "horizontal";
   children: ReactNode;
 }) {
   const field = useFieldContext();
   const invalid = field.state.meta.errors.length > 0;
+  const marksOptional = useContext(OptionalMarksContext);
+  const readOnly = useContext(ReadOnlyContext);
+  if (readOnly && props.display !== undefined) {
+    return <FieldRow label={props.label} display={props.display} />;
+  }
   return (
     <Field orientation={props.orientation} data-invalid={invalid ? true : undefined}>
       <FieldLabel htmlFor={field.name}>
         {props.label}
-        {props.required === true && <RequiredMark />}
+        {marksOptional && props.required !== true && <OptionalMark />}
       </FieldLabel>
+      {props.description !== undefined && <FieldDescription>{props.description}</FieldDescription>}
       {props.children}
       <FieldError errors={toFieldErrors(field.state.meta.errors)} />
     </Field>
@@ -95,6 +166,7 @@ function FieldShell(props: {
 export function TextField(props: {
   label: string;
   required?: boolean;
+  description?: string;
   type?: "text" | "email" | "password" | "date";
   disabled?: boolean;
   placeholder?: string;
@@ -102,7 +174,12 @@ export function TextField(props: {
 }) {
   const field = useFieldContext<string>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={field.state.value}
+    >
       <Input
         id={field.name}
         name={field.name}
@@ -123,17 +200,29 @@ export function TextField(props: {
 export function NumberField(props: {
   label: string;
   required?: boolean;
+  placeholder?: string;
+  description?: string;
   disabled?: boolean;
   step?: string;
 }) {
   const field = useFieldContext<number>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={
+        Number.isNaN(field.state.value) ? null : (
+          <span className="tabular-nums">{String(field.state.value)}</span>
+        )
+      }
+    >
       <Input
         id={field.name}
         name={field.name}
         type="number"
         step={props.step}
+        placeholder={props.placeholder}
         aria-required={props.required === true || undefined}
         aria-invalid={field.state.meta.errors.length > 0 || undefined}
         value={Number.isNaN(field.state.value) ? "" : String(field.state.value)}
@@ -150,9 +239,14 @@ export function NumberField(props: {
 }
 
 export function SwitchField(props: { label: string; disabled?: boolean }) {
+  const L = useLocalization();
   const field = useFieldContext<boolean>();
   return (
-    <FieldShell label={props.label} orientation="horizontal">
+    <FieldShell
+      label={props.label}
+      orientation="horizontal"
+      display={L(field.state.value ? "Form:Yes" : "Form:No")}
+    >
       <Switch
         id={field.name}
         aria-invalid={field.state.meta.errors.length > 0 || undefined}
@@ -168,11 +262,17 @@ export function SelectField(props: {
   label: string;
   options: { value: string; label: string }[];
   required?: boolean;
+  description?: string;
   disabled?: boolean;
 }) {
   const field = useFieldContext<string>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={props.options.find((option) => option.value === field.state.value)?.label ?? null}
+    >
       <Select
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value)}
@@ -200,12 +300,18 @@ export function SelectField(props: {
 export function DateField(props: {
   label: string;
   required?: boolean;
+  description?: string;
   disabled?: boolean;
   placeholder?: string;
 }) {
   const field = useFieldContext<string>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={field.state.value ? <span className="tabular-nums">{field.state.value}</span> : null}
+    >
       <Suspense fallback={<Skeleton className="h-9 w-full" />}>
         <DatePicker
           id={field.name}
@@ -223,13 +329,19 @@ export function DateField(props: {
 
 export function DateTimeField(props: {
   label: string;
+  description?: string;
   required?: boolean;
   disabled?: boolean;
   placeholder?: string;
 }) {
   const field = useFieldContext<string>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={field.state.value ? <span className="tabular-nums">{field.state.value}</span> : null}
+    >
       <Suspense fallback={<Skeleton className="h-9 w-full" />}>
         <DateTimePicker
           id={field.name}
@@ -245,10 +357,26 @@ export function DateTimeField(props: {
   );
 }
 
-export function DateRangeField(props: { label: string; required?: boolean; disabled?: boolean }) {
+export function DateRangeField(props: {
+  label: string;
+  description?: string;
+  required?: boolean;
+  disabled?: boolean;
+}) {
   const field = useFieldContext<{ from: string; to: string }>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={
+        field.state.value.from || field.state.value.to ? (
+          <span className="tabular-nums">
+            {field.state.value.from} – {field.state.value.to}
+          </span>
+        ) : null
+      }
+    >
       <Suspense fallback={<Skeleton className="h-9 w-full" />}>
         <DateRangePicker
           id={field.name}
@@ -273,6 +401,7 @@ export function DateRangeField(props: { label: string; required?: boolean; disab
 
 export function ComboboxField(props: {
   label: string;
+  description?: string;
   options?: ComboboxOption[];
   loadOptions?: (search: string) => Promise<ComboboxOption[]>;
   placeholder?: string;
@@ -281,7 +410,15 @@ export function ComboboxField(props: {
 }) {
   const field = useFieldContext<string>();
   return (
-    <FieldShell label={props.label} required={props.required}>
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={
+        props.options?.find((option) => option.value === field.state.value)?.label ??
+        field.state.value
+      }
+    >
       <Combobox
         value={field.state.value || undefined}
         onChange={(value) => field.handleChange(value ?? "")}
@@ -301,7 +438,20 @@ export function MultiComboboxField(props: {
 }) {
   const field = useFieldContext<string[]>();
   return (
-    <FieldShell label={props.label}>
+    <FieldShell
+      label={props.label}
+      display={
+        field.state.value.length === 0 ? null : (
+          <div className="flex flex-wrap justify-end gap-1">
+            {field.state.value.map((name) => (
+              <Badge key={name} variant="secondary">
+                {name}
+              </Badge>
+            ))}
+          </div>
+        )
+      }
+    >
       {props.editable ? (
         <Suspense fallback={<Skeleton className="h-9 w-full" />}>
           <MultiCombobox
