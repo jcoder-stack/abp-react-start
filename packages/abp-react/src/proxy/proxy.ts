@@ -59,6 +59,10 @@ const IDEMPOTENT = new Set(["GET", "HEAD", "OPTIONS"]);
 
 const isRetryableStatus = (status: number) => status >= 500 || status === 429;
 
+// res.text() 按 WHATWG 规范解码会剥掉 UTF-8 BOM；代理是透传者，不该替下游改字节
+// （上游 CSV 常故意带 BOM 让 Excel 认出编码）。
+const utf8KeepingBom = new TextDecoder("utf-8", { ignoreBOM: true });
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 被丢弃的响应必须显式释放：undici 下未消费的 body 一直占着连接直到 GC，
@@ -277,7 +281,7 @@ export function createAbpProxy(opts: {
         return {
           status: res.status,
           headers: exposeHeaders(res.headers),
-          body: isText ? await res.text() : await res.arrayBuffer(),
+          body: isText ? utf8KeepingBom.decode(await res.arrayBuffer()) : await res.arrayBuffer(),
           setCookies,
         };
       }
