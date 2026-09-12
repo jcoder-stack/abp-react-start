@@ -5,7 +5,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 ## 执行准则
 
 - 沿用既有写法与约定，做最小必要改动。
-- 涉及样式、新增组件、或要加语义色时，先读 `DESIGN.md`；需要新增/修改 token 时再读 `packages/cli/templates/app-theme.css` 的 `:root` / `.dark` / `@theme inline` 段。同一会话内已读过的不重复读。
+- 涉及样式、新增组件、或要加语义色时，先读 `DESIGN.md`；需要新增/修改 token 时再读主题文件的 `:root` / `.dark` / `@theme inline` 段。同一会话内已读过的不重复读。
 - 设计/交互不确定先问，不擅自发挥；不引入未讨论的依赖。
 
 
@@ -14,8 +14,8 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 只用语义 token（`bg-background`、`text-foreground`、`text-muted-foreground`、`border-border`、`ring-ring`）。
 - 禁止硬编码色值（`#2F6BFF`、`text-[#...]`、`bg-[oklch(...)]`——品牌色也走 `--brand-*` token）和 Tailwind 调色板（`bg-gray-800`、`text-zinc-500`）——会绕过主题、破坏暗色。
 - 暗色只靠 token + `.dark`，不给组件手写整套 `dark:` 类。
-- 新语义色顺序：DESIGN.md + `app-theme.css` 的 `:root`/`.dark` 定义 token → `@theme inline` 里 `--color-x: var(--x)` 映射 → 才在组件用。不在组件里就地造色。
-- 具体数值（间距节奏、圆角、字体、排版层级、视觉克制原则）以 DESIGN.md 为准，本文件不复述。
+- 新语义色顺序：主题文件的 `:root`/`.dark` 定义 token → `@theme inline` 里 `--color-x: var(--x)` 映射 → 才在组件用。不在组件里就地造色。
+- **令牌的具体数值以主题文件为准**（`packages/cli/templates/app-theme.css`），DESIGN.md 不再复制值——它讲的是「相对 shadcn 原版改了什么、为什么」以及原版没覆盖的产品约定。
 
 ## shadcn/ui
 
@@ -38,7 +38,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 骨架：`<section className="space-y-4">` + 页标题 `<h1 className="text-2xl font-normal">`（字号与字距由 `@theme` 的 text-2xl 带出，不写任意值）；卡片/表格横向充满内容区，不加 `max-w`（刻意居中的窄页如 profile 除外）。
 - 整页表单：`divide-y rounded-lg border bg-card` 容器 + `FormSection` 分区（左标题描述 / 右字段）；操作按钮在容器底部行 `justify-end`，primary 最右。成对短字段用 `grid gap-4 sm:grid-cols-2`。
 - 页签用 `<TabsList variant="line">`；行内状态用 `StatusBadge`，禁止拿 primary/destructive 实心 Badge 表状态。
-- 主题 token 只改 `packages/cli/templates/app-theme.css`（starter 的 `src/styles.css` 是它的镜像，两份必须一致）并与 DESIGN.md 同步。
+- 主题 token 只改 `packages/cli/templates/app-theme.css`（starter 的 `src/styles.css` 是它的镜像，两份必须一致）。改颜色令牌后重跑对比度校验，浅暗两色都要过；新增覆盖要能在 DESIGN.md 的「定制层清单」里写出一行理由。
 - 尺寸/字号/字重/圆角一律走 `@theme` 的刻度类（`text-sm`、`font-medium`、`rounded-md`），禁止 `text-[13px]`、`tracking-[-0.02em]` 这类任意值——字距已随字号在 `@theme` 里给好。换主题时改刻度即可全站生效，任意值会漏。
 - 组件不 fork shadcn 原语：要改原语的观感（圆角、焦点环、暗色质感、导航项字重等）时写进主题层的 `[data-slot="…"]` 规则，这样 `shadcn add` 装进来的新组件自动继承。
 - 每个 `useQuery` 驱动的区块都要有 `isError` 分支（`FormErrorSummary` 或 destructive 文案）；禁止「失败停在骨架」与「失败渲染成空列表」。
