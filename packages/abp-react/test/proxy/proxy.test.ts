@@ -211,6 +211,17 @@ describe("createAbpProxy", () => {
     expect((await jsonProxy.send({ path: "/x" }, noRefresh)).body).toBe('{"a":1}');
   });
 
+  it("keeps the UTF-8 BOM of a text body instead of decoding it away", async () => {
+    // 上游 CSV 特意写了 BOM 让 Excel 认出 UTF-8；代理是透传者，不该替下游改字节
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf, 0x61, 0x2c, 0x62]); // "﻿a,b"
+    const csv = fakeFetch(
+      new Response(bom, { status: 200, headers: { "content-type": "text/csv; charset=utf-8" } }),
+    );
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn: csv.fetchFn });
+    const res = await proxy.send({ path: "/x" }, noRefresh);
+    expect(res.body).toBe("﻿a,b");
+  });
+
   it("cancels the discarded response body when replaying after a refresh", async () => {
     const stale = streamingResponse(401);
     const { fetchFn } = fakeFetch(stale.response, new Response("ok", { status: 200 }));
