@@ -115,6 +115,10 @@ function TenantsPage() {
           : z.string(),
       });
     },
+    // 新建态给宾语；编辑/查看态以记录本身领衔。这两页都只有 name 一个可作标识的字段，
+    // 没有第二个有信息量的标识，所以不给副标题——副标题只在真有东西可说时才占那一行。
+    title: (mode, record) =>
+      mode === "create" ? L("App::TenantCreateTitle") : (record?.name ?? ""),
   });
 
   const t = useAbpTable(tenantService, { columns, onOpen: sheet.open });
