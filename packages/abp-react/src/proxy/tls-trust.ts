@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
-import tls from "node:tls";
+// 内建模块在调用时取，不在顶层 import。这个文件随 proxy 子路径一起进客户端模块图——starter 的
+// `@/auth` 桶文件同时导出路由守卫与服务端 runtime——静态 `node:` import 会让整个子路径在浏览器里
+// 求值失败，根组件永远水合不了。下面的函数只在服务端被调，浏览器里连 process 都没有。
+function builtin<ID extends "node:fs" | "node:os" | "node:path" | "node:tls">(id: ID) {
+  return process.getBuiltinModule(id);
+}
 
 // Node 只认自己内置的 CA 列表，不读系统钥匙串：`dotnet dev-certs https --trust` 装进钥匙串后
 // 浏览器与 curl 都放行，服务端 fetch 依然拒绝。这些码表示「证书不可接受」，与网络抖动不同，
@@ -89,7 +91,7 @@ export function tlsTrustFailureMessage(code: string, url: string): string {
 /** `~`/`~/...` 展开到 home；其余路径原样返回。 */
 function expandHome(path: string): string {
   if (path !== "~" && !path.startsWith("~/")) return path;
-  return join(homedir(), path.slice(2));
+  return builtin("node:path").join(builtin("node:os").homedir(), path.slice(2));
 }
 
 interface RuntimeCaApi {
@@ -105,23 +107,28 @@ export type InstallExtraCaResult = "installed" | "already-installed" | "unsuppor
  * 运行时没有该 API（旧 Node、Bun）时返回 "unsupported"，由调用方决定怎么提示；文件不可读则抛错。
  * @param caApi 测试注入口，默认 `node:tls`。
  */
-export function installExtraCa(caFile: string, caApi: RuntimeCaApi = tls): InstallExtraCaResult {
+export function installExtraCa(caFile: string, caApi?: RuntimeCaApi): InstallExtraCaResult {
+  // 没有 getBuiltinModule 的运行时（Node < 22.3）也一定没有下面的 CA API，归为同一种「不支持」。
+  if (typeof process === "undefined" || typeof process.getBuiltinModule !== "function") {
+    return "unsupported";
+  }
+  const api = caApi ?? builtin("node:tls");
   if (
-    typeof caApi.getCACertificates !== "function" ||
-    typeof caApi.setDefaultCACertificates !== "function"
+    typeof api.getCACertificates !== "function" ||
+    typeof api.setDefaultCACertificates !== "function"
   ) {
     return "unsupported";
   }
   const resolved = expandHome(caFile);
   let pem: string;
   try {
-    pem = readFileSync(resolved, "utf8");
+    pem = builtin("node:fs").readFileSync(resolved, "utf8");
   } catch (error) {
     throw new Error(`extra CA file is not readable: ${resolved}`, { cause: error });
   }
-  const current = caApi.getCACertificates("default");
+  const current = api.getCACertificates("default");
   // 幂等：auth 运行时与 gen 可能各调一次，重复追加会让默认列表随进程寿命膨胀。
   if (current.includes(pem)) return "already-installed";
-  caApi.setDefaultCACertificates([...current, pem]);
+  api.setDefaultCACertificates([...current, pem]);
   return "installed";
 }

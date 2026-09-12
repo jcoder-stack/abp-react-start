@@ -11,7 +11,7 @@ export {
   serializeCookie,
 } from "./cookies";
 export { type Auth, createAuth } from "./create-auth";
-export { formatCultureCookie, parseCultureCookie } from "./culture";
+export { CULTURE_COOKIE, formatCultureCookie, parseCultureCookie } from "./culture";
 export { AuthError, type AuthErrorCode } from "./errors";
 export { createSessionManager, type SessionManager } from "./manager";
 export { decodeIdTokenClaims } from "./oidc/claims";
