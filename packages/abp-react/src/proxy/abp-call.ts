@@ -1,11 +1,16 @@
-import { type Auth, type AuthSession, parseCookieHeader, parseCultureCookie } from "../auth";
+import {
+  type Auth,
+  type AuthSession,
+  CULTURE_COOKIE,
+  parseCookieHeader,
+  parseCultureCookie,
+} from "../auth";
 import type { Logger } from "../logger";
 import type { AbpProxy, AbpProxyRequest, AbpProxyResponse } from "./proxy";
 
 /** 租户切换 cookie / 头名，与 ABP 后端约定共享。 */
 export const TENANT_COOKIE = "__tenant";
-/** ASP.NET Core 文化 cookie 名，与 ABP 后端约定共享。 */
-export const CULTURE_COOKIE = ".AspNetCore.Culture";
+export { CULTURE_COOKIE };
 
 /** abp-call/identity 只认代理、会话与日志三样；宿主的完整 runtime 结构上兼容此形状。 */
 export interface AbpCallRuntime {
