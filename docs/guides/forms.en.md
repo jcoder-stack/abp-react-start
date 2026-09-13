@@ -114,10 +114,12 @@ All are used through `<form.AppField name="x">{(field) => <field.Xxx .../>}</for
 |---|---|---|
 | `TextField` | `string` | `label`, `required?`, `type?` (text/email/password/date), `disabled?`, `placeholder?`, `autoComplete?` |
 | `NumberField` | `number` | `label`, `required?`, `disabled?`, `step?`. Empty string ↔ `NaN` handled internally (clearing never silently becomes `0`) |
-| `SwitchField` | `boolean` | `label`, `disabled?` (horizontal layout) |
+| `SwitchField` | `boolean` | `label`, `required?`, `description?`, `disabled?` (horizontal layout; description and error sit on the label side) |
 | `SelectField` | `string` | `label`, `options: {value,label}[]`, `required?`, `disabled?`. Numeric enums convert with `Number()`/`String()` at the DTO boundary |
 | `ComboboxField` | `string` | `label`, `options?`, `loadOptions?` (remote search), `placeholder?`, `required?`, `disabled?`. Empty passes `undefined`, writes back `?? ""` |
 | `MultiComboboxField` | `string[]` | `label`, `options`, `editable`. `editable=false` renders read-only Badge chips; `editable=true` goes through the lazy `MultiCombobox` |
+
+In view mode (`SheetForm` with `mode="view"`), `ReadOnlyFields` renders every field as a "key / value" row. When a page needs a row that is not a form field (a computed value, a summary of a related record), use `FieldRow` exported from the same file (`label` + `display`; an empty value renders as "Not set") so it lines up with the generated fields. A `FormSection` placed inside the view-mode `<dl>` collapses into the record layout on its own.
 
 The required-field trio: pass `required` on the component (asterisk + `aria-required` built in, **never the native `required`** — it pops the browser bubble first and hides the inline error) + `.min(1, L("Form:Required"))` in the schema + `revalidateLogic`. The asterisk is purely visual; the actual gate is the schema.
 
