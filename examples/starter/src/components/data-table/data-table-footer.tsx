@@ -22,27 +22,24 @@ import { cn } from "@/lib/utils";
 const DEFAULT_PAGE_SIZES = [10, 20, 50];
 const PAGE_WINDOW_THRESHOLD = 7;
 
-/** 0-based 页码窗口：总页 ≤7 全显；否则首页/末页恒在，加当前页及左右各一页，其余折叠为省略号。 */
+/**
+ * 0-based 页码窗口：总页 ≤7 全显；否则**恒定 7 个槽位**，首页与末页占两端，中间五槽随当前页滑动。
+ *
+ * 槽位数必须恒定：数量随当前页变化时，翻一页整排页码就会左右平移，按钮跑到光标底下换了张脸，
+ * 连点下一页看起来像在闪烁。宁可多显示一个省略号，也不让已经画出来的页码挪位置。
+ */
 export function getPageItems(pageIndex: number, pageCount: number): (number | "ellipsis")[] {
   const totalPages = Math.max(pageCount, 1);
   if (totalPages <= PAGE_WINDOW_THRESHOLD) {
     return Array.from({ length: totalPages }, (_, i) => i);
   }
 
-  const current = Math.min(Math.max(pageIndex, 0), totalPages - 1);
-  const keep = new Set<number>([0, totalPages - 1, current]);
-  if (current - 1 >= 0) keep.add(current - 1);
-  if (current + 1 <= totalPages - 1) keep.add(current + 1);
-  const sorted = [...keep].sort((a, b) => a - b);
+  const last = totalPages - 1;
+  const current = Math.min(Math.max(pageIndex, 0), last);
 
-  const items: (number | "ellipsis")[] = [];
-  let previous: number | undefined;
-  for (const page of sorted) {
-    if (previous !== undefined && page - previous > 1) items.push("ellipsis");
-    items.push(page);
-    previous = page;
-  }
-  return items;
+  if (current <= 3) return [0, 1, 2, 3, 4, "ellipsis", last];
+  if (current >= last - 3) return [0, "ellipsis", last - 4, last - 3, last - 2, last - 1, last];
+  return [0, "ellipsis", current - 1, current, current + 1, "ellipsis", last];
 }
 
 /** 内建页脚：总条数 + 每页行数下拉 + 分页器。与表体正交，单独成文件降低 fork 进入成本。 */

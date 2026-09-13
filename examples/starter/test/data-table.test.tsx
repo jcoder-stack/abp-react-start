@@ -162,8 +162,18 @@ describe("getPageItems", () => {
       10,
       [0, "ellipsis", 4, 5, 6, "ellipsis", 9],
     ],
-    ["collapses only the trailing gap near the start", 0, 10, [0, 1, "ellipsis", 9]],
-    ["collapses only the leading gap near the end", 9, 10, [0, "ellipsis", 8, 9]],
+    [
+      "keeps a fixed 7 slots near the start",
+      0,
+      10,
+      [0, 1, 2, 3, 4, "ellipsis", 9],
+    ],
+    [
+      "keeps a fixed 7 slots near the end",
+      9,
+      10,
+      [0, "ellipsis", 5, 6, 7, 8, 9],
+    ],
   ] as const)("%s", (_label, pageIndex, pageCount, expected) => {
     expect(getPageItems(pageIndex, pageCount)).toEqual(expected);
   });
