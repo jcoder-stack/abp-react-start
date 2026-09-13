@@ -4,7 +4,7 @@ import { revalidateLogic } from "@tanstack/react-form";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { useAppForm } from "@/components/form/form-hook";
+import { FieldRow, ReadOnlyFields, useAppForm } from "@/components/form/form-hook";
 import formMessages from "@/components/form/form-messages.json";
 import { renderWithProviders } from "./test-utils";
 
@@ -91,6 +91,41 @@ function ChipsHarness() {
     </form.AppField>
   );
 }
+
+function SwitchHarness() {
+  const form = useAppForm({ defaultValues: { active: false } });
+  return (
+    <form.AppField name="active">
+      {(field) => <field.SwitchField label="Active" required description="TOGGLE_HELP" />}
+    </form.AppField>
+  );
+}
+
+describe("SwitchField", () => {
+  it("说明文案可见,required 落成开关的 aria-required", async () => {
+    renderWithProviders(<SwitchHarness />, { messages });
+    const toggle = await screen.findByRole("switch", { name: /Active/ });
+    expect(toggle.getAttribute("aria-required")).toBe("true");
+    expect(screen.getByText("TOGGLE_HELP")).toBeTruthy();
+  });
+});
+
+describe("FieldRow", () => {
+  it("渲染键值行,空值显示「未填写」文案", async () => {
+    renderWithProviders(
+      <ReadOnlyFields>
+        <dl>
+          <FieldRow label="Total" display="42" />
+          <FieldRow label="Note" display={null} />
+        </dl>
+      </ReadOnlyFields>,
+      { messages },
+    );
+    expect(await screen.findByText("Total")).toBeTruthy();
+    expect(screen.getByText("42")).toBeTruthy();
+    expect(screen.getByText(messages.en[""]["Form:Empty"])).toBeTruthy();
+  });
+});
 
 describe("SelectField", () => {
   it("渲染当前值对应 label", async () => {

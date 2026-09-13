@@ -8,7 +8,13 @@ import { formatIso, ISO_DATE, ISO_DATE_TIME, parseIso } from "@/components/date-
 import { FormErrorSummary } from "@/components/form/form-error-summary";
 import { OptionalMark } from "@/components/form/optional-mark";
 import { Badge } from "@/components/ui/badge";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -98,8 +104,14 @@ export function ReadOnlyFields(props: { children: ReactNode }) {
   return <ReadOnlyContext.Provider value={true}>{props.children}</ReadOnlyContext.Provider>;
 }
 
-/** 只读态的一行：左键右值，行高与表格同源（40px），值右对齐排成一条竖线。 */
-function FieldRow(props: { label: string; display: ReactNode }) {
+/**
+ * 只读态的一行：左键右值，行高与表格同源（40px），值右对齐排成一条竖线。
+ *
+ * 导出给页面自己排「不是表单字段」的那一行（计算值、关联记录的摘要），让它与生成字段落在同一
+ * 条竖线上。`display` 为 `null`/空串/NaN 时渲染成「未填写」；只在 `ReadOnlyFields` 的 `<dl>`
+ * 里使用，它输出的是 `<dt>/<dd>`。
+ */
+export function FieldRow(props: { label: string; display: ReactNode }) {
   const L = useLocalization();
   const empty =
     props.display === undefined ||
@@ -150,15 +162,35 @@ function FieldShell(props: {
   if (readOnly && props.display !== undefined) {
     return <FieldRow label={props.label} display={props.display} />;
   }
+  const label = (
+    <FieldLabel htmlFor={field.name}>
+      {props.label}
+      {marksOptional && props.required !== true && <OptionalMark />}
+    </FieldLabel>
+  );
+  const description = props.description !== undefined && (
+    <FieldDescription>{props.description}</FieldDescription>
+  );
+  const error = <FieldError errors={toFieldErrors(field.state.meta.errors)} />;
+  if (props.orientation === "horizontal") {
+    // 横排时说明与错误都归到标签那一列，控件留在行尾——否则它们会挤进同一行把开关推走。
+    return (
+      <Field orientation="horizontal" data-invalid={invalid ? true : undefined}>
+        <FieldContent>
+          {label}
+          {description}
+          {error}
+        </FieldContent>
+        {props.children}
+      </Field>
+    );
+  }
   return (
     <Field orientation={props.orientation} data-invalid={invalid ? true : undefined}>
-      <FieldLabel htmlFor={field.name}>
-        {props.label}
-        {marksOptional && props.required !== true && <OptionalMark />}
-      </FieldLabel>
-      {props.description !== undefined && <FieldDescription>{props.description}</FieldDescription>}
+      {label}
+      {description}
       {props.children}
-      <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+      {error}
     </Field>
   );
 }
@@ -238,17 +270,25 @@ export function NumberField(props: {
   );
 }
 
-export function SwitchField(props: { label: string; disabled?: boolean }) {
+export function SwitchField(props: {
+  label: string;
+  required?: boolean;
+  description?: string;
+  disabled?: boolean;
+}) {
   const L = useLocalization();
   const field = useFieldContext<boolean>();
   return (
     <FieldShell
       label={props.label}
+      required={props.required}
+      description={props.description}
       orientation="horizontal"
       display={L(field.state.value ? "Form:Yes" : "Form:No")}
     >
       <Switch
         id={field.name}
+        aria-required={props.required === true || undefined}
         aria-invalid={field.state.meta.errors.length > 0 || undefined}
         checked={field.state.value}
         disabled={props.disabled}

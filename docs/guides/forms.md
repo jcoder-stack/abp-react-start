@@ -121,10 +121,12 @@ const form = useAppForm({
 |---|---|---|
 | `TextField` | `string` | `label`、`required?`、`type?`(text/email/password/date)、`disabled?`、`placeholder?`、`autoComplete?` |
 | `NumberField` | `number` | `label`、`required?`、`disabled?`、`step?`。空串↔`NaN` 已内聚(清空不会被静默写成 `0`) |
-| `SwitchField` | `boolean` | `label`、`disabled?`(横排布局) |
+| `SwitchField` | `boolean` | `label`、`required?`、`description?`、`disabled?`(横排布局,说明与错误挂在标签一侧) |
 | `SelectField` | `string` | `label`、`options: {value,label}[]`、`required?`、`disabled?`。数字枚举在 DTO 边界 `Number()`/`String()` 转换 |
 | `ComboboxField` | `string` | `label`、`options?`、`loadOptions?`(远程搜索)、`placeholder?`、`required?`、`disabled?`。空值传 `undefined`、回写 `?? ""` |
 | `MultiComboboxField` | `string[]` | `label`、`options`、`editable`。`editable=false` 渲染只读 Badge chips;`editable=true` 走 lazy `MultiCombobox` |
+
+查看态(`SheetForm` 的 `mode="view"`)由 `ReadOnlyFields` 把每个字段渲染成一行「键 / 值」。页面要自己排一行不是表单字段的内容(计算值、关联记录摘要)时,用同一文件导出的 `FieldRow`(`label` + `display`,空值渲染成「未填写」),它与生成字段落在同一条竖线上。`FormSection` 放进查看态的 `<dl>` 里会自动收成记录布局,不必另写分区容器。
 
 必填字段三件套:组件传 `required`(自带星号 + `aria-required`,**不用原生 `required`**——它会抢先弹浏览器气泡盖掉内联错误)+ schema 里 `.min(1, L("Form:Required"))` + `revalidateLogic`。星号纯视觉,真正的拦截靠 schema。
 
