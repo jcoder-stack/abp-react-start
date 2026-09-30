@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 /**
  * 产品标识。换成自己的品牌时改这一个文件即可，侧栏、落地页顶导航、登录页都取它。
  *
- * 藏蓝砖 + 反白笔画：砖取 primary、六边形与三角取 primary-foreground，浅色是深蓝砖白笔画、
- * 暗色自动翻成浅蓝砖深笔画，组件不需要知道当前主题。全站除状态色外只有一个色相，所以标识
- * 也不另带第二种颜色。尺寸由外部 className 给（`size-*`），viewBox 保证不失真。
+ * 藏蓝砖 + 反白六边形 + 点睛的播放键：砖取 primary、六边形取 primary-foreground、播放键取
+ * brand-accent（与主色同色相、只差明度）。浅色是深蓝砖白框浅蓝键，暗色自动翻过来，组件不需要
+ * 知道当前主题。全站除状态色外只有一个色相，标识也不另带第二种色相。尺寸由外部 className 给（`size-*`），viewBox 保证不失真。
  * 改动图形后必须在 16 / 24 / 32 / 48px 四档各看一眼——16px 是 favicon、24px 是侧栏图标轨。
  */
 export function BrandMark({ className }: { className?: string }) {
@@ -26,7 +26,7 @@ export function BrandMark({ className }: { className?: string }) {
       />
       <path
         d="M28 24.5 L41 32 L28 39.5 Z"
-        className="fill-primary-foreground stroke-primary-foreground"
+        className="fill-brand-accent stroke-brand-accent"
         strokeWidth={3}
         strokeLinejoin="round"
       />

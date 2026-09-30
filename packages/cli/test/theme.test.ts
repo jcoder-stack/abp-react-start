@@ -33,6 +33,8 @@ const PAIRS: Array<[string, string, number]> = [
   ["ring", "background", NON_TEXT],
   ["primary", "card", NON_TEXT],
   ["sidebar-indicator", "sidebar-accent", NON_TEXT],
+  // 标识砖上的播放键：图形元素，对砖面按非文本 3:1
+  ["brand-accent", "primary", NON_TEXT],
 ];
 
 const STATUSES = ["success", "warning", "error", "info", "neutral"] as const;

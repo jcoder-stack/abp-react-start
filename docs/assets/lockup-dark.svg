@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 64" width="352" height="64" fill="none">
   <rect width="64" height="64" rx="16" fill="#99BFFB"></rect>
   <path d="M32 11 L50.2 21.5 V42.5 L32 53 L13.8 42.5 V21.5 Z" stroke="#041531" stroke-width="5" stroke-linejoin="round"></path>
-  <path d="M28 24.5 L41 32 L28 39.5 Z" fill="#041531" stroke="#041531" stroke-width="3" stroke-linejoin="round"></path>
+  <path d="M28 24.5 L41 32 L28 39.5 Z" fill="#0E2D5C" stroke="#0E2D5C" stroke-width="3" stroke-linejoin="round"></path>
   <text x="76" y="41" font-family="Space Grotesk, system-ui, sans-serif" font-size="30" font-weight="700" fill="#EFF4FA">ABP React <tspan font-weight="400" fill="#98A3B4">Start</tspan></text>
 </svg>

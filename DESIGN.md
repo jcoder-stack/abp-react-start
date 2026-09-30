@@ -42,7 +42,7 @@
 
 ### 新增
 
-原版没有、而组件在用的语义令牌：`status-success` / `warning` / `error` / `info` / `neutral`、`row-selected`、`primary-hover`、`destructive-foreground`、`highlight` / `highlight-foreground`、`sidebar-muted-foreground`、`sidebar-indicator`、`focus-halo`。
+原版没有、而组件在用的语义令牌：`status-success` / `warning` / `error` / `info` / `neutral`、`row-selected`、`primary-hover`、`destructive-foreground`、`highlight` / `highlight-foreground`、`sidebar-muted-foreground`、`sidebar-indicator`、`focus-halo`、`brand-accent`（只给 BrandMark 的播放键，与主色同色相只差明度，不进任何组件）。
 
 ### 删除
 

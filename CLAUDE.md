@@ -30,7 +30,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 用 TanStack Query 时，客户端缓存交给 Query，loader 内 `ensureQueryData` 预取，避免瀑布请求。
 - 全局 CSS 在 `__root.tsx` 用 `?url` + `head().links` 注入，不在组件里 `import './x.css'`。
 - `src/routes` 下的非路由文件（路由专用子组件、mock demo）放进 `-` 前缀目录 colocate，如 `routes/-showcase/`。放进无前缀子目录会被误当路由。
-- 首页 `/` 是全幅营销落地页（脱离 `_layout` 侧边栏壳）：顶导航 + 英雄 + 特性 + 组件实时演示 + 页脚；匿名给登录，认证给「进入控制台」，用 `<a href>` 整页跳转而非 typed `Link`（`--no-admin` 项目无 admin 路由时不至于编译报错）。业务页仍在 `_layout/_authed` 下。品牌标识统一用 `BrandMark`（`components/abp/layout/brand-mark.tsx`，内联 SVG 走 `primary` / `primary-foreground` 以适配明暗）——换品牌只改这一个文件。
+- 首页 `/` 是全幅营销落地页（脱离 `_layout` 侧边栏壳）：顶导航 + 英雄 + 特性 + 组件实时演示 + 页脚；匿名给登录，认证给「进入控制台」，用 `<a href>` 整页跳转而非 typed `Link`（`--no-admin` 项目无 admin 路由时不至于编译报错）。业务页仍在 `_layout/_authed` 下。品牌标识统一用 `BrandMark`（`components/abp/layout/brand-mark.tsx`，内联 SVG 走 `primary` / `primary-foreground` / `brand-accent` 以适配明暗）——换品牌只改这一个文件。
 
 ## Admin 页面（ABP React Start 主题）
 

@@ -65,6 +65,9 @@
   --sidebar-indicator: oklch(0.250 0.097 259);
   --sidebar-ring: oklch(0.250 0.097 259);
   --focus-halo: color-mix(in oklab, var(--ring) 10%, transparent);
+  /* 标识砖上的播放键：与主色同一色相、只差明度，所以不算第二色相。它只给 BrandMark 用，
+     不进任何组件——一旦拿来标状态或当按钮色，「有颜色 = 有状态」就破了。 */
+  --brand-accent: oklch(0.800 0.095 259);
 
   /* 图表色沿用原值：零引用，等真要做图表时再作为独立一轮设计分类色板（见 DESIGN.md 已知空白）。
      它们本来就落在蓝色系 hue 251–265，与这套藏蓝不冲突。 */
@@ -114,6 +117,7 @@
   --sidebar-indicator: oklch(0.800 0.095 259);
   --sidebar-ring: oklch(0.800 0.095 259);
   --focus-halo: color-mix(in oklab, var(--ring) 16%, transparent);
+  --brand-accent: oklch(0.305 0.092 259);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
@@ -171,6 +175,7 @@
   --color-highlight-foreground: var(--highlight-foreground);
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
   --color-sidebar-indicator: var(--sidebar-indicator);
+  --color-brand-accent: var(--brand-accent);
 
   /* 前两个字族是自托管的变量字体（见顶部 @fontsource 导入），随构建产物落盘，不依赖访问者本机
      装了什么。Noto Sans SC Variable 刻意排在 system-ui 之前，让各操作系统上的汉字由同一支字体
