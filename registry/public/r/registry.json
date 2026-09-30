@@ -630,6 +630,11 @@
           "target": "components/date-picker/date-time-picker.tsx"
         },
         {
+          "path": "ui/blocks/date-picker/time-input.tsx",
+          "type": "registry:component",
+          "target": "components/date-picker/time-input.tsx"
+        },
+        {
           "path": "ui/blocks/date-picker/date-picker-messages.json",
           "type": "registry:file",
           "target": "components/date-picker/date-picker-messages.json"
