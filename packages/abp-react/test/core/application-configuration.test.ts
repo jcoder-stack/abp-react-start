@@ -31,6 +31,30 @@ describe("parseApplicationConfiguration", () => {
     expect(config.currentTenant.id).toBeNull();
   });
 
+  it("timing 原样透传并带类型", () => {
+    const config = parseApplicationConfiguration({
+      ...sample,
+      timing: {
+        timeZone: {
+          iana: { timeZoneName: "Asia/Shanghai" },
+          windows: { timeZoneId: "China Standard Time" },
+        },
+      },
+    });
+    expect(config.timing?.timeZone?.iana?.timeZoneName).toBe("Asia/Shanghai");
+  });
+
+  it("timing 形状不对时降级为 undefined 并报告，整份配置照常可用", () => {
+    const onError = vi.fn();
+    const config = parseApplicationConfiguration(
+      { ...sample, timing: "Asia/Shanghai" },
+      { onError },
+    );
+    expect(config.timing).toBeUndefined();
+    expect(onError).toHaveBeenCalled();
+    expect(config.currentUser).toBeDefined();
+  });
+
   it("throws on malformed payload", () => {
     expect(() => parseApplicationConfiguration({ auth: {} })).toThrow();
   });
