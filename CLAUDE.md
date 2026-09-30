@@ -12,7 +12,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 ## 样式
 
 - 只用语义 token（`bg-background`、`text-foreground`、`text-muted-foreground`、`border-border`、`ring-ring`）。
-- 禁止硬编码色值（`#2F6BFF`、`text-[#...]`、`bg-[oklch(...)]`——品牌色也走 `--brand-*` token）和 Tailwind 调色板（`bg-gray-800`、`text-zinc-500`）——会绕过主题、破坏暗色。
+- 禁止硬编码色值（`#2F6BFF`、`text-[#...]`、`bg-[oklch(...)]`——品牌色也走 `primary` 等语义 token）和 Tailwind 调色板（`bg-gray-800`、`text-zinc-500`）——会绕过主题、破坏暗色。
 - 暗色只靠 token + `.dark`，不给组件手写整套 `dark:` 类。
 - 新语义色顺序：主题文件的 `:root`/`.dark` 定义 token → `@theme inline` 里 `--color-x: var(--x)` 映射 → 才在组件用。不在组件里就地造色。
 - **令牌的具体数值以主题文件为准**（`packages/cli/templates/app-theme.css`），DESIGN.md 不再复制值——它讲的是「相对 shadcn 原版改了什么、为什么」以及原版没覆盖的产品约定。
@@ -30,7 +30,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 用 TanStack Query 时，客户端缓存交给 Query，loader 内 `ensureQueryData` 预取，避免瀑布请求。
 - 全局 CSS 在 `__root.tsx` 用 `?url` + `head().links` 注入，不在组件里 `import './x.css'`。
 - `src/routes` 下的非路由文件（路由专用子组件、mock demo）放进 `-` 前缀目录 colocate，如 `routes/-showcase/`。放进无前缀子目录会被误当路由。
-- 首页 `/` 是全幅营销落地页（脱离 `_layout` 侧边栏壳）：顶导航 + 英雄 + 特性 + 组件实时演示 + 页脚；匿名给登录，认证给「进入控制台」，用 `<a href>` 整页跳转而非 typed `Link`（`--no-admin` 项目无 admin 路由时不至于编译报错）。业务页仍在 `_layout/_authed` 下。品牌标识统一用 `BrandMark`（`components/abp/layout/brand-mark.tsx`，内联 SVG 走 `--brand-*` token 以适配明暗）——换品牌只改这一个文件。
+- 首页 `/` 是全幅营销落地页（脱离 `_layout` 侧边栏壳）：顶导航 + 英雄 + 特性 + 组件实时演示 + 页脚；匿名给登录，认证给「进入控制台」，用 `<a href>` 整页跳转而非 typed `Link`（`--no-admin` 项目无 admin 路由时不至于编译报错）。业务页仍在 `_layout/_authed` 下。品牌标识统一用 `BrandMark`（`components/abp/layout/brand-mark.tsx`，内联 SVG 走 `primary` / `primary-foreground` 以适配明暗）——换品牌只改这一个文件。
 
 ## Admin 页面（ABP React Start 主题）
 
@@ -38,7 +38,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 骨架：`<section className="space-y-4">` + 页标题 `<h1 className="text-2xl font-normal">`（字号与字距由 `@theme` 的 text-2xl 带出，不写任意值）；卡片/表格横向充满内容区，不加 `max-w`（刻意居中的窄页如 profile 除外）。
 - 整页表单：`divide-y rounded-lg border bg-card` 容器 + `FormSection` 分区（左标题描述 / 右字段）；操作按钮在容器底部行 `justify-end`，primary 最右。成对短字段用 `grid gap-4 sm:grid-cols-2`。
 - 页签用 `<TabsList variant="line">`；行内状态用 `StatusBadge`，禁止拿 primary/destructive 实心 Badge 表状态。
-- 主题 token 只改 `packages/cli/templates/app-theme.css`（starter 的 `src/styles.css` 是它的镜像，两份必须一致）。改颜色令牌后重跑对比度校验，浅暗两色都要过；新增覆盖要能在 DESIGN.md 的「定制层清单」里写出一行理由。
+- 主题 token 只改 `packages/cli/templates/app-theme.css`（starter 的 `src/styles.css` 是它的镜像，两份必须一致）。改颜色令牌后跑 `bun run check:theme`（对比度 + 明度序，浅暗两色都要过）；新增覆盖要能在 DESIGN.md 的「定制层清单」里写出一行理由。
 - 尺寸/字号/字重/圆角一律走 `@theme` 的刻度类（`text-sm`、`font-medium`、`rounded-md`），禁止 `text-[13px]`、`tracking-[-0.02em]` 这类任意值——字距已随字号在 `@theme` 里给好。换主题时改刻度即可全站生效，任意值会漏。
 - 组件不 fork shadcn 原语：要改原语的观感（圆角、焦点环、暗色质感、导航项字重等）时写进主题层的 `[data-slot="…"]` 规则，这样 `shadcn add` 装进来的新组件自动继承。
 - 每个 `useQuery` 驱动的区块都要有 `isError` 分支（`FormErrorSummary` 或 destructive 文案）；禁止「失败停在骨架」与「失败渲染成空列表」。
