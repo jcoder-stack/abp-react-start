@@ -24,7 +24,7 @@ export function DateTimePicker(props: DatePickerProps) {
   const culture = useCulture();
   const [open, setOpen] = useState(false);
   const locale = dateFnsLocale(culture);
-  const bounds = useCalendarBounds(props.value);
+  const bounds = useCalendarBounds(props.value, props.value, props);
   const timeValue = props.value ? format(props.value, "HH:mm") : "";
   const label = props.value
     ? // 时分固定 24 小时制：locale 的 `p` 在中文下是「上午 12:00」，与全站的 `HH:mm` 不是一套读法
@@ -78,11 +78,9 @@ export function DateTimePicker(props: DatePickerProps) {
           <TimeInput
             aria-label={L("DatePicker:Time")}
             value={timeValue}
-            onChange={(time) => {
-              // 清空时分只是「没填时分」，不该把已选的日期一起清掉
-              if (time === "") return;
-              props.onChange(mergeTime(props.value ?? new Date(), time));
-            }}
+            // 时分是日期的一部分，清空它不等于清掉日期；不可清空让框里显示与真实值保持一致
+            clearable={false}
+            onChange={(time) => props.onChange(mergeTime(props.value ?? new Date(), time))}
           />
         </div>
       </PopoverContent>

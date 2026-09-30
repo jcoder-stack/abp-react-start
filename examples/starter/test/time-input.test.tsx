@@ -13,9 +13,17 @@ import {
 describe("maskTimeInput", () => {
   it("只留数字，满两位补冒号，最多四位", () => {
     expect(maskTimeInput("9")).toBe("9");
-    expect(maskTimeInput("093")).toBe("09:3");
+    expect(maskTimeInput("093")).toBe("0:93");
     expect(maskTimeInput("09a30b")).toBe("09:30");
     expect(maskTimeInput("093015")).toBe("09:30");
+  });
+});
+
+describe("maskTimeInput 与失焦结果口径一致", () => {
+  it("三位数按 H:mm 显示，看到的就是失焦会落成的值", () => {
+    expect(maskTimeInput("930")).toBe("9:30");
+    expect(maskTimeInput("12:3")).toBe("1:23");
+    expect(normalizeTime(maskTimeInput("930"))).toBe("09:30");
   });
 });
 
@@ -96,6 +104,26 @@ describe("TimeInput", () => {
     await user.keyboard("930");
     fireEvent.blur(input);
     expect(onChange).toHaveBeenLastCalledWith("09:30");
+  });
+
+  it("值没变时失焦不往外发", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Controlled initial="08:00" onChange={onChange} />);
+    await user.click(screen.getByLabelText("time"));
+    await user.tab();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("不可清空时，清空后失焦回到原值", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<TimeInput aria-label="time" value="09:30" clearable={false} onChange={onChange} />);
+    const input = screen.getByLabelText("time") as HTMLInputElement;
+    await user.clear(input);
+    fireEvent.blur(input);
+    expect(input.value).toBe("09:30");
+    expect(onChange).not.toHaveBeenCalledWith("");
   });
 
   it("外部改了值，输入框跟上", () => {

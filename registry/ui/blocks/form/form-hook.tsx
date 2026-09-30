@@ -412,6 +412,9 @@ export function DateField(props: {
   description?: string;
   disabled?: boolean;
   placeholder?: string;
+  /** 透传给日期选择器，覆盖默认可选范围（见 DatePickerProps.startMonth）。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }) {
   const field = useFieldContext<string>();
   return (
@@ -425,6 +428,8 @@ export function DateField(props: {
         <DatePicker
           id={field.name}
           value={parseIso(field.state.value, ISO_DATE)}
+          startMonth={props.startMonth}
+          endMonth={props.endMonth}
           disabled={props.disabled}
           placeholder={props.placeholder}
           aria-required={props.required === true || undefined}
@@ -442,6 +447,9 @@ export function DateTimeField(props: {
   required?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  /** 透传给日期选择器，覆盖默认可选范围（见 DatePickerProps.startMonth）。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }) {
   const field = useFieldContext<string>();
   return (
@@ -455,6 +463,8 @@ export function DateTimeField(props: {
         <DateTimePicker
           id={field.name}
           value={parseIso(field.state.value, ISO_DATE_TIME)}
+          startMonth={props.startMonth}
+          endMonth={props.endMonth}
           disabled={props.disabled}
           placeholder={props.placeholder}
           aria-required={props.required === true || undefined}
@@ -471,6 +481,9 @@ export function DateRangeField(props: {
   description?: string;
   required?: boolean;
   disabled?: boolean;
+  /** 透传给日期选择器，覆盖默认可选范围（见 DatePickerProps.startMonth）。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }) {
   const field = useFieldContext<{ from: string; to: string }>();
   return (
@@ -493,6 +506,8 @@ export function DateRangeField(props: {
             from: parseIso(field.state.value.from, ISO_DATE),
             to: parseIso(field.state.value.to, ISO_DATE),
           }}
+          startMonth={props.startMonth}
+          endMonth={props.endMonth}
           disabled={props.disabled}
           aria-required={props.required === true || undefined}
           aria-invalid={field.state.meta.errors.length > 0 || undefined}

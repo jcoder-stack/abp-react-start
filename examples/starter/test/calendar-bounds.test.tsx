@@ -22,10 +22,10 @@ describe("widenBounds", () => {
     expect(widenBounds(base, [new Date(2020, 3, 1), undefined])).toBe(base);
   });
 
-  it("值早于下界或晚于上界时把范围撑到该月", () => {
+  it("值早于下界或晚于上界时把范围撑到该年整年", () => {
     const b = widenBounds(base, [new Date(1990, 6, 9), new Date(2030, 1, 2)]);
-    expect([b.startMonth.getFullYear(), b.startMonth.getMonth()]).toEqual([1990, 6]);
-    expect([b.endMonth.getFullYear(), b.endMonth.getMonth()]).toEqual([2030, 1]);
+    expect([b.startMonth.getFullYear(), b.startMonth.getMonth()]).toEqual([1990, 0]);
+    expect([b.endMonth.getFullYear(), b.endMonth.getMonth()]).toEqual([2030, 11]);
   });
 });
 
@@ -50,6 +50,19 @@ describe("DatePicker 年月下拉", () => {
       .map((o) => o.textContent);
     expect(labels).toContain("1月");
     expect(labels).not.toContain("Jan");
+  });
+
+  it("调用方给了 startMonth 时，新建记录也能选到更早的年份", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DatePicker startMonth={new Date(1950, 0, 1)} onChange={vi.fn()} />, {
+      messages: datePickerMessages,
+    });
+    await user.click(await screen.findByRole("button", { name: /pick a date/i }));
+    const year = screen.getByRole("combobox", { name: /year/i });
+    const years = within(year)
+      .getAllByRole("option")
+      .map((o) => o.textContent);
+    expect(years).toContain("1950");
   });
 
   it("值早于十年前时，打开仍落在值所在月", async () => {

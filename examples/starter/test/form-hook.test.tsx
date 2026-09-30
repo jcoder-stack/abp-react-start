@@ -267,6 +267,18 @@ function TimeHarness(props: { readOnly?: boolean; onValue?: (value: string) => v
   );
 }
 
+function DirtyTimeHarness() {
+  const form = useAppForm({ defaultValues: { start: "08:00" } });
+  return (
+    <>
+      <form.AppField name="start">{(field) => <field.TimeField label="Start" />}</form.AppField>
+      <form.Subscribe selector={(state) => state.isDirty}>
+        {(dirty) => <span data-testid="dirty">{String(dirty)}</span>}
+      </form.Subscribe>
+    </>
+  );
+}
+
 describe("TimeField", () => {
   it("敲简写失焦后，表单值是 HH:mm", async () => {
     const onValue = vi.fn();
@@ -275,6 +287,14 @@ describe("TimeField", () => {
     fireEvent.change(input, { target: { value: "9" } });
     fireEvent.blur(input);
     await waitFor(() => expect(onValue).toHaveBeenLastCalledWith("09:00"));
+  });
+
+  it("只是 Tab 经过不改值，表单不算改过", async () => {
+    renderWithProviders(<DirtyTimeHarness />, { messages });
+    const input = await screen.findByLabelText("Start");
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(screen.getByTestId("dirty").textContent).toBe("false");
   });
 
   it("查看态显示时分文本", async () => {

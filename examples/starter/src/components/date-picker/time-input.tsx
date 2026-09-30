@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 const HOUR_DIGITS = 2;
 const MAX_DIGITS = 4;
 
-/** 边敲边整形：只留数字，够两位就补冒号，最多四位。 */
+/** 边敲边整形：只留数字，最多四位；三位按 `H:mm`、四位按 `HH:mm` 补冒号——与 `normalizeTime`
+ *  的口径一致，框里看到的就是失焦会落成的值（`930` 显示 `9:30`，而不是 `93:0`）。 */
 export function maskTimeInput(text: string): string {
   const digits = text.replace(/\D/g, "").slice(0, MAX_DIGITS);
   if (digits.length <= HOUR_DIGITS) return digits;
-  return `${digits.slice(0, HOUR_DIGITS)}:${digits.slice(HOUR_DIGITS)}`;
+  const hourDigits = digits.length === MAX_DIGITS ? HOUR_DIGITS : 1;
+  return `${digits.slice(0, hourDigits)}:${digits.slice(hourDigits)}`;
 }
 
 /**
@@ -33,10 +35,11 @@ export function normalizeTime(text: string): string | null {
  * 失焦时该落成什么值。
  *
  * 整理不出来时保留表单里的原值：清空一个看不懂的时刻，等于在用户只是点了一下的情况下把它悄悄
- * 删掉，而后端跨天的 TimeSpan（`d.HH:mm`）正好长成这样。空输入是明确要清掉，照办。
+ * 删掉，而后端跨天的 TimeSpan（`d.HH:mm`）正好长成这样。空输入是明确要清掉，照办——除非
+ * 这个时刻不可清空（`clearable: false`），那就回到原值。
  */
-export function resolveTimeOnBlur(text: string, current: string): string {
-  if (text.trim() === "") return "";
+export function resolveTimeOnBlur(text: string, current: string, clearable = true): string {
+  if (text.trim() === "") return clearable ? "" : current;
   return normalizeTime(text) ?? current;
 }
 
@@ -58,7 +61,11 @@ export function TimeInput(props: {
   "aria-label"?: string;
   "aria-required"?: boolean;
   "aria-invalid"?: boolean;
+  /** 能否清空成 `""`，默认可以。为 false 时清空后失焦回到原值，也不往外发空串——用在「时分
+   *  只是日期的一部分」的地方，否则框里显示已清空、真实值却还带着原时分。 */
+  clearable?: boolean;
 }) {
+  const clearable = props.clearable ?? true;
   const [text, setText] = useState(props.value);
   // 外部改了值（换一天、表单重置）要跟上；正在敲的中间态由 onChange 自己维护
   useEffect(() => setText(props.value), [props.value]);
@@ -83,12 +90,13 @@ export function TimeInput(props: {
         // 敲满四位才往外发，半截的 `09:3` 会被上游当成一个时刻
         const normalized = masked.length === 5 ? normalizeTime(masked) : null;
         if (normalized !== null) props.onChange(normalized);
-        if (masked === "") props.onChange("");
+        if (masked === "" && clearable) props.onChange("");
       }}
       onBlur={() => {
-        const resolved = resolveTimeOnBlur(text, props.value);
+        const resolved = resolveTimeOnBlur(text, props.value, clearable);
         setText(resolved);
-        props.onChange(resolved);
+        // 值没变就不发：只是 Tab 经过也调 onChange，表单会被标成已修改，关抽屉时平白弹确认
+        if (resolved !== props.value) props.onChange(resolved);
         props.onBlur?.();
       }}
     />

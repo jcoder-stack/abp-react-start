@@ -88,7 +88,7 @@ describe("DateTimePicker", () => {
     expect([merged.getHours(), merged.getMinutes()]).toEqual([9, 30]);
   });
 
-  it("清空时分不清掉日期，也不产生无效日期", async () => {
+  it("清空时分后失焦，时间框回到原时分，日期不动", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const value = new Date(2026, 3, 10, 9, 30);
@@ -96,13 +96,11 @@ describe("DateTimePicker", () => {
       messages: datePickerMessages,
     });
     await user.click(await screen.findByRole("button", { name: /2026/ }));
-    const time = screen.getByLabelText(/time/i);
+    const time = screen.getByLabelText(/time/i) as HTMLInputElement;
     await user.clear(time);
     fireEvent.blur(time);
-    for (const [date] of onChange.mock.calls) {
-      expect(date).toBeInstanceOf(Date);
-      expect(Number.isNaN((date as Date).getTime())).toBe(false);
-    }
+    expect(time.value).toBe("09:30");
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("时间框是文本输入而非原生 time 输入", async () => {

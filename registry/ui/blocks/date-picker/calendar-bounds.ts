@@ -26,8 +26,9 @@ const CALENDAR_BOUNDS = calendarBounds(new Date());
 
 const monthStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
 
-/** 把范围撑到能装下给定日期所在的月；都在范围内时原样返回同一个对象，保住引用。
- *  不撑的话，一条十五年前的生日在日历里根本翻不到，打开时还会被夹到下界。 */
+/** 把范围撑到能装下给定日期所在的整年；都在范围内时原样返回同一个对象，保住引用。
+ *  不撑的话，一条十五年前的生日在日历里根本翻不到，打开时还会被夹到下界；撑到整年而不是
+ *  那个月，是为了把它改成同年更早的月份也够得着。 */
 export function widenBounds(
   bounds: CalendarBounds,
   dates: readonly (Date | undefined)[],
@@ -36,8 +37,8 @@ export function widenBounds(
   for (const date of dates) {
     if (date === undefined) continue;
     const month = monthStart(date);
-    if (month < startMonth) startMonth = month;
-    if (month > endMonth) endMonth = month;
+    if (month < startMonth) startMonth = new Date(date.getFullYear(), 0, 1);
+    if (month > endMonth) endMonth = new Date(date.getFullYear(), 11, 1);
   }
   return startMonth === bounds.startMonth && endMonth === bounds.endMonth
     ? bounds
@@ -50,14 +51,30 @@ const monthKey = (date: Date | undefined) =>
 const fromKey = (key: number | null) =>
   key === null ? undefined : new Date(Math.floor(key / 12), key % 12, 1);
 
-/** 日历的可选范围，撑到能装下当前值。只在所涉月份变化时才换引用（同月里改日、改时分不换）。 */
-export function useCalendarBounds(first?: Date, last?: Date): CalendarBounds {
+/**
+ * 日历的可选范围，撑到能装下当前值。`range` 覆盖默认的「当年往前 10 年、往后 1 年」（生日这类
+ * 字段放宽下界用）。只在所涉月份变化时才换引用：同月里改日、改时分不换，调用方每次渲染传新的
+ * `range` 对象也不换。
+ */
+export function useCalendarBounds(
+  first?: Date,
+  last?: Date,
+  range?: { startMonth?: Date; endMonth?: Date },
+): CalendarBounds {
   const firstKey = monthKey(first);
   const lastKey = monthKey(last);
-  return useMemo(
-    () => widenBounds(CALENDAR_BOUNDS, [fromKey(firstKey), fromKey(lastKey)]),
-    [firstKey, lastKey],
-  );
+  const startKey = monthKey(range?.startMonth);
+  const endKey = monthKey(range?.endMonth);
+  return useMemo(() => {
+    const base =
+      startKey === null && endKey === null
+        ? CALENDAR_BOUNDS
+        : {
+            startMonth: fromKey(startKey) ?? CALENDAR_BOUNDS.startMonth,
+            endMonth: fromKey(endKey) ?? CALENDAR_BOUNDS.endMonth,
+          };
+    return widenBounds(base, [fromKey(firstKey), fromKey(lastKey)]);
+  }, [firstKey, lastKey, startKey, endKey]);
 }
 
 const monthFormatters = new Map<

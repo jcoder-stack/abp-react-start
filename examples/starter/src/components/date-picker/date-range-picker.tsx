@@ -29,6 +29,10 @@ export interface DateRangePickerProps {
   placeholder?: string;
   "aria-invalid"?: boolean;
   "aria-required"?: boolean;
+  /** 日历可选范围的起止月，覆盖默认的「当年往前 10 年、往后 1 年」。生日、入职日这类要往回
+   *  翻很多年的字段用它放宽下界；当前值落在范围外时仍会自动撑开。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }
 
 export function DateRangePicker(props: DateRangePickerProps) {
@@ -37,7 +41,7 @@ export function DateRangePicker(props: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(() => toCalendarRange(props.value));
   const locale = dateFnsLocale(culture);
-  const bounds = useCalendarBounds(props.value?.from, props.value?.to);
+  const bounds = useCalendarBounds(props.value?.from, props.value?.to, props);
   const { value } = props;
   const label =
     value?.from !== undefined
