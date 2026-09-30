@@ -48,7 +48,7 @@ interface RunnerCall {
  * A fake registry + app dir mirroring add.test.ts's fakeWorkspace, extended with public/r/*.json for every
  * shadcn block runInit may install. The app carries a components.json already (so seedOrRequireComponentsJson
  * is a no-op), plus an already-themed css entry, a pre-existing src/lib/utils.ts, and a package.json that
- * already declares clsx/tailwind-merge/tw-animate-css, so the seedLibUtils/seedThemeCss steps are no-ops
+ * already declares clsx/tailwind-merge/tw-animate-css/@fontsource-variable/*, so the seedLibUtils/seedThemeCss steps are no-ops
  * here too *and* installSeededDependencies has nothing left missing, keeping this helper's many non-A3
  * callers unaffected by A3 behavior. fakeWorkspaceWithoutComponentsJson covers the cold-start (seed-or-fail,
  * and fresh utils/theme seeding) case.
@@ -70,7 +70,12 @@ function fakeWorkspace(): { root: string; app: string; registryDir: string } {
     JSON.stringify({
       name: "app",
       dependencies: { clsx: "^2.0.0", "tailwind-merge": "^2.0.0" },
-      devDependencies: { "tw-animate-css": "^1.0.0" },
+      devDependencies: {
+        "tw-animate-css": "^1.0.0",
+        "@fontsource-variable/inter": "^5.3.0",
+        "@fontsource-variable/noto-sans-sc": "^5.3.0",
+        "@fontsource-variable/jetbrains-mono": "^5.3.0",
+      },
     }),
   );
   return { root, app, registryDir };
@@ -471,6 +476,9 @@ describe("runInit", () => {
         "clsx",
         "tailwind-merge",
         "tw-animate-css",
+        "@fontsource-variable/inter",
+        "@fontsource-variable/noto-sans-sc",
+        "@fontsource-variable/jetbrains-mono",
         "@tanstack/react-router-ssr-query",
       ],
       cwd: app,
@@ -491,7 +499,16 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "bun",
-      args: ["add", "clsx", "tailwind-merge", "tw-animate-css", "@tanstack/react-router-ssr-query"],
+      args: [
+        "add",
+        "clsx",
+        "tailwind-merge",
+        "tw-animate-css",
+        "@fontsource-variable/inter",
+        "@fontsource-variable/noto-sans-sc",
+        "@fontsource-variable/jetbrains-mono",
+        "@tanstack/react-router-ssr-query",
+      ],
       cwd: paths.app,
     });
   });
@@ -503,7 +520,15 @@ describe("runInit", () => {
     writeFileSync(join(app, "src", "styles.css"), ":root { --background: white; }\n");
     writeFileSync(
       join(app, "package.json"),
-      JSON.stringify({ name: "app", devDependencies: { "tw-animate-css": "^1.0.0" } }),
+      JSON.stringify({
+        name: "app",
+        devDependencies: {
+          "tw-animate-css": "^1.0.0",
+          "@fontsource-variable/inter": "^5.3.0",
+          "@fontsource-variable/noto-sans-sc": "^5.3.0",
+          "@fontsource-variable/jetbrains-mono": "^5.3.0",
+        },
+      }),
     );
     const { runner, calls } = recordingRunner();
 
@@ -534,6 +559,9 @@ describe("runInit", () => {
         "clsx",
         "tailwind-merge",
         "tw-animate-css",
+        "@fontsource-variable/inter",
+        "@fontsource-variable/noto-sans-sc",
+        "@fontsource-variable/jetbrains-mono",
         "@tanstack/react-router-ssr-query",
       ],
       cwd: app,

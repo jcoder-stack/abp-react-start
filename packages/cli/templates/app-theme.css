@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* 字体自托管，不走第三方 CDN：内网部署未必连得上 Google Fonts，连不上就整套排版失效；
+   第三方字体源还会拿到每个访问者的 IP 与访问时间。按 unicode-range 切片，浏览器只取用到的几片。 */
+@import "@fontsource-variable/inter/opsz.css";
+@import "@fontsource-variable/noto-sans-sc";
+@import "@fontsource-variable/jetbrains-mono";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -171,7 +177,6 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --font-sans: 'Inter Variable', sans-serif;
   --color-status-success: var(--status-success);
   --color-status-warning: var(--status-warning);
   --color-status-error: var(--status-error);
@@ -189,12 +194,16 @@
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
   --color-sidebar-indicator: var(--sidebar-indicator);
 
-  /* CJK 字族排在 system-ui 之后：汉字在 mac/Windows 上由 system-ui 那一跳就已解决，这几个
-     名字是给 Linux/容器兜底、并把 Windows 的落点钉死。排到 Inter 之后、system-ui 之前则会
-     反过来伤到西文——Inter 加载失败时拉丁字母会去借苹方的字形。 */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* 前两个字族是自托管的变量字体（见顶部 @fontsource 导入），随构建产物落盘，不依赖访问者本机
+     装了什么。Noto Sans SC Variable 刻意排在 system-ui 之前，让各操作系统上的汉字由同一支字体
+     渲染，而不是 mac 落到苹方、Windows 落到雅黑；代价是访问者要下载 CJK 分片。
+     这不会伤到西文：回退是逐字形的，Inter 分片没到时下一跳是 Noto 的拉丁字形（fontsource 的
+     Noto Sans SC 也覆盖 latin），不是苹方。系统链整条留在后面兜底。 */
+  --font-sans: "Inter Variable", "Noto Sans SC Variable", "Inter", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+    monospace;
 
   /* 密度：后台的正文基线是 13px，不是原版的 14px。这是整套主题里唯一为「更密」付的代价，
      其余密度都由组件自己的类决定（h-9 控件、gap-5 字段、表格行高 h-10）。 */

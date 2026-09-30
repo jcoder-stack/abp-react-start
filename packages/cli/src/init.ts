@@ -349,7 +349,12 @@ function seedThemeCss(cwd: string, cssRelPath: string | undefined, completed: st
  *  any package.json. installSeededDependencies installs whichever subset the target app's
  *  manifest is missing. */
 const LIB_UTILS_RUNTIME_DEPS = ["clsx", "tailwind-merge"];
-const THEME_CSS_RUNTIME_DEPS = ["tw-animate-css"];
+const THEME_CSS_RUNTIME_DEPS = [
+  "tw-animate-css",
+  "@fontsource-variable/inter",
+  "@fontsource-variable/noto-sans-sc",
+  "@fontsource-variable/jetbrains-mono",
+];
 
 /** 生成的 src/router.tsx 用它把 QueryClient 接进 SSR 的 dehydrate/hydrate。没有任何块声明它
  *  （react-query 由 abp-crud 等块带进来，这个只有根接线用得到），所以由 init 自己装。 */
@@ -498,13 +503,13 @@ function readManifestDependencyNames(cwd: string): Set<string> {
 }
 
 /**
- * Installs whichever of clsx/tailwind-merge/tw-animate-css the target app's package.json is still
+ * Installs whichever of clsx/tailwind-merge/tw-animate-css/@fontsource-variable/* the target app's package.json is still
  * missing. Gated by file existence (needsLibUtilsDeps/needsThemeCssDeps: does src/lib/utils.ts / the
  * css entry actually exist), not by whether seedLibUtils/seedThemeCss freshly wrote it *this* run.
  * A run that dies after seeding those files but before this step (the install itself failing, say)
  * leaves them on disk with nothing to remember that by on the next `jc-abp init`, so re-deriving
  * "does this app need the dependency" from the manifest each time is what makes retries actually
- * idempotent instead of leaving clsx/tailwind-merge/tw-animate-css permanently uninstalled.
+ * idempotent instead of leaving clsx/tailwind-merge/tw-animate-css/@fontsource-variable/* permanently uninstalled.
  */
 async function installSeededDependencies(
   cwd: string,
