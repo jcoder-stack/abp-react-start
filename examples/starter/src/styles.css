@@ -219,28 +219,94 @@
  * 模态阴影、浮层另换面与圆角）一律不再收——那类规则正是上一版踩坑最多的地方。
  */
 
-/* 侧栏当前项：左侧 2px 指示条 + 图标染色。shadcn 默认只有一块灰底，在长导航里「我在哪」
-   这个信号太弱。一级项与二级项是两个 slot，都要覆盖。 */
+/* 聚焦：1px 实边框 + 3px 同色光晕。
+ *
+ * 原语写的是 `focus-visible:border-ring` + `ring-ring/50` + `ring-[3px]`。那圈 50% 的光晕在任何
+ * 主题下都到不了 3:1 —— 承担对比度的从来只有那圈实边框。这里把光晕压到同色 10%（暗色 16%，
+ * 深底吃掉的对比更多），让它只做品牌气息，不假装在做无障碍。
+ *
+ * 光晕必须与边框同色：深色边框配另一支颜色的光晕，读出来是两个不相干的环套在一起。
+ *
+ * 只覆盖 `--tw-ring-color`（`ring-ring/50` 编译出来就是它），原语一个字都不用动，也不需要
+ * !important —— 未分层的规则本来就压过 Tailwind 的 utilities 层。 */
+*:focus-visible,
+/* input-group 把环画在容器上而不是聚焦元素上，容器自己不是 :focus-visible，上一条够不着它——
+   不补的话带按钮的输入框比普通输入框重一档。 */
+*:has(> [data-slot="input-group-control"]:focus-visible) {
+  --tw-ring-color: var(--focus-halo);
+}
+
+/* 侧栏是例外：`sidebar.tsx` 的焦点写的是 `focus-visible:ring-2` + `ring-sidebar-ring`，没有配实边框，
+ * 那圈环就是唯一的指示。上面压光晕的前提是「另有实边框扛 3:1」，这里不成立，还它满不透明度。 */
+[data-slot^="sidebar-"]:focus-visible {
+  --tw-ring-color: var(--sidebar-ring);
+}
+
+/* 浏览器自动填充的底色。Chrome 只给 <input> 本身刷那层浅蓝，而 input-group 的圆角边框包着
+ * input 加尾部按钮——于是密码框里出现一块方形蓝底，右边按钮那截还是白的，像控件裂开了。
+ * 内阴影是唯一盖得住的办法（background 会被 UA 样式赢过去）；取 --card，因为输入框都长在
+ * 卡片、抽屉或浮层上，三者在两个主题里是同一支面。 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  -webkit-text-fill-color: var(--foreground);
+  caret-color: var(--foreground);
+}
+
+/* 侧栏当前项：原语那块 sidebar-accent 底（比轨浮一档的面）之外，再加左侧 2px 指示条。
+ * 只有底时「我在哪」在长导航里读不出来；只有条时条得粗到难看才够醒目。两者一起，各自都可以很轻。
+ *
+ * 指示条单独一个令牌而不复用 primary：两个主题要的值不同，关系相同。
+ *
+ * **挂在 li 上，不能挂在按钮上。** 两个按钮原语都带 overflow-hidden，挂在按钮上的负偏移
+ * ::before 会被它自己裁掉——计算样式里有，屏幕上没有。li 本身就是 position: relative。
+ *
+ * 二级项的条压在 SidebarMenuSub 那条 border-l 上（-0.625rem 正好是它的 px-2.5），读作
+ * 「树线的这一段被点亮」，而不是又多出一条平行的线。 */
+[data-slot="sidebar-menu-item"]:has(> [data-active="true"])::before,
+[data-slot="sidebar-menu-sub-item"]:has(> [data-active="true"])::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.25rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--sidebar-indicator);
+}
+[data-slot="sidebar-menu-item"]:has(> [data-active="true"])::before {
+  left: -0.5rem;
+}
+[data-slot="sidebar-menu-sub-item"]:has(> [data-active="true"])::before {
+  left: -0.625rem;
+}
 [data-slot="sidebar-menu-sub-button"][data-active="true"] {
   font-weight: var(--font-weight-medium);
 }
-[data-slot="sidebar-menu-button"][data-active="true"],
-[data-slot="sidebar-menu-sub-button"][data-active="true"] {
-  position: relative;
+
+/* 用户区与导航之间一条发丝线：导航列表可滚动而用户区固定在底部，没有这条线时它读起来像列表里
+ * 最后一个导航项。顶部标识区不给——紧接着的搜索框自带边框，再加一条就是两条平行线。 */
+[data-slot="sidebar-footer"] {
+  border-top: 1px solid var(--sidebar-border);
 }
-[data-slot="sidebar-menu-button"][data-active="true"]::before,
-[data-slot="sidebar-menu-sub-button"][data-active="true"]::before {
-  content: "";
-  position: absolute;
-  inset-block: 0.375rem;
-  left: -0.5rem;
-  width: 2px;
-  border-radius: 9999px;
-  background: var(--primary);
+
+/* 单选 toggle（视图 / 模式切换）的选中态。原语默认 bg-accent，在这套色阶下压在抽屉底上只有
+ * 1.05:1，选中与未选中分不出来。不用主色填充：主色是「点这里」，填进表示「你在哪」的段里会让
+ * 品牌色获得数据含义。所以用中性墨边 + 字重；55% 是解出来的（浅色 4.09、暗色 5.62，40% 只有 2.59）。
+ *
+ * 只打单选：Radix 给单选 role="radio"（父级 radiogroup），多选是 aria-pressed，多选的选中态
+ * 往往另有含义（例如「这天不上班」的删除线），不能被这条盖掉。 */
+[data-slot="toggle-group"][role="radiogroup"] [data-slot="toggle-group-item"][data-state="on"] {
+  border-color: color-mix(in oklab, var(--foreground) 55%, transparent);
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
 }
-[data-slot="sidebar-menu-button"][data-active="true"] > svg,
-[data-slot="sidebar-menu-sub-button"][data-active="true"] svg {
-  color: var(--primary);
+
+/* 相连的段（spacing=0）除首段外没有左边框，段间那条线是前一段的右边框，墨边染不到它。
+ * 补回 1px 左边框并左移 1px 盖住前一段的右边框，布局宽度不变。 */
+[data-slot="toggle-group"][role="radiogroup"]
+  [data-slot="toggle-group-item"][data-spacing="0"][data-variant="outline"][data-state="on"]:not(:first-child) {
+  border-left-width: 1px;
+  margin-left: -1px;
 }
 
 /* 字段内部收紧到 6px：标签、说明、控件、错误是同一件东西的四个部分，而字段与字段之间是
@@ -254,6 +320,19 @@
    单独决定整张表的密度。 */
 [data-slot="table-cell"] {
   padding-block: 0;
+}
+
+/* 行栅格与工具条、分页脚共处一张卡片，三者共用同一条左右边界，取 16px。单元格 8px 内边距是
+ * 列间隙的一半，两列之间是 16px；外侧若只给 8px，首列看上去被挤在边框上。外边距与列间距相等，
+ * 栅格才匀。给在单元格而不是滚动容器上：容器的内边距会跟着横向滚动滚走。 */
+[data-slot="table-head"]:first-child,
+[data-slot="table-cell"]:first-child {
+  padding-left: --spacing(4);
+}
+
+[data-slot="table-head"]:last-child,
+[data-slot="table-cell"]:last-child {
+  padding-right: --spacing(4);
 }
 
 /* 抽屉回到 200ms。原语是开 500ms、关 300ms，开场比产品里第二慢的动画还慢 2.5 倍——
