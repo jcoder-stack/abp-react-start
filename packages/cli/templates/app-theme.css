@@ -4,130 +4,131 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * 主题 = shadcn 原版 Blue preset + 一层薄覆盖。
+ * 主题 = 一条藏蓝色阶（hue 259，11 级）承担全部中性、文字与动作色。
  *
- * 此前这里是一套自定义设计系统（Linear-informed：自定义字重 510/590、逐档负字距、四级
- * surface 阶梯、五层模态阴影……）。它被换掉不是因为不好看，是因为账算不过来——见
- * docs/theme-spike.md：近期 7 个 PR 里有 5 个修的是那套自定义**自己造出来的**问题，
- * 而它带来的密度优势实测只值一行 --text-sm。
+ * 体系仍是 shadcn 原版：不自定义字重、不逐档设负字距、不另造 surface 与 border 阶梯
+ * （那一套自研体系为什么被推翻，见 docs/theme-spike.md）。换掉的是颜色与色阶的组织方式——
+ * 强调色恰恰是 preset 预期被替换的那一个。
  *
- * 覆盖层只留四类，每一条都能说出「原版给不了什么」：
- *   1. --ring      原版用中性灰，对底色只有 2.59:1，低于 WCAG 对非文本控件的 3:1
- *   2. --text-sm   13px，后台的密度基线（原版 14px）；另留 11px 的 --text-2xs 给表头
- *   3. CJK 字族    原版完全没管，而这是双语产品的刚需
- *   4. 语义补充    status-* 五档、brand-*、row-selected、primary-hover——组件在用，原版没有
+ * 三条贯穿全表的规则：
+ *   1. 中性色不是灰。从页底到正文都落在 hue 259，彩度随变暗而爬升（0.006 → 0.097）：
+ *      浅端近乎无色好当面，深端有实打实的蓝好当墨与动作色。
+ *   2. 有颜色 = 有状态。除 status-* 五档外全表没有第二个色相，而五档只出现在药丸与告警条里。
+ *      层级由明度差与间距承担，不由颜色承担。
+ *   3. 导航轨永远比内容沉一档，当前项永远比轨浮一档。这条是语义，不是一组值——暗色下不存在
+ *      「浅色轨」，两个主题的取值不同但关系相同。
+ *
+ * 改任何一个值之后跑 `bun run check:theme`：它校验两个主题的对比度与上面第 3 条的明度序。
+ * 明度序那一组是必要的——曾有一版暗色侧栏比内容还亮、当前项比轨还暗，而对比度全程达标。
  */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.55 0.21 264);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: oklch(0.980 0.006 259);
+  --foreground: oklch(0.198 0.075 259);
+  --card: oklch(1.000 0.000 0);
+  --card-foreground: oklch(0.198 0.075 259);
+  --popover: oklch(1.000 0.000 0);
+  --popover-foreground: oklch(0.198 0.075 259);
+  --primary: oklch(0.250 0.097 259);
+  --primary-foreground: oklch(1.000 0.000 0);
+  --primary-hover: oklch(0.305 0.092 259);
+  --secondary: oklch(0.964 0.010 259);
+  --secondary-foreground: oklch(0.390 0.070 259);
+  --muted: oklch(0.964 0.010 259);
+  --muted-foreground: oklch(0.520 0.054 259);
+  --accent: oklch(0.964 0.010 259);
+  --accent-foreground: oklch(0.250 0.097 259);
+  --destructive: oklch(0.525 0.190 25);
+  --destructive-foreground: oklch(1.000 0.000 0);
+  --border: oklch(0.920 0.016 259);
+  --input: oklch(0.872 0.022 259);
+  --ring: oklch(0.250 0.097 259);
+  --highlight: oklch(0.250 0.097 259);
+  --highlight-foreground: oklch(1.000 0.000 0);
+  --row-selected: oklch(0.952 0.022 259);
+  --status-success: oklch(0.500 0.130 155);
+  --status-warning: oklch(0.520 0.130 70);
+  --status-error: oklch(0.530 0.190 25);
+  --status-info: oklch(0.523 0.150 274);
+  --status-neutral: oklch(0.513 0.020 259);
+  --sidebar: oklch(0.964 0.010 259);
+  --sidebar-foreground: oklch(0.198 0.075 259);
+  --sidebar-muted-foreground: oklch(0.520 0.054 259);
+  --sidebar-border: oklch(0.920 0.016 259);
+  --sidebar-accent: oklch(1.000 0.000 0);
+  --sidebar-accent-foreground: oklch(0.198 0.075 259);
+  --sidebar-indicator: oklch(0.250 0.097 259);
+  --sidebar-ring: oklch(0.250 0.097 259);
+  --focus-halo: color-mix(in oklab, var(--ring) 10%, transparent);
+
+  /* 图表色沿用原值：零引用，等真要做图表时再作为独立一轮设计分类色板（见 DESIGN.md 已知空白）。
+     它们本来就落在蓝色系 hue 251–265，与这套藏蓝不冲突。 */
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+
+  /* 待第 1 批 Task 4 随 BrandMark / 落地页一并删除 */
   --sidebar-primary: oklch(0.546 0.245 262.881);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-
-  /* ── 覆盖层 ── */
-  /* 强调色用自家的蓝，不用 preset 自带的那支。采用原版的**体系**不等于采用它的**强调色**——
-     强调色恰恰是 preset 预期被替换的那一个。而且自家这支是往**正确方向**调的：暗色比浅色更亮
-     （0.55 → 0.57），所以同一个色值既能当填充（承白字 5.08 / 4.66），也能当前景用在链接、
-     当前项与焦点边框上（对页底 5.08 / 4.24）。preset 那支反过来，暗色比浅色更深
-     （0.488 → 0.424），对页底只剩 2.24:1，得为暗色另开一条焦点环特例才行。
-
-     前景取纯白而不是基准那支淡蓝（oklch(0.97 0.014 254.604)）：配我们的蓝，它在暗色下只有
-     4.28:1，低于 4.5；纯白是 4.66:1。
-
-     `--sidebar-primary` 不跟着改——它其实不服务侧栏，是营销页渐变标题的第二个色标
-     （`from-primary to-sidebar-primary`），与 primary 同值会让渐变塌成纯色。侧栏当前项的
-     指示条在定制层里直接用 primary。
-
-     焦点环因此两个主题都能直接指向 primary。判定的是 `focus-visible:border-ring` 那圈
-     **实边框**——同时存在的 `ring-ring/50` 光晕是半透明的，任何主题下都到不了 3:1，
-     它是第二重提示，不是对比度的承担者。 */
-  --ring: var(--primary);
-  --status-success: oklch(0.50 0.13 155);
-  --status-warning: oklch(0.52 0.13 70);
-  --status-error: oklch(0.53 0.2 25);
-  --status-info: oklch(0.52 0.15 255);
-  --status-neutral: oklch(0.52 0.01 286);
   --brand-ink: oklch(0.259 0.052 263);
   --brand-mark: oklch(0.52 0.22 264);
   --brand-spark: oklch(0.750 0.167 51);
   --brand-ink-contrast: oklch(1 0 0);
-  --row-selected: oklch(0.955 0.014 264);
-  --primary-hover: oklch(0.50 0.21 264);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.57 0.21 264);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: oklch(0.165 0.038 259);
+  --foreground: oklch(0.965 0.010 259);
+  --card: oklch(0.205 0.042 259);
+  --card-foreground: oklch(0.965 0.010 259);
+  --popover: oklch(0.205 0.042 259);
+  --popover-foreground: oklch(0.965 0.010 259);
+  --primary: oklch(0.800 0.095 259);
+  --primary-foreground: oklch(0.200 0.060 259);
+  --primary-hover: oklch(0.862 0.078 259);
+  --secondary: oklch(0.268 0.040 259);
+  --secondary-foreground: oklch(0.965 0.010 259);
+  --muted: oklch(0.262 0.038 259);
+  --muted-foreground: oklch(0.712 0.028 259);
+  --accent: oklch(0.274 0.042 259);
+  --accent-foreground: oklch(0.965 0.010 259);
+  --destructive: oklch(0.700 0.170 25);
+  --destructive-foreground: oklch(0.180 0.040 25);
+  --border: oklch(0.320 0.040 259);
+  --input: oklch(0.358 0.042 259);
+  --ring: oklch(0.800 0.095 259);
+  --highlight: oklch(0.800 0.095 259);
+  --highlight-foreground: oklch(0.200 0.060 259);
+  --row-selected: oklch(0.262 0.050 259);
+  --status-success: oklch(0.720 0.150 155);
+  --status-warning: oklch(0.800 0.140 80);
+  --status-error: oklch(0.680 0.190 25);
+  --status-info: oklch(0.700 0.130 278);
+  --status-neutral: oklch(0.680 0.016 259);
+  --sidebar: oklch(0.140 0.038 259);
+  --sidebar-foreground: oklch(0.940 0.012 259);
+  --sidebar-muted-foreground: oklch(0.700 0.030 259);
+  --sidebar-border: oklch(0.268 0.042 259);
+  --sidebar-accent: oklch(0.252 0.050 259);
+  --sidebar-accent-foreground: oklch(0.978 0.006 259);
+  --sidebar-indicator: oklch(0.800 0.095 259);
+  --sidebar-ring: oklch(0.800 0.095 259);
+  --focus-halo: color-mix(in oklab, var(--ring) 16%, transparent);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
+
+  /* 待第 1 批 Task 4 随 BrandMark / 落地页一并删除 */
   --sidebar-primary: oklch(0.623 0.214 259.815);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-
-  /* ── 覆盖层 ── */
-  --ring: var(--primary);
-  --status-success: oklch(0.72 0.15 155);
-  --status-warning: oklch(0.8 0.14 80);
-  --status-error: oklch(0.68 0.19 25);
-  --status-info: oklch(0.7 0.13 250);
-  --status-neutral: oklch(0.68 0.012 286);
   --brand-ink: oklch(1 0 0);
   --brand-mark: oklch(0.62 0.20 264);
   --brand-spark: oklch(0.750 0.167 51);
   --brand-ink-contrast: oklch(0.259 0.052 263);
-  --row-selected: oklch(0.22 0.024 264);
-  --primary-hover: oklch(0.63 0.18 264);
 }
 
 @theme inline {
@@ -182,6 +183,11 @@
   --color-brand-ink-contrast: var(--brand-ink-contrast);
   --color-row-selected: var(--row-selected);
   --color-primary-hover: var(--primary-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-indicator: var(--sidebar-indicator);
 
   /* CJK 字族排在 system-ui 之后：汉字在 mac/Windows 上由 system-ui 那一跳就已解决，这几个
      名字是给 Linux/容器兜底、并把 Windows 的落点钉死。排到 Inter 之后、system-ui 之前则会
