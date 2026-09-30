@@ -259,7 +259,7 @@ function Hero({ L, authed, userName }: { L: Localizer; authed: boolean; userName
         </span>
         <h1 className="mt-6 max-w-3xl text-4xl font-medium sm:text-5xl">
           {L("Landing:HeroTitleLead")}{" "}
-          <span className="bg-gradient-to-r from-primary to-sidebar-primary bg-clip-text text-transparent">
+          <span className="text-primary">
             {L("Landing:HeroTitleAccent")}
           </span>
         </h1>
