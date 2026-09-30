@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -547,6 +554,8 @@ describe("runInit", () => {
   // install must be re-derived from the target's package.json every run, not from "did this run seed it".
   it("installs still-missing seeded dependencies on a rerun where lib/utils.ts and the theme css already exist but package.json never caught up (init retried after a previous partial failure)", async () => {
     const { app } = fakeWorkspace();
+    // The previous run seeded the baseline theme, so its font imports are on disk too.
+    copyFileSync(APP_THEME_CSS_TEMPLATE_PATH, join(app, "src", "app.css"));
     writeFileSync(join(app, "package.json"), JSON.stringify({ name: "app" }));
     const { runner, calls } = recordingRunner();
 
@@ -562,6 +571,26 @@ describe("runInit", () => {
         "@fontsource-variable/inter",
         "@fontsource-variable/noto-sans-sc",
         "@fontsource-variable/jetbrains-mono",
+        "@tanstack/react-router-ssr-query",
+      ],
+      cwd: app,
+    });
+  });
+
+  it("does not install the font packages into an app whose own theme css never imports them", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, "package.json"), JSON.stringify({ name: "app" }));
+    const { runner, calls } = recordingRunner();
+
+    await initWithStubbedProbe({ cwd: app, runner });
+
+    expect(calls[0]).toEqual({
+      cmd: "npm",
+      args: [
+        "install",
+        "clsx",
+        "tailwind-merge",
+        "tw-animate-css",
         "@tanstack/react-router-ssr-query",
       ],
       cwd: app,
