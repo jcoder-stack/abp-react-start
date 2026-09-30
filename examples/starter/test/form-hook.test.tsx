@@ -250,3 +250,55 @@ describe("提交失败聚焦首错字段", () => {
     await waitFor(() => expect(document.activeElement).toBe(nameInput));
   });
 });
+
+function TimeHarness(props: { readOnly?: boolean; onValue?: (value: string) => void }) {
+  const form = useAppForm({ defaultValues: { start: props.readOnly ? "08:30" : "" } });
+  const fields = (
+    <form.AppField name="start" listeners={{ onChange: ({ value }) => props.onValue?.(value) }}>
+      {(field) => <field.TimeField label="Start" />}
+    </form.AppField>
+  );
+  return props.readOnly ? (
+    <ReadOnlyFields>
+      <dl>{fields}</dl>
+    </ReadOnlyFields>
+  ) : (
+    fields
+  );
+}
+
+describe("TimeField", () => {
+  it("敲简写失焦后，表单值是 HH:mm", async () => {
+    const onValue = vi.fn();
+    renderWithProviders(<TimeHarness onValue={onValue} />, { messages });
+    const input = await screen.findByLabelText("Start");
+    fireEvent.change(input, { target: { value: "9" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(onValue).toHaveBeenLastCalledWith("09:00"));
+  });
+
+  it("查看态显示时分文本", async () => {
+    renderWithProviders(<TimeHarness readOnly />, { messages });
+    expect(await screen.findByText("08:30")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+});
+
+function NoteHarness() {
+  const form = useAppForm({ defaultValues: { note: "" } });
+  return (
+    <form.AppField name="note">
+      {(field) => <field.TextareaField label="Note" rows={3} />}
+    </form.AppField>
+  );
+}
+
+describe("TextareaField", () => {
+  it("多行输入可写回", async () => {
+    renderWithProviders(<NoteHarness />, { messages });
+    const area = (await screen.findByLabelText("Note")) as HTMLTextAreaElement;
+    fireEvent.change(area, { target: { value: "a\nb" } });
+    expect(area.value).toBe("a\nb");
+    expect(area.tagName).toBe("TEXTAREA");
+  });
+});
