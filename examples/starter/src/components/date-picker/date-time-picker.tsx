@@ -27,7 +27,8 @@ export function DateTimePicker(props: DatePickerProps) {
   const bounds = useCalendarBounds(props.value);
   const timeValue = props.value ? format(props.value, "HH:mm") : "";
   const label = props.value
-    ? format(props.value, "PPp", { locale })
+    ? // 时分固定 24 小时制：locale 的 `p` 在中文下是「上午 12:00」，与全站的 `HH:mm` 不是一套读法
+      `${format(props.value, "PP", { locale })} ${format(props.value, "HH:mm")}`
     : (props.placeholder ?? L("DatePicker:Placeholder"));
   return (
     <Popover open={open} onOpenChange={setOpen}>

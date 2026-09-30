@@ -5,7 +5,7 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import datePickerMessages from "@/components/date-picker/date-picker-messages.json";
 import { DateTimePicker } from "@/components/date-picker/date-time-picker";
-import { monthCaption, monthsAgo, renderWithProviders } from "./test-utils";
+import { makeConfig, monthCaption, monthsAgo, renderWithProviders } from "./test-utils";
 
 /** 逐键录入要求输入框留住已敲进去的字符；只挂 spy 而不回写 value 的话，受控 Input
  * 每敲一下就被拽回初始值，测到的就不是用户的输入路径。 */
@@ -110,5 +110,17 @@ describe("DateTimePicker", () => {
     renderWithProviders(<DateTimePicker onChange={vi.fn()} />, { messages: datePickerMessages });
     await user.click(await screen.findByRole("button", { name: /pick a date/i }));
     expect(screen.getByLabelText(/time/i).getAttribute("type")).not.toBe("time");
+  });
+
+  it("中文界面触发器文本用 24 小时制", async () => {
+    const config = makeConfig({
+      localization: { currentCulture: { name: "zh-Hans" }, languages: [], values: {} },
+    });
+    renderWithProviders(
+      <DateTimePicker value={new Date(2026, 9, 15, 17, 30)} onChange={vi.fn()} />,
+      { config, messages: datePickerMessages },
+    );
+    const trigger = await screen.findByRole("button", { name: /17:30/ });
+    expect(trigger.textContent).not.toMatch(/上午|下午|AM|PM/);
   });
 });

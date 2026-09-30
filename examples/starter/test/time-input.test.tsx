@@ -87,6 +87,17 @@ describe("TimeInput", () => {
     expect((input as HTMLInputElement).value).toBe("09:00");
   });
 
+  it("已有值时聚焦即全选，直接敲简写整体替换", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Controlled initial="00:00" onChange={onChange} />);
+    const input = screen.getByLabelText("time");
+    await user.click(input);
+    await user.keyboard("930");
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenLastCalledWith("09:30");
+  });
+
   it("外部改了值，输入框跟上", () => {
     const { rerender } = render(<TimeInput aria-label="time" value="08:00" onChange={vi.fn()} />);
     rerender(<TimeInput aria-label="time" value="17:45" onChange={vi.fn()} />);

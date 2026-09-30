@@ -75,6 +75,8 @@ export function TimeInput(props: {
       aria-label={props["aria-label"]}
       aria-required={props["aria-required"]}
       aria-invalid={props["aria-invalid"]}
+      // 聚焦即全选：已有 `00:00` 时直接敲 `930` 要整体替换，否则新数字追加在后面、被掩码截掉
+      onFocus={(event) => event.currentTarget.select()}
       onChange={(event) => {
         const masked = maskTimeInput(event.target.value);
         setText(masked);
