@@ -259,9 +259,7 @@ function Hero({ L, authed, userName }: { L: Localizer; authed: boolean; userName
         </span>
         <h1 className="mt-6 max-w-3xl text-4xl font-medium sm:text-5xl">
           {L("Landing:HeroTitleLead")}{" "}
-          <span className="text-primary">
-            {L("Landing:HeroTitleAccent")}
-          </span>
+          <span className="text-primary">{L("Landing:HeroTitleAccent")}</span>
         </h1>
         <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
           {authed ? L("Landing:HeroWelcomeBack", userName) : L("Landing:HeroSubtitle")}
