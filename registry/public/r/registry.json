@@ -615,6 +615,11 @@
           "target": "components/date-picker/date-io.ts"
         },
         {
+          "path": "ui/blocks/date-picker/calendar-bounds.ts",
+          "type": "registry:component",
+          "target": "components/date-picker/calendar-bounds.ts"
+        },
+        {
           "path": "ui/blocks/date-picker/date-picker.tsx",
           "type": "registry:component",
           "target": "components/date-picker/date-picker.tsx"

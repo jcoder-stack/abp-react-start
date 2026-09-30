@@ -2,6 +2,7 @@ import { useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { calendarFormatters, useCalendarBounds } from "@/components/date-picker/calendar-bounds";
 import { dateFnsLocale } from "@/components/date-picker/date-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,6 +37,7 @@ export function DateRangePicker(props: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(() => toCalendarRange(props.value));
   const locale = dateFnsLocale(culture);
+  const bounds = useCalendarBounds(props.value?.from, props.value?.to);
   const { value } = props;
   const label =
     value?.from !== undefined
@@ -84,6 +86,11 @@ export function DateRangePicker(props: DateRangePickerProps) {
           // 见 date-picker.tsx：按起始日起锚（numberOfMonths=2 时它是左侧那个月）。锚点取
           // 用 props.value 而不是 working，半截区间的 working 被归零，仍应停在用户已选的起始月。
           defaultMonth={value?.from}
+          // 见 date-picker.tsx：年月下拉，范围撑到能装下当前区间
+          captionLayout="dropdown"
+          startMonth={bounds.startMonth}
+          endMonth={bounds.endMonth}
+          formatters={calendarFormatters(locale)}
           selected={working ? { from: working.from, to: working.to } : undefined}
           onSelect={(range) => {
             setWorking(range);
