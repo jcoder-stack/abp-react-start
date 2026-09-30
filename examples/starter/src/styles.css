@@ -215,17 +215,28 @@
  * 光晕必须与边框同色：深色边框配另一支颜色的光晕，读出来是两个不相干的环套在一起。
  *
  * 只覆盖 `--tw-ring-color`（`ring-ring/50` 编译出来就是它），原语一个字都不用动，也不需要
- * !important —— 未分层的规则本来就压过 Tailwind 的 utilities 层。 */
-*:focus-visible,
+ * !important —— 未分层的规则本来就压过 Tailwind 的 utilities 层。
+ *
+ * 出错与危险态不压：原语在那里给的是 destructive 色的光晕，套上藏蓝就成了红边框外一圈蓝，
+ * 正是上面要防的异色环，而且出错时的焦点最需要看清。 */
+*:focus-visible:not([aria-invalid="true"], [data-variant="destructive"]),
 /* input-group 把环画在容器上而不是聚焦元素上，容器自己不是 :focus-visible，上一条够不着它——
    不补的话带按钮的输入框比普通输入框重一档。 */
-*:has(> [data-slot="input-group-control"]:focus-visible) {
+[data-slot="input-group"]:has(> [data-slot="input-group-control"]:focus-visible):not(
+    :has([aria-invalid="true"])
+  ) {
   --tw-ring-color: var(--focus-halo);
 }
 
-/* 侧栏是例外：`sidebar.tsx` 的焦点写的是 `focus-visible:ring-2` + `ring-sidebar-ring`，没有配实边框，
- * 那圈环就是唯一的指示。上面压光晕的前提是「另有实边框扛 3:1」，这里不成立，还它满不透明度。 */
-[data-slot^="sidebar-"]:focus-visible {
+/* 侧栏是例外：`sidebar.tsx` 这五个 slot 的焦点写的是 `focus-visible:ring-2` + `ring-sidebar-ring`，
+ * 没有配实边框，那圈环就是唯一的指示。上面压光晕的前提是「另有实边框扛 3:1」，这里不成立，还它
+ * 满不透明度。只点名这五个：sidebar-trigger / sidebar-input 是 Button / Input 原语，自带实边框与
+ * 3px 光晕，按前缀一把抓会把它们画成 3px 实心环。 */
+[data-slot="sidebar-group-label"]:focus-visible,
+[data-slot="sidebar-group-action"]:focus-visible,
+[data-slot="sidebar-menu-button"]:focus-visible,
+[data-slot="sidebar-menu-action"]:focus-visible,
+[data-slot="sidebar-menu-sub-button"]:focus-visible {
   --tw-ring-color: var(--sidebar-ring);
 }
 
