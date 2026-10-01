@@ -480,6 +480,7 @@ export function useAbpTable<
         source: read().self.source,
         getSelectedRows: read().self.getSelectedRows,
         keepSelected: read().self.keepSelected,
+        canDelete: read().self.rowConfig?.canDelete,
       });
     const Table = (p: AbpTableViewOwnProps<TDto> & { children?: ReactNode }) => {
       // 槽位扫描靠引用相等识别自家绑定成员（组件身份在 useBoundComponents 内跨渲染不变，
