@@ -18,12 +18,15 @@ import {
 export const AppSidebar = memo(function AppSidebar({
   items,
   title,
+  subtitle,
   logo,
   userMenuItems,
   ...props
 }: {
   items: MenuItem[];
   title: string;
+  /** 标题下的第二行（如产品标语）；不给则只渲染标题那一行。 */
+  subtitle?: string;
   logo?: ReactNode;
   userMenuItems?: ReactNode;
 } & ComponentProps<typeof Sidebar>) {
@@ -36,7 +39,12 @@ export const AppSidebar = memo(function AppSidebar({
               <a href="/">
                 {/* size-8! 提权：SidebarMenuButton 带 [&>svg]:size-4，会把标识压成 16px */}
                 {logo ?? <BrandMark className="size-8! shrink-0" />}
-                <span className="truncate font-medium">{title}</span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate font-medium">{title}</span>
+                  {subtitle !== undefined && (
+                    <span className="truncate text-2xs text-muted-foreground">{subtitle}</span>
+                  )}
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

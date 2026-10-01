@@ -43,6 +43,11 @@
           "target": "components/abp/layout/nav-main.tsx"
         },
         {
+          "path": "ui/blocks/abp-layout/nav-active.ts",
+          "type": "registry:component",
+          "target": "components/abp/layout/nav-active.ts"
+        },
+        {
           "path": "ui/blocks/abp-layout/nav-search.tsx",
           "type": "registry:component",
           "target": "components/abp/layout/nav-search.tsx"

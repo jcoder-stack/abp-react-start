@@ -265,7 +265,7 @@ input:-webkit-autofill:focus {
  * **挂在 li 上，不能挂在按钮上。** 两个按钮原语都带 overflow-hidden，挂在按钮上的负偏移
  * ::before 会被它自己裁掉——计算样式里有，屏幕上没有。li 本身就是 position: relative。
  *
- * 二级项的条压在 SidebarMenuSub 那条 border-l 上（-0.625rem 正好是它的 px-2.5），读作
+ * 二级项的条压在 SidebarMenuSub 那条 border-l 上（-0.625rem 是它的 px-2.5，再减 1px 落在那条 border-l 本身上），读作
  * 「树线的这一段被点亮」，而不是又多出一条平行的线。 */
 [data-slot="sidebar-menu-item"]:has(> [data-active="true"])::before,
 [data-slot="sidebar-menu-sub-item"]:has(> [data-active="true"])::before {
@@ -280,7 +280,20 @@ input:-webkit-autofill:focus {
   left: -0.5rem;
 }
 [data-slot="sidebar-menu-sub-item"]:has(> [data-active="true"])::before {
-  left: -0.625rem;
+  left: calc(-0.625rem - 1px);
+}
+
+/* 收成图标轨时二级项整组隐藏，当前页是二级页的话轨上就没有任何「我在哪」的提示——把指示条
+ * 挂到它所属的一级项上。只在图标轨下生效：展开时二级项自己就有条，再给一级项一条就成了两条。 */
+[data-collapsible="icon"]
+  [data-slot="sidebar-menu-item"]:has([data-slot="sidebar-menu-sub-button"][data-active="true"])::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.25rem;
+  left: -0.5rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--sidebar-indicator);
 }
 [data-slot="sidebar-menu-sub-button"][data-active="true"] {
   font-weight: var(--font-weight-medium);
