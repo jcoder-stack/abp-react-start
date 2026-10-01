@@ -14,6 +14,7 @@ import {
   toggleGroup,
   toUpdatePayload,
 } from "@/components/abp/permission/permission-helpers";
+import { SHEET_SIZE_CLASS } from "@/components/form/sheet-form";
 import { SubmitButton } from "@/components/form/submit-button";
 import { Tree } from "@/components/tree/tree";
 import { deriveIndeterminate, type TreeNode } from "@/components/tree/tree-helpers";
@@ -27,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 export interface PermissionSheetProps {
   providerName: "R" | "U";
@@ -97,7 +99,7 @@ export function PermissionSheet(props: PermissionSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-md">
+      <SheetContent className={cn("flex w-full flex-col gap-0", SHEET_SIZE_CLASS.sm)}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>

@@ -106,6 +106,12 @@ export function ReadOnlyFields(props: { children: ReactNode }) {
   return <ReadOnlyContext.Provider value={true}>{props.children}</ReadOnlyContext.Provider>;
 }
 
+/** 当前是否处在查看态。字段组件自己会查，导出是给排版层用——查看态的容器只认识 `FieldRow`，
+ *  页面为录入态写的栅格与提示必须自行退场，否则会把键值卡的对齐和分隔线打散。 */
+export function useReadOnly(): boolean {
+  return useContext(ReadOnlyContext);
+}
+
 /**
  * 只读态的一行：左键右值，行高与表格同源（40px），值右对齐排成一条竖线。
  *
@@ -305,18 +311,21 @@ export function NumberField(props: {
   description?: string;
   disabled?: boolean;
   step?: string;
+  /**
+   * 清空时写 `null` 而不是 `NaN`——用于「留空即不限制」这类可空字段：值要原样提交给后端，
+   * 不能被 `z.number()` 判失败态吞掉。
+   */
+  nullable?: boolean;
 }) {
-  const field = useFieldContext<number>();
+  const field = useFieldContext<number | null>();
+  const value = field.state.value;
+  const isEmpty = value === null || Number.isNaN(value);
   return (
     <FieldShell
       label={props.label}
       required={props.required}
       description={props.description}
-      display={
-        Number.isNaN(field.state.value) ? null : (
-          <span className="tabular-nums">{String(field.state.value)}</span>
-        )
-      }
+      display={isEmpty ? null : <span className="tabular-nums">{String(value)}</span>}
     >
       <Input
         id={field.name}
@@ -326,13 +335,18 @@ export function NumberField(props: {
         placeholder={props.placeholder}
         aria-required={props.required === true || undefined}
         aria-invalid={field.state.meta.errors.length > 0 || undefined}
-        value={Number.isNaN(field.state.value) ? "" : String(field.state.value)}
+        value={isEmpty ? "" : String(value)}
         disabled={props.disabled}
         onBlur={field.handleBlur}
         onChange={(event) => {
-          // 空串裸转 Number 是 0,会把「清空了」写成「改成 0」;映射 NaN 让 z.number() 判失败
+          // 空串裸转 Number 是 0,会把「清空了」写成「改成 0」;非 nullable 映射 NaN 让 z.number() 判失败,
+          // nullable 映射 null 原样提交给后端的可空字段。
           const raw = event.target.value;
-          field.handleChange(raw.trim() === "" ? Number.NaN : Number(raw));
+          if (raw.trim() === "") {
+            field.handleChange(props.nullable ? null : Number.NaN);
+            return;
+          }
+          field.handleChange(Number(raw));
         }}
       />
     </FieldShell>
@@ -375,6 +389,9 @@ export function SelectField(props: {
   disabled?: boolean;
 }) {
   const field = useFieldContext<string>();
+  // Radix 把 value === "" 当作「未选」，即便选项里有 value=""：选中项的文字不会同步进触发器，
+  // 只会回退渲染 SelectValue 的 placeholder。给空值选项传它自己的 label 当 placeholder。
+  const emptyOptionLabel = props.options.find((option) => option.value === "")?.label;
   return (
     <FieldShell
       label={props.label}
@@ -392,7 +409,7 @@ export function SelectField(props: {
           className="w-full"
           aria-invalid={field.state.meta.errors.length > 0 || undefined}
         >
-          <SelectValue />
+          <SelectValue placeholder={emptyOptionLabel} />
         </SelectTrigger>
         <SelectContent>
           {props.options.map((option) => (
@@ -557,31 +574,48 @@ export function ComboboxField(props: {
 
 export function MultiComboboxField(props: {
   label: string;
-  options: ComboboxOption[];
-  editable: boolean;
+  description?: string;
+  options?: ComboboxOption[];
+  /** 远程搜索：候选过多时用它替代整份 options，内部已带防抖。 */
+  loadOptions?: (search: string) => Promise<ComboboxOption[]>;
+  required?: boolean;
+  placeholder?: string;
+  /** 缺省 true。为 false 时只展示已选项（如当前用户无权修改）。 */
+  editable?: boolean;
 }) {
   const field = useFieldContext<string[]>();
+  const editable = props.editable ?? true;
+  // 有的字段值本身就是可读文案（如角色名），有的是 id（如成员）；后者靠调用方传入的 options
+  // 换成 label，找不到就原样显示，不丢值。
+  const labelOf = (value: string) =>
+    props.options?.find((option) => option.value === value)?.label ?? value;
+  const badges = field.state.value.map((value) => (
+    <Badge key={value} variant="secondary">
+      {labelOf(value)}
+    </Badge>
+  ));
   return (
     <FieldShell
       label={props.label}
+      required={props.required}
+      description={props.description}
       display={
         field.state.value.length === 0 ? null : (
-          <div className="flex flex-wrap justify-end gap-1">
-            {field.state.value.map((name) => (
-              <Badge key={name} variant="secondary">
-                {name}
-              </Badge>
-            ))}
-          </div>
+          <div className="flex flex-wrap justify-end gap-1">{badges}</div>
         )
       }
     >
-      {props.editable ? (
+      {editable ? (
         <Suspense fallback={<Skeleton className="h-9 w-full" />}>
           <MultiCombobox
+            id={field.name}
+            aria-required={props.required === true || undefined}
+            aria-invalid={field.state.meta.errors.length > 0 || undefined}
             values={field.state.value}
             onChange={(values) => field.handleChange(values)}
             options={props.options}
+            loadOptions={props.loadOptions}
+            placeholder={props.placeholder}
           />
         </Suspense>
       ) : (
@@ -589,11 +623,7 @@ export function MultiComboboxField(props: {
           {field.state.value.length === 0 ? (
             <span className="text-sm text-muted-foreground">—</span>
           ) : (
-            field.state.value.map((name) => (
-              <Badge key={name} variant="secondary">
-                {name}
-              </Badge>
-            ))
+            badges
           )}
         </div>
       )}
