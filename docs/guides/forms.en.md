@@ -121,6 +121,8 @@ All are used through `<form.AppField name="x">{(field) => <field.Xxx .../>}</for
 
 In view mode (`SheetForm` with `mode="view"`), `ReadOnlyFields` renders every field as a "key / value" row. When a page needs a row that is not a form field (a computed value, a summary of a related record), use `FieldRow` exported from the same file (`label` + `display`; an empty value renders as "Not set") so it lines up with the generated fields. A `FormSection` placed inside the view-mode `<dl>` collapses into the record layout on its own.
 
+Set the drawer width with `size` on `SheetForm` / `useAbpSheet().Sheet` (`sm` by default, `md`, `lg`, `xl`); for a hand-built `SheetContent` use `SHEET_SIZE_CLASS` instead of a raw `max-w`. Split long forms in wide drawers with `FormCard`; wrap edit-only grids in `FieldLayout` and filling hints in `FieldHint` — both step aside in the read-only view. Pass `nullable` to `NumberField` for optional numbers (clearing writes `null`). When `MultiComboboxField` stores ids, pass `options` so the read-only view shows labels, and `loadOptions` for remote search over large candidate sets.
+
 The required-field trio: pass `required` on the component (asterisk + `aria-required` built in, **never the native `required`** — it pops the browser bubble first and hides the inline error) + `.min(1, L("Form:Required"))` in the schema + `revalidateLogic`. The asterisk is purely visual; the actual gate is the schema.
 
 ## The four validation channels
