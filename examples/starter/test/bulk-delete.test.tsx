@@ -75,6 +75,19 @@ function ServiceHarness({ service }: { service: ReturnType<typeof makeService>["
   );
 }
 
+const notBeta = (book: Book) => book.name !== "Beta";
+
+function CanDeleteHarness({ service }: { service: ReturnType<typeof makeService>["service"] }) {
+  const t = useAbpTable(service, { columns, selectable: true, row: { canDelete: notBeta } });
+  return (
+    <t.Table>
+      <t.BulkBar>
+        <t.BulkDelete />
+      </t.BulkBar>
+    </t.Table>
+  );
+}
+
 /** 自实现数据源（L1 回调），刻意不给 `delete.many`，用来锁「数据源不支持批量删就不渲染按钮」。 */
 function CallbackHarness() {
   const t = useAbpTable<Book>(
@@ -171,5 +184,21 @@ describe("t.BulkDelete", () => {
     // sentinel 在位 = 批量条确实渲染了，缺的只是删除按钮本身。
     expect(await screen.findByRole("button", { name: "sentinel" })).toBeDefined();
     expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+  });
+
+  it("行级 canDelete 接到批量删除：不可删的行不发请求、提示交代跳过、确认后不留在勾选里", async () => {
+    const { service, spy } = makeService(async () => undefined);
+    renderWithProviders(<CanDeleteHarness service={service} />, { identity: admin, messages });
+    await screen.findByText("Alpha");
+
+    await selectAllAndConfirm();
+
+    await waitFor(() => expect(toast.warning).toHaveBeenCalledTimes(1));
+    expect(spy.mock.calls.map(([id]) => id)).toEqual(["1", "3"]);
+    expect(toast.warning).toHaveBeenCalledWith("Deleted 2, 0 failed, 1 skipped as not deletable");
+    const betaRow = (await screen.findByText("Beta")).closest("tr") as HTMLElement;
+    await waitFor(() =>
+      expect(within(betaRow).getByRole("checkbox").getAttribute("aria-checked")).toBe("false"),
+    );
   });
 });

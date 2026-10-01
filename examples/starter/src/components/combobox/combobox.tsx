@@ -60,6 +60,14 @@ export function Combobox({
     if (typeof selectedLabel === "string") setSearch(selectedLabel);
   }, [selectedLabel, setSearch]);
 
+  // 值被外部清空（表单 reset 等）时输入框跟着清空，否则表单值已空、界面却还显示着旧选项。
+  // 只认「从有值变成无值」这一跳：一直无值时清空会冲掉用户正在敲的搜索词。
+  const previousValue = useRef(value);
+  useEffect(() => {
+    if (previousValue.current !== undefined && value === undefined) setSearch("");
+    previousValue.current = value;
+  }, [value, setSearch]);
+
   const selected =
     value !== undefined ? (cacheRef.current.get(value) ?? { value, label: value }) : null;
 

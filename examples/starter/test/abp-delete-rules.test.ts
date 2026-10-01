@@ -1,21 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isRowDeletable, warnIfUnpaged } from "@/components/abp/table/use-abp-table";
 
-const listKey = () => ["/api/app/books"] as const;
 afterEach(() => vi.restoreAllMocks());
 
 describe("warnIfUnpaged", () => {
-  it("一页收到的行数超过 MaxResultCount 时报错，带上端点", () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    warnIfUnpaged(188, 10, listKey);
-    expect(error).toHaveBeenCalledOnce();
-    expect(String(error.mock.calls[0]?.[0])).toContain("/api/app/books");
+  it("一页收到的行数超过 MaxResultCount 时告警一次，带上端点；同一端点不重复刷屏", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const key = () => ["/api/app/unpaged-books"] as const;
+    warnIfUnpaged(188, 10, key);
+    warnIfUnpaged(188, 10, key);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(String(warn.mock.calls[0]?.[0])).toContain("/api/app/unpaged-books");
   });
 
   it("正好一整页不算越界", () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    warnIfUnpaged(10, 10, listKey);
-    expect(error).not.toHaveBeenCalled();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnIfUnpaged(10, 10, () => ["/api/app/full-page"] as const);
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 

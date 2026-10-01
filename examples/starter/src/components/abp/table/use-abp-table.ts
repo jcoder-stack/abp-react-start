@@ -141,9 +141,12 @@ export function warnIfUnpaged(
   maxResultCount: number,
   listKey: () => readonly unknown[],
 ): void {
-  if (!import.meta.env.DEV || received <= maxResultCount) return;
-  console.error(
-    `[useAbpTable] ${String(listKey()[0] ?? "list")} returned ${received} rows for MaxResultCount=${maxResultCount}. ` +
+  if (received <= maxResultCount) return;
+  const endpoint = String(listKey()[0] ?? "list");
+  // 按端点去重：条件成立期间每次渲染都会走到这里，不去重就刷屏
+  devWarn(
+    `abp-table:unpaged:${endpoint}`,
+    `[useAbpTable] ${endpoint} returned ${received} rows for MaxResultCount=${maxResultCount}. ` +
       "useList is handing over the full array: page on the server, or slice by SkipCount/MaxResultCount in the wrapper.",
   );
 }
@@ -182,7 +185,12 @@ function useServiceSource<
   });
   const totalCount = listQuery.data?.totalCount ?? 0;
   const pageCount = Math.max(Math.ceil(totalCount / listParams.MaxResultCount), 1);
-  warnIfUnpaged(listQuery.data?.items?.length ?? 0, listParams.MaxResultCount, service.listKey);
+  // 占位数据（keepPreviousData）是上一页的行：把每页 50 改成 10 的那一刻，旧的 50 行还在，不算越界。
+  // service 契约里的 listQuery 类型不带这个字段（自实现的数据源未必有），按运行时实际读。
+  const isPlaceholder = "isPlaceholderData" in listQuery && listQuery.isPlaceholderData === true;
+  if (!isPlaceholder) {
+    warnIfUnpaged(listQuery.data?.items?.length ?? 0, listParams.MaxResultCount, service.listKey);
+  }
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: service.listKey() });
   const deleted = () => {

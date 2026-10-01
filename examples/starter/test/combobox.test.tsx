@@ -246,3 +246,46 @@ describe("Combobox 回显与录入", () => {
     expect(input.value).toBe("Ba");
   });
 });
+
+describe("Combobox 受控回显的边界", () => {
+  it("远程模式：已选项的 label 晚到时不覆盖用户正在输入的文字", async () => {
+    // 首页结果里没有已选的 Banana，它的 label 要等用户搜到它才得知
+    const loadOptions = vi.fn(
+      async (search: string): Promise<ComboboxOption[]> =>
+        search === "" ? [FRUIT_OPTIONS[0] as ComboboxOption] : [FRUIT_OPTIONS[1] as ComboboxOption],
+    );
+    renderWithProviders(
+      <SingleHarness initial="banana" options={undefined} loadOptions={loadOptions} />,
+      { messages: comboboxMessages },
+    );
+    const input = (await screen.findByRole("combobox")) as HTMLInputElement;
+    openCombobox(input);
+    fireEvent.change(input, { target: { value: "B" } });
+    await waitFor(() => expect(loadOptions).toHaveBeenCalledWith("B"));
+    await screen.findByText("Banana");
+    // 给晚到的 label 一个回显的机会（effect 与随之而来的下一轮搜索都在这段时间里跑完）
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    });
+    expect(input.value).toBe("B");
+  });
+
+  it("值被外部清空时输入框跟着清空", async () => {
+    function ClearableHarness() {
+      const [value, setValue] = useState<string | undefined>("apple");
+      return (
+        <>
+          <Combobox value={value} onChange={setValue} options={FRUIT_OPTIONS} />
+          <button type="button" onClick={() => setValue(undefined)}>
+            reset
+          </button>
+        </>
+      );
+    }
+    renderWithProviders(<ClearableHarness />, { messages: comboboxMessages });
+    const input = (await screen.findByRole("combobox")) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe("Apple"));
+    fireEvent.click(screen.getByRole("button", { name: "reset" }));
+    await waitFor(() => expect(input.value).toBe(""));
+  });
+});
