@@ -20,6 +20,10 @@ export interface MultiComboboxProps {
   loadOptions?: (search: string) => Promise<ComboboxOption[]>;
   placeholder?: string;
   disabled?: boolean;
+  /** 输入框的 id，供外部 `<Label htmlFor>` 关联与表单「首错聚焦」定位；不给则输入框不带 id。 */
+  id?: string;
+  "aria-required"?: boolean;
+  "aria-invalid"?: boolean;
 }
 
 function isEqualOption(a: ComboboxOption, b: ComboboxOption): boolean {
@@ -39,6 +43,9 @@ export function MultiCombobox({
   loadOptions,
   placeholder,
   disabled,
+  id,
+  "aria-required": ariaRequired,
+  "aria-invalid": ariaInvalid,
 }: MultiComboboxProps) {
   const L = useLocalization();
   const knownRef = useRef(new Map<string, ComboboxOption>());
@@ -79,6 +86,9 @@ export function MultiCombobox({
             <ComboboxChip key={option.value}>{option.label}</ComboboxChip>
           ))}
           <ComboboxChipsInput
+            id={id}
+            aria-required={ariaRequired}
+            aria-invalid={ariaInvalid}
             placeholder={
               selectedOptions.length > 0 ? undefined : (placeholder ?? L("Combobox:Search"))
             }

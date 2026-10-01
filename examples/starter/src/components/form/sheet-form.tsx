@@ -127,15 +127,7 @@ export function SheetForm(props: SheetFormProps) {
             ) : (
               // 查看态借整页表单的容器语汇：一行一个字段、发丝线分隔、值右对齐排成一条竖线。
               // 一条记录于是读起来像「把一行表格竖过来」，而不是一排灰掉的输入框。
-              // 内容已经按 FormCard 分区时，外层再套一张卡片会让各分区贴成一片；这时退化为
-              // 纵向堆叠、分区之间留与编辑态一致的间距，分区自己保留卡片外观。
-              <dl
-                className={cn(
-                  "divide-y rounded-lg border bg-card",
-                  "has-[[data-form-card]]:flex has-[[data-form-card]]:flex-col has-[[data-form-card]]:gap-5",
-                  "has-[[data-form-card]]:divide-y-0 has-[[data-form-card]]:rounded-none has-[[data-form-card]]:border-0 has-[[data-form-card]]:bg-transparent",
-                )}
-              >
+              <dl className="divide-y rounded-lg border bg-card">
                 <ReadOnlyFields>{props.children}</ReadOnlyFields>
               </dl>
             )}

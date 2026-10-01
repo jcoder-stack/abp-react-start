@@ -422,3 +422,26 @@ describe("MultiComboboxField", () => {
     expect(screen.queryByText("u1")).toBeNull();
   });
 });
+
+function RequiredMultiHarness() {
+  const form = useAppForm({ defaultValues: { members: [] as string[] } });
+  return (
+    <form.AppField name="members">
+      {(f) => (
+        <f.MultiComboboxField
+          label="Members"
+          required
+          options={[{ value: "u1", label: "Alice" }]}
+        />
+      )}
+    </form.AppField>
+  );
+}
+
+describe("MultiComboboxField 必填", () => {
+  it("label 关联到输入框，必填带 aria-required", async () => {
+    renderWithProviders(<RequiredMultiHarness />, { messages });
+    const input = await screen.findByLabelText(/Members/);
+    expect(input.getAttribute("aria-required")).toBe("true");
+  });
+});

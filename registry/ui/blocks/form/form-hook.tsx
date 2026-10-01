@@ -608,6 +608,9 @@ export function MultiComboboxField(props: {
       {editable ? (
         <Suspense fallback={<Skeleton className="h-9 w-full" />}>
           <MultiCombobox
+            id={field.name}
+            aria-required={props.required === true || undefined}
+            aria-invalid={field.state.meta.errors.length > 0 || undefined}
             values={field.state.value}
             onChange={(values) => field.handleChange(values)}
             options={props.options}

@@ -39,4 +39,20 @@ describe("FormCard", () => {
     expect(basics.closest("[data-form-card]")?.textContent).toContain("Day shift");
     expect(rules.closest("[data-form-card]")?.textContent).not.toContain("Day shift");
   });
+
+  it("查看态里普通字段与 FormCard 混用：所有键值行同在一张记录卡里", async () => {
+    renderWithProviders(
+      <SheetForm mode="view" open onOpenChange={vi.fn()} title="Group">
+        <FieldRow label="Code" display="G-01" />
+        <FormCard title="Basics">
+          <FieldRow label="Name" display="Day shift" />
+        </FormCard>
+      </SheetForm>,
+      { messages: formMessages },
+    );
+    const plain = await screen.findByText("G-01");
+    const inCard = screen.getByText("Day shift");
+    expect(plain.closest("dl")).toBe(inCard.closest("dl"));
+    expect(screen.getByRole("heading", { name: "Basics" })).toBeTruthy();
+  });
 });
