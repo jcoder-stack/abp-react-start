@@ -2,11 +2,12 @@ import { useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { calendarFormatters, useCalendarBounds } from "@/components/date-picker/calendar-bounds";
 import type { DatePickerProps } from "@/components/date-picker/date-picker";
 import { dateFnsLocale } from "@/components/date-picker/date-picker";
+import { TimeInput } from "@/components/date-picker/time-input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +24,11 @@ export function DateTimePicker(props: DatePickerProps) {
   const culture = useCulture();
   const [open, setOpen] = useState(false);
   const locale = dateFnsLocale(culture);
+  const bounds = useCalendarBounds(props.value, props.value, props);
   const timeValue = props.value ? format(props.value, "HH:mm") : "";
   const label = props.value
-    ? format(props.value, "PPp", { locale })
+    ? // 时分固定 24 小时制：locale 的 `p` 在中文下是「上午 12:00」，与全站的 `HH:mm` 不是一套读法
+      `${format(props.value, "PP", { locale })} ${format(props.value, "HH:mm")}`
     : (props.placeholder ?? L("DatePicker:Placeholder"));
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -63,22 +66,21 @@ export function DateTimePicker(props: DatePickerProps) {
             }
             props.onChange(timeValue === "" ? date : mergeTime(date, timeValue));
           }}
+          // 见 date-picker.tsx：年月下拉，范围撑到能装下当前值
+          captionLayout="dropdown"
+          startMonth={bounds.startMonth}
+          endMonth={bounds.endMonth}
+          formatters={calendarFormatters(locale)}
           locale={locale}
           autoFocus
         />
         <div className="border-t p-3">
-          <Input
-            type="time"
+          <TimeInput
             aria-label={L("DatePicker:Time")}
-            // 原生时钟指示器会弹出浏览器自绘的时分列表，与全站视觉无关且无法主题化；隐藏它，
-            // 只留手输与键盘上下调整（Firefox/Safari 本就没有这个指示器，行为因此一致）。
-            className="appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
             value={timeValue}
-            onChange={(event) => {
-              const time = event.target.value;
-              if (time === "") return;
-              props.onChange(mergeTime(props.value ?? new Date(), time));
-            }}
+            // 时分是日期的一部分，清空它不等于清掉日期；不可清空让框里显示与真实值保持一致
+            clearable={false}
+            onChange={(time) => props.onChange(mergeTime(props.value ?? new Date(), time))}
           />
         </div>
       </PopoverContent>

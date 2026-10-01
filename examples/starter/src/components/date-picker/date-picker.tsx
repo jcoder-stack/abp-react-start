@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { calendarFormatters, useCalendarBounds } from "@/components/date-picker/calendar-bounds";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,6 +24,10 @@ export interface DatePickerProps {
   placeholder?: string;
   "aria-invalid"?: boolean;
   "aria-required"?: boolean;
+  /** 日历可选范围的起止月，覆盖默认的「当年往前 10 年、往后 1 年」。生日、入职日这类要往回
+   *  翻很多年的字段用它放宽下界；当前值落在范围外时仍会自动撑开。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }
 
 export function DatePicker(props: DatePickerProps) {
@@ -30,6 +35,7 @@ export function DatePicker(props: DatePickerProps) {
   const culture = useCulture();
   const [open, setOpen] = useState(false);
   const locale = dateFnsLocale(culture);
+  const bounds = useCalendarBounds(props.value, props.value, props);
   const label = props.value
     ? format(props.value, "PPP", { locale })
     : (props.placeholder ?? L("DatePicker:Placeholder"));
@@ -67,6 +73,11 @@ export function DatePicker(props: DatePickerProps) {
             props.onChange(date);
             setOpen(false);
           }}
+          // 年月下拉：往回补一条几个月前的记录时，逐月点太慢
+          captionLayout="dropdown"
+          startMonth={bounds.startMonth}
+          endMonth={bounds.endMonth}
+          formatters={calendarFormatters(locale)}
           locale={locale}
           autoFocus
         />

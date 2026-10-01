@@ -323,6 +323,7 @@
         "alert",
         "field",
         "input",
+        "textarea",
         "switch",
         "select",
         "badge",
@@ -615,6 +616,11 @@
           "target": "components/date-picker/date-io.ts"
         },
         {
+          "path": "ui/blocks/date-picker/calendar-bounds.ts",
+          "type": "registry:component",
+          "target": "components/date-picker/calendar-bounds.ts"
+        },
+        {
           "path": "ui/blocks/date-picker/date-picker.tsx",
           "type": "registry:component",
           "target": "components/date-picker/date-picker.tsx"
@@ -628,6 +634,11 @@
           "path": "ui/blocks/date-picker/date-time-picker.tsx",
           "type": "registry:component",
           "target": "components/date-picker/date-time-picker.tsx"
+        },
+        {
+          "path": "ui/blocks/date-picker/time-input.tsx",
+          "type": "registry:component",
+          "target": "components/date-picker/time-input.tsx"
         },
         {
           "path": "ui/blocks/date-picker/date-picker-messages.json",

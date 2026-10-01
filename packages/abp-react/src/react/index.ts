@@ -33,3 +33,4 @@ export {
   usePermissionChecker,
   useSession,
 } from "./session";
+export { Instant, useTenantTimeZone } from "./time-zone";

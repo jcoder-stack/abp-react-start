@@ -5,6 +5,7 @@ import { createContext, lazy, Suspense, useContext } from "react";
 import { Combobox } from "@/components/combobox/combobox";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
 import { formatIso, ISO_DATE, ISO_DATE_TIME, parseIso } from "@/components/date-picker/date-io";
+import { TimeInput } from "@/components/date-picker/time-input";
 import { FormErrorSummary } from "@/components/form/form-error-summary";
 import { OptionalMark } from "@/components/form/optional-mark";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const MultiCombobox = lazy(() =>
@@ -229,6 +231,73 @@ export function TextField(props: {
   );
 }
 
+/** 多行文本字段，值域是整块字符串；按行拆分的语义由调用方的 toDto / fromDto 决定。 */
+export function TextareaField(props: {
+  label: string;
+  required?: boolean;
+  description?: string;
+  disabled?: boolean;
+  placeholder?: string;
+  rows?: number;
+}) {
+  const field = useFieldContext<string>();
+  return (
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={
+        field.state.value ? <span className="whitespace-pre-wrap">{field.state.value}</span> : null
+      }
+    >
+      <Textarea
+        id={field.name}
+        name={field.name}
+        rows={props.rows}
+        aria-required={props.required === true || undefined}
+        aria-invalid={field.state.meta.errors.length > 0 || undefined}
+        value={field.state.value}
+        disabled={props.disabled}
+        placeholder={props.placeholder}
+        onBlur={field.handleBlur}
+        onChange={(event) => field.handleChange(event.target.value)}
+      />
+    </FieldShell>
+  );
+}
+
+/**
+ * 时刻字段，值域 `"HH:mm"`（空串表示未填），24 小时制。对应后端 TimeSpan 时，调用方在
+ * toDto / fromDto 里补齐或截掉秒段。
+ */
+export function TimeField(props: {
+  label: string;
+  required?: boolean;
+  description?: string;
+  disabled?: boolean;
+}) {
+  const field = useFieldContext<string>();
+  return (
+    <FieldShell
+      label={props.label}
+      required={props.required}
+      description={props.description}
+      display={field.state.value ? <span className="tabular-nums">{field.state.value}</span> : null}
+    >
+      <TimeInput
+        id={field.name}
+        name={field.name}
+        aria-required={props.required === true || undefined}
+        aria-invalid={field.state.meta.errors.length > 0 || undefined}
+        value={field.state.value}
+        disabled={props.disabled}
+        onBlur={field.handleBlur}
+        onChange={field.handleChange}
+      />
+    </FieldShell>
+  );
+}
+
 export function NumberField(props: {
   label: string;
   required?: boolean;
@@ -343,6 +412,9 @@ export function DateField(props: {
   description?: string;
   disabled?: boolean;
   placeholder?: string;
+  /** 透传给日期选择器，覆盖默认可选范围（见 DatePickerProps.startMonth）。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }) {
   const field = useFieldContext<string>();
   return (
@@ -356,6 +428,8 @@ export function DateField(props: {
         <DatePicker
           id={field.name}
           value={parseIso(field.state.value, ISO_DATE)}
+          startMonth={props.startMonth}
+          endMonth={props.endMonth}
           disabled={props.disabled}
           placeholder={props.placeholder}
           aria-required={props.required === true || undefined}
@@ -373,6 +447,9 @@ export function DateTimeField(props: {
   required?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  /** 透传给日期选择器，覆盖默认可选范围（见 DatePickerProps.startMonth）。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }) {
   const field = useFieldContext<string>();
   return (
@@ -386,6 +463,8 @@ export function DateTimeField(props: {
         <DateTimePicker
           id={field.name}
           value={parseIso(field.state.value, ISO_DATE_TIME)}
+          startMonth={props.startMonth}
+          endMonth={props.endMonth}
           disabled={props.disabled}
           placeholder={props.placeholder}
           aria-required={props.required === true || undefined}
@@ -402,6 +481,9 @@ export function DateRangeField(props: {
   description?: string;
   required?: boolean;
   disabled?: boolean;
+  /** 透传给日期选择器，覆盖默认可选范围（见 DatePickerProps.startMonth）。 */
+  startMonth?: Date;
+  endMonth?: Date;
 }) {
   const field = useFieldContext<{ from: string; to: string }>();
   return (
@@ -424,6 +506,8 @@ export function DateRangeField(props: {
             from: parseIso(field.state.value.from, ISO_DATE),
             to: parseIso(field.state.value.to, ISO_DATE),
           }}
+          startMonth={props.startMonth}
+          endMonth={props.endMonth}
           disabled={props.disabled}
           aria-required={props.required === true || undefined}
           aria-invalid={field.state.meta.errors.length > 0 || undefined}
@@ -536,6 +620,8 @@ const { useAppForm: useAppFormBase, withForm } = createFormHook({
   fieldComponents: {
     TextField,
     NumberField,
+    TextareaField,
+    TimeField,
     SwitchField,
     SelectField,
     DateField,

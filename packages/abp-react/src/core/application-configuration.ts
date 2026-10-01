@@ -82,6 +82,20 @@ const abpValueTableSchema = z
   .object({ values: z.record(z.string(), abpValueSchema).catch(degradeTo({})) })
   .catch(degradeTo({ values: {} }));
 
+/** ABP 的 `Abp.Timing.TimeZone` 归一结果（IANA / Windows 两种写法）。设置未配置或无法识别时
+ *  `timeZoneName` 为 null。只声明前端要读的那一段；形状漂移降级为 undefined 并报告，读取方按 UTC。 */
+const timingSchema = z
+  .object({
+    timeZone: z
+      .object({
+        iana: z.object({ timeZoneName: z.string().nullish() }).nullish(),
+      })
+      .nullish(),
+  })
+  .nullish()
+  .catch(degradeTo(undefined))
+  .optional();
+
 const applicationConfigurationShape = {
   currentUser: currentUserSchema,
   // swagger marks grantedPolicies nullable and the subtree can arrive null for an anonymous
@@ -100,6 +114,7 @@ const applicationConfigurationShape = {
   localization: localizationSchema,
   currentTenant: currentTenantSchema,
   features: abpValueTableSchema,
+  timing: timingSchema,
 };
 /** Runtime schema preserves unknown top-level keys (extraProperties / custom contributors); the exported type omits that index signature so server-fn return values stay serializable. */
 export const applicationConfigurationSchema = z.looseObject(applicationConfigurationShape);
