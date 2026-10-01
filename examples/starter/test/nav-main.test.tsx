@@ -37,4 +37,3 @@ describe("NavMain", () => {
     expect(roles.closest("a")?.getAttribute("data-active")).toBe("true");
   });
 });
-
