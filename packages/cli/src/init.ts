@@ -351,6 +351,21 @@ function seedThemeCss(cwd: string, cssRelPath: string | undefined, completed: st
 const LIB_UTILS_RUNTIME_DEPS = ["clsx", "tailwind-merge"];
 const THEME_CSS_RUNTIME_DEPS = ["tw-animate-css"];
 
+/** 模板自托管的字体包。只在入口 css 真的 `@import` 了它们时才装：已有自己主题的 app 不引这几支字体，
+ *  装进去只是一堆没人用的分片（Noto Sans SC 上百个）。 */
+const THEME_FONT_DEPS = [
+  "@fontsource-variable/inter",
+  "@fontsource-variable/noto-sans-sc",
+  "@fontsource-variable/jetbrains-mono",
+];
+
+function themeCssDependencies(cssText: string): string[] {
+  return [
+    ...THEME_CSS_RUNTIME_DEPS,
+    ...THEME_FONT_DEPS.filter((pkg) => cssText.includes(`@import "${pkg}`)),
+  ];
+}
+
 /** 生成的 src/router.tsx 用它把 QueryClient 接进 SSR 的 dehydrate/hydrate。没有任何块声明它
  *  （react-query 由 abp-crud 等块带进来，这个只有根接线用得到），所以由 init 自己装。 */
 const ROOT_WIRING_RUNTIME_DEPS = ["@tanstack/react-router-ssr-query"];
@@ -498,25 +513,25 @@ function readManifestDependencyNames(cwd: string): Set<string> {
 }
 
 /**
- * Installs whichever of clsx/tailwind-merge/tw-animate-css the target app's package.json is still
- * missing. Gated by file existence (needsLibUtilsDeps/needsThemeCssDeps: does src/lib/utils.ts / the
- * css entry actually exist), not by whether seedLibUtils/seedThemeCss freshly wrote it *this* run.
+ * Installs whichever of clsx/tailwind-merge/tw-animate-css/@fontsource-variable/* the target app's package.json is still
+ * missing. Gated by file existence (needsLibUtilsDeps / themeCssText: does src/lib/utils.ts / the
+ * css entry actually exist; the font packages additionally only when that css imports them), not by whether seedLibUtils/seedThemeCss freshly wrote it *this* run.
  * A run that dies after seeding those files but before this step (the install itself failing, say)
  * leaves them on disk with nothing to remember that by on the next `jc-abp init`, so re-deriving
  * "does this app need the dependency" from the manifest each time is what makes retries actually
- * idempotent instead of leaving clsx/tailwind-merge/tw-animate-css permanently uninstalled.
+ * idempotent instead of leaving clsx/tailwind-merge/tw-animate-css/@fontsource-variable/* permanently uninstalled.
  */
 async function installSeededDependencies(
   cwd: string,
   needsLibUtilsDeps: boolean,
-  needsThemeCssDeps: boolean,
+  themeCssText: string | undefined,
   runner: CommandRunner,
   completed: string[],
 ): Promise<void> {
   const existing = readManifestDependencyNames(cwd);
   const packages = [
     ...(needsLibUtilsDeps ? LIB_UTILS_RUNTIME_DEPS : []),
-    ...(needsThemeCssDeps ? THEME_CSS_RUNTIME_DEPS : []),
+    ...(themeCssText !== undefined ? themeCssDependencies(themeCssText) : []),
     ...ROOT_WIRING_RUNTIME_DEPS,
   ].filter((name) => !existing.has(name));
   if (packages.length === 0) return;
@@ -784,7 +799,9 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   await installSeededDependencies(
     opts.cwd,
     existsSync(resolve(opts.cwd, LIB_UTILS_TARGET)),
-    cssEntryPath !== undefined && existsSync(resolve(opts.cwd, cssEntryPath)),
+    cssEntryPath !== undefined && existsSync(resolve(opts.cwd, cssEntryPath))
+      ? readFileSync(resolve(opts.cwd, cssEntryPath), "utf8")
+      : undefined,
     runner,
     completed,
   );

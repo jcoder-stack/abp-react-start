@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,7 +55,7 @@ interface RunnerCall {
  * A fake registry + app dir mirroring add.test.ts's fakeWorkspace, extended with public/r/*.json for every
  * shadcn block runInit may install. The app carries a components.json already (so seedOrRequireComponentsJson
  * is a no-op), plus an already-themed css entry, a pre-existing src/lib/utils.ts, and a package.json that
- * already declares clsx/tailwind-merge/tw-animate-css, so the seedLibUtils/seedThemeCss steps are no-ops
+ * already declares clsx/tailwind-merge/tw-animate-css/@fontsource-variable/*, so the seedLibUtils/seedThemeCss steps are no-ops
  * here too *and* installSeededDependencies has nothing left missing, keeping this helper's many non-A3
  * callers unaffected by A3 behavior. fakeWorkspaceWithoutComponentsJson covers the cold-start (seed-or-fail,
  * and fresh utils/theme seeding) case.
@@ -70,7 +77,12 @@ function fakeWorkspace(): { root: string; app: string; registryDir: string } {
     JSON.stringify({
       name: "app",
       dependencies: { clsx: "^2.0.0", "tailwind-merge": "^2.0.0" },
-      devDependencies: { "tw-animate-css": "^1.0.0" },
+      devDependencies: {
+        "tw-animate-css": "^1.0.0",
+        "@fontsource-variable/inter": "^5.3.0",
+        "@fontsource-variable/noto-sans-sc": "^5.3.0",
+        "@fontsource-variable/jetbrains-mono": "^5.3.0",
+      },
     }),
   );
   return { root, app, registryDir };
@@ -471,6 +483,9 @@ describe("runInit", () => {
         "clsx",
         "tailwind-merge",
         "tw-animate-css",
+        "@fontsource-variable/inter",
+        "@fontsource-variable/noto-sans-sc",
+        "@fontsource-variable/jetbrains-mono",
         "@tanstack/react-router-ssr-query",
       ],
       cwd: app,
@@ -491,7 +506,16 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "bun",
-      args: ["add", "clsx", "tailwind-merge", "tw-animate-css", "@tanstack/react-router-ssr-query"],
+      args: [
+        "add",
+        "clsx",
+        "tailwind-merge",
+        "tw-animate-css",
+        "@fontsource-variable/inter",
+        "@fontsource-variable/noto-sans-sc",
+        "@fontsource-variable/jetbrains-mono",
+        "@tanstack/react-router-ssr-query",
+      ],
       cwd: paths.app,
     });
   });
@@ -503,7 +527,15 @@ describe("runInit", () => {
     writeFileSync(join(app, "src", "styles.css"), ":root { --background: white; }\n");
     writeFileSync(
       join(app, "package.json"),
-      JSON.stringify({ name: "app", devDependencies: { "tw-animate-css": "^1.0.0" } }),
+      JSON.stringify({
+        name: "app",
+        devDependencies: {
+          "tw-animate-css": "^1.0.0",
+          "@fontsource-variable/inter": "^5.3.0",
+          "@fontsource-variable/noto-sans-sc": "^5.3.0",
+          "@fontsource-variable/jetbrains-mono": "^5.3.0",
+        },
+      }),
     );
     const { runner, calls } = recordingRunner();
 
@@ -521,6 +553,31 @@ describe("runInit", () => {
   // on disk with no seededLibUtils/seededThemeCss flag surviving to the next `jc-abp init`, so whether to
   // install must be re-derived from the target's package.json every run, not from "did this run seed it".
   it("installs still-missing seeded dependencies on a rerun where lib/utils.ts and the theme css already exist but package.json never caught up (init retried after a previous partial failure)", async () => {
+    const { app } = fakeWorkspace();
+    // The previous run seeded the baseline theme, so its font imports are on disk too.
+    copyFileSync(APP_THEME_CSS_TEMPLATE_PATH, join(app, "src", "app.css"));
+    writeFileSync(join(app, "package.json"), JSON.stringify({ name: "app" }));
+    const { runner, calls } = recordingRunner();
+
+    await initWithStubbedProbe({ cwd: app, runner });
+
+    expect(calls[0]).toEqual({
+      cmd: "npm",
+      args: [
+        "install",
+        "clsx",
+        "tailwind-merge",
+        "tw-animate-css",
+        "@fontsource-variable/inter",
+        "@fontsource-variable/noto-sans-sc",
+        "@fontsource-variable/jetbrains-mono",
+        "@tanstack/react-router-ssr-query",
+      ],
+      cwd: app,
+    });
+  });
+
+  it("does not install the font packages into an app whose own theme css never imports them", async () => {
     const { app } = fakeWorkspace();
     writeFileSync(join(app, "package.json"), JSON.stringify({ name: "app" }));
     const { runner, calls } = recordingRunner();

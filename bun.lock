@@ -25,6 +25,9 @@
       "name": "starter",
       "dependencies": {
         "@base-ui/react": "^1.6.0",
+        "@fontsource-variable/inter": "^5.3.0",
+        "@fontsource-variable/jetbrains-mono": "^5.3.0",
+        "@fontsource-variable/noto-sans-sc": "^5.3.0",
         "@jcoder-stack/abp-react": "workspace:*",
         "@tailwindcss/vite": "^4.1.18",
         "@tanstack/react-devtools": "^0.10.12",
@@ -64,7 +67,7 @@
     },
     "packages/abp-react": {
       "name": "@jcoder-stack/abp-react",
-      "version": "0.2.0",
+      "version": "0.4.2",
       "devDependencies": {
         "@tanstack/react-router": "^1.0.0",
         "react": "^19.0.0",
@@ -82,7 +85,7 @@
     },
     "packages/cli": {
       "name": "@jcoder-stack/cli",
-      "version": "0.2.0",
+      "version": "0.4.2",
       "bin": {
         "jc-abp": "./bin/jc-abp.js",
       },
@@ -104,9 +107,9 @@
     },
     "registry": {
       "name": "@jcoder-stack/registry",
-      "version": "0.2.0",
+      "version": "0.4.2",
       "dependencies": {
-        "@jcoder-stack/abp-react": "^0.2.0",
+        "@jcoder-stack/abp-react": "^0.4.2",
         "@tanstack/react-router": "^1.0.0",
         "@tanstack/react-start": "^1.0.0",
         "zod": "^4.0.0",
@@ -272,6 +275,12 @@
     "@floating-ui/react-dom": ["@floating-ui/react-dom@2.1.9", "", { "dependencies": { "@floating-ui/dom": "^1.8.0" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-JDjEFGCpImxDCA7JJKviA0M9+RtmJdj0m/NVU5IMgBK+AmZouAQQ7/+2GLH0GXXY0YMw9oXPB8hKdbPYg5QLYg=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
+
+    "@fontsource-variable/inter": ["@fontsource-variable/inter@5.3.0", "", {}, "sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA=="],
+
+    "@fontsource-variable/jetbrains-mono": ["@fontsource-variable/jetbrains-mono@5.3.0", "", {}, "sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw=="],
+
+    "@fontsource-variable/noto-sans-sc": ["@fontsource-variable/noto-sans-sc@5.3.0", "", {}, "sha512-lNar1dF7Ik/lHNPo/7JWG0TolXY29LtsqYgMvEysooZ5bsO9uH4shJmRrwyJ3PjyTPljhpMJEK0jDuLSU4vJ1w=="],
 
     "@gerrit0/mini-shiki": ["@gerrit0/mini-shiki@3.23.0", "", { "dependencies": { "@shikijs/engine-oniguruma": "^3.23.0", "@shikijs/langs": "^3.23.0", "@shikijs/themes": "^3.23.0", "@shikijs/types": "^3.23.0", "@shikijs/vscode-textmate": "^10.0.2" } }, "sha512-bEMORlG0cqdjVyCEuU0cDQbORWX+kYCeo0kV1lbxF5bt4r7SID2l9bqsxJEM0zndaxpOUT7riCyIVEuqq/Ynxg=="],
 

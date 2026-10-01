@@ -145,8 +145,10 @@ export function DataTableFooter<TData extends RowData>(props: {
                     size="icon"
                     className={cn(
                       "size-8 tabular-nums",
+                      // 当前页用中性填充，不用主色实心：它说的是「你在第几页」，不是「点这里」。
+                      // 主色在一屏里只该有一处，那一处留给唯一的主按钮。
                       item === props.pagination.pageIndex &&
-                        "border-primary bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-foreground dark:border-primary dark:bg-primary dark:hover:bg-primary-hover",
+                        "border-input bg-secondary font-medium text-foreground hover:bg-secondary",
                     )}
                     isActive={item === props.pagination.pageIndex}
                     href="#"

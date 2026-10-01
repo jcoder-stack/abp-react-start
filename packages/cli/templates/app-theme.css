@@ -1,133 +1,128 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* 字体自托管，不走第三方 CDN：内网部署未必连得上 Google Fonts，连不上就整套排版失效；
+   第三方字体源还会拿到每个访问者的 IP 与访问时间。按 unicode-range 切片，浏览器只取用到的几片。 */
+@import "@fontsource-variable/inter/opsz.css";
+@import "@fontsource-variable/noto-sans-sc";
+@import "@fontsource-variable/jetbrains-mono";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
- * 主题 = shadcn 原版 Blue preset + 一层薄覆盖。
+ * 主题 = 一条藏蓝色阶（hue 259，11 级）承担全部中性、文字与动作色。
  *
- * 此前这里是一套自定义设计系统（Linear-informed：自定义字重 510/590、逐档负字距、四级
- * surface 阶梯、五层模态阴影……）。它被换掉不是因为不好看，是因为账算不过来——见
- * docs/theme-spike.md：近期 7 个 PR 里有 5 个修的是那套自定义**自己造出来的**问题，
- * 而它带来的密度优势实测只值一行 --text-sm。
+ * 体系仍是 shadcn 原版：不自定义字重、不逐档设负字距、不另造 surface 与 border 阶梯
+ * （那一套自研体系为什么被推翻，见 docs/theme-spike.md）。换掉的是颜色与色阶的组织方式——
+ * 强调色恰恰是 preset 预期被替换的那一个。
  *
- * 覆盖层只留四类，每一条都能说出「原版给不了什么」：
- *   1. --ring      原版用中性灰，对底色只有 2.59:1，低于 WCAG 对非文本控件的 3:1
- *   2. --text-sm   13px，后台的密度基线（原版 14px）；另留 11px 的 --text-2xs 给表头
- *   3. CJK 字族    原版完全没管，而这是双语产品的刚需
- *   4. 语义补充    status-* 五档、brand-*、row-selected、primary-hover——组件在用，原版没有
+ * 三条贯穿全表的规则：
+ *   1. 中性色不是灰。从页底到正文都落在 hue 259，彩度随变暗而爬升（0.006 → 0.097）：
+ *      浅端近乎无色好当面，深端有实打实的蓝好当墨与动作色。
+ *   2. 有颜色 = 有状态。除 status-* 五档外全表没有第二个色相，而五档只出现在药丸与告警条里。
+ *      层级由明度差与间距承担，不由颜色承担。
+ *   3. 导航轨永远比内容沉一档，当前项永远比轨浮一档。这条是语义，不是一组值——暗色下不存在
+ *      「浅色轨」，两个主题的取值不同但关系相同。
+ *
+ * 改任何一个值之后跑 `bun run check:theme`：它校验两个主题的对比度与上面第 3 条的明度序。
+ * 明度序那一组是必要的——曾有一版暗色侧栏比内容还亮、当前项比轨还暗，而对比度全程达标。
  */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.55 0.21 264);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: oklch(0.980 0.006 259);
+  --foreground: oklch(0.198 0.075 259);
+  --card: oklch(1.000 0.000 0);
+  --card-foreground: oklch(0.198 0.075 259);
+  --popover: oklch(1.000 0.000 0);
+  --popover-foreground: oklch(0.198 0.075 259);
+  --primary: oklch(0.250 0.097 259);
+  --primary-foreground: oklch(1.000 0.000 0);
+  --primary-hover: oklch(0.305 0.092 259);
+  --secondary: oklch(0.964 0.010 259);
+  --secondary-foreground: oklch(0.390 0.070 259);
+  --muted: oklch(0.964 0.010 259);
+  --muted-foreground: oklch(0.520 0.054 259);
+  --accent: oklch(0.964 0.010 259);
+  --accent-foreground: oklch(0.250 0.097 259);
+  --destructive: oklch(0.525 0.190 25);
+  --destructive-foreground: oklch(1.000 0.000 0);
+  --border: oklch(0.920 0.016 259);
+  --input: oklch(0.872 0.022 259);
+  --ring: oklch(0.250 0.097 259);
+  --highlight: oklch(0.250 0.097 259);
+  --highlight-foreground: oklch(1.000 0.000 0);
+  --row-selected: oklch(0.952 0.022 259);
+  --status-success: oklch(0.500 0.130 155);
+  --status-warning: oklch(0.520 0.130 70);
+  --status-error: oklch(0.530 0.190 25);
+  --status-info: oklch(0.523 0.150 274);
+  --status-neutral: oklch(0.513 0.020 259);
+  --sidebar: oklch(0.964 0.010 259);
+  --sidebar-foreground: oklch(0.198 0.075 259);
+  --sidebar-muted-foreground: oklch(0.520 0.054 259);
+  --sidebar-border: oklch(0.920 0.016 259);
+  --sidebar-accent: oklch(1.000 0.000 0);
+  --sidebar-accent-foreground: oklch(0.198 0.075 259);
+  --sidebar-indicator: oklch(0.250 0.097 259);
+  --sidebar-ring: oklch(0.250 0.097 259);
+  --focus-halo: color-mix(in oklab, var(--ring) 10%, transparent);
+  /* 标识砖上的播放键：与主色同一色相、只差明度，所以不算第二色相。它只给 BrandMark 用，
+     不进任何组件——一旦拿来标状态或当按钮色，「有颜色 = 有状态」就破了。 */
+  --brand-accent: oklch(0.800 0.095 259);
+
+  /* 图表色沿用原值：零引用，等真要做图表时再作为独立一轮设计分类色板（见 DESIGN.md 已知空白）。
+     它们本来就落在蓝色系 hue 251–265，与这套藏蓝不冲突。 */
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-
-  /* ── 覆盖层 ── */
-  /* 强调色用自家的蓝，不用 preset 自带的那支。采用原版的**体系**不等于采用它的**强调色**——
-     强调色恰恰是 preset 预期被替换的那一个。而且自家这支是往**正确方向**调的：暗色比浅色更亮
-     （0.55 → 0.57），所以同一个色值既能当填充（承白字 5.08 / 4.66），也能当前景用在链接、
-     当前项与焦点边框上（对页底 5.08 / 4.24）。preset 那支反过来，暗色比浅色更深
-     （0.488 → 0.424），对页底只剩 2.24:1，得为暗色另开一条焦点环特例才行。
-
-     前景取纯白而不是基准那支淡蓝（oklch(0.97 0.014 254.604)）：配我们的蓝，它在暗色下只有
-     4.28:1，低于 4.5；纯白是 4.66:1。
-
-     `--sidebar-primary` 不跟着改——它其实不服务侧栏，是营销页渐变标题的第二个色标
-     （`from-primary to-sidebar-primary`），与 primary 同值会让渐变塌成纯色。侧栏当前项的
-     指示条在定制层里直接用 primary。
-
-     焦点环因此两个主题都能直接指向 primary。判定的是 `focus-visible:border-ring` 那圈
-     **实边框**——同时存在的 `ring-ring/50` 光晕是半透明的，任何主题下都到不了 3:1，
-     它是第二重提示，不是对比度的承担者。 */
-  --ring: var(--primary);
-  --status-success: oklch(0.50 0.13 155);
-  --status-warning: oklch(0.52 0.13 70);
-  --status-error: oklch(0.53 0.2 25);
-  --status-info: oklch(0.52 0.15 255);
-  --status-neutral: oklch(0.52 0.01 286);
-  --brand-ink: oklch(0.259 0.052 263);
-  --brand-mark: oklch(0.52 0.22 264);
-  --brand-spark: oklch(0.750 0.167 51);
-  --brand-ink-contrast: oklch(1 0 0);
-  --row-selected: oklch(0.955 0.014 264);
-  --primary-hover: oklch(0.50 0.21 264);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.57 0.21 264);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: oklch(0.165 0.038 259);
+  --foreground: oklch(0.965 0.010 259);
+  --card: oklch(0.205 0.042 259);
+  --card-foreground: oklch(0.965 0.010 259);
+  --popover: oklch(0.205 0.042 259);
+  --popover-foreground: oklch(0.965 0.010 259);
+  --primary: oklch(0.800 0.095 259);
+  --primary-foreground: oklch(0.200 0.060 259);
+  --primary-hover: oklch(0.862 0.078 259);
+  --secondary: oklch(0.268 0.040 259);
+  --secondary-foreground: oklch(0.965 0.010 259);
+  --muted: oklch(0.262 0.038 259);
+  --muted-foreground: oklch(0.712 0.028 259);
+  --accent: oklch(0.274 0.042 259);
+  --accent-foreground: oklch(0.965 0.010 259);
+  --destructive: oklch(0.700 0.170 25);
+  --destructive-foreground: oklch(0.180 0.040 25);
+  --border: oklch(0.320 0.040 259);
+  --input: oklch(0.358 0.042 259);
+  --ring: oklch(0.800 0.095 259);
+  --highlight: oklch(0.800 0.095 259);
+  --highlight-foreground: oklch(0.200 0.060 259);
+  --row-selected: oklch(0.262 0.050 259);
+  --status-success: oklch(0.720 0.150 155);
+  --status-warning: oklch(0.800 0.140 80);
+  --status-error: oklch(0.680 0.190 25);
+  --status-info: oklch(0.700 0.130 278);
+  --status-neutral: oklch(0.680 0.016 259);
+  --sidebar: oklch(0.140 0.038 259);
+  --sidebar-foreground: oklch(0.940 0.012 259);
+  --sidebar-muted-foreground: oklch(0.700 0.030 259);
+  --sidebar-border: oklch(0.268 0.042 259);
+  --sidebar-accent: oklch(0.252 0.050 259);
+  --sidebar-accent-foreground: oklch(0.978 0.006 259);
+  --sidebar-indicator: oklch(0.800 0.095 259);
+  --sidebar-ring: oklch(0.800 0.095 259);
+  --focus-halo: color-mix(in oklab, var(--ring) 16%, transparent);
+  --brand-accent: oklch(0.305 0.092 259);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-
-  /* ── 覆盖层 ── */
-  --ring: var(--primary);
-  --status-success: oklch(0.72 0.15 155);
-  --status-warning: oklch(0.8 0.14 80);
-  --status-error: oklch(0.68 0.19 25);
-  --status-info: oklch(0.7 0.13 250);
-  --status-neutral: oklch(0.68 0.012 286);
-  --brand-ink: oklch(1 0 0);
-  --brand-mark: oklch(0.62 0.20 264);
-  --brand-spark: oklch(0.750 0.167 51);
-  --brand-ink-contrast: oklch(0.259 0.052 263);
-  --row-selected: oklch(0.22 0.024 264);
-  --primary-hover: oklch(0.63 0.18 264);
 }
 
 @theme inline {
@@ -136,8 +131,6 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
@@ -170,25 +163,30 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --font-sans: 'Inter Variable', sans-serif;
   --color-status-success: var(--status-success);
   --color-status-warning: var(--status-warning);
   --color-status-error: var(--status-error);
   --color-status-info: var(--status-info);
   --color-status-neutral: var(--status-neutral);
-  --color-brand-ink: var(--brand-ink);
-  --color-brand-mark: var(--brand-mark);
-  --color-brand-spark: var(--brand-spark);
-  --color-brand-ink-contrast: var(--brand-ink-contrast);
   --color-row-selected: var(--row-selected);
   --color-primary-hover: var(--primary-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-indicator: var(--sidebar-indicator);
+  --color-brand-accent: var(--brand-accent);
 
-  /* CJK 字族排在 system-ui 之后：汉字在 mac/Windows 上由 system-ui 那一跳就已解决，这几个
-     名字是给 Linux/容器兜底、并把 Windows 的落点钉死。排到 Inter 之后、system-ui 之前则会
-     反过来伤到西文——Inter 加载失败时拉丁字母会去借苹方的字形。 */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* 前两个字族是自托管的变量字体（见顶部 @fontsource 导入），随构建产物落盘，不依赖访问者本机
+     装了什么。Noto Sans SC Variable 刻意排在 system-ui 之前，让各操作系统上的汉字由同一支字体
+     渲染，而不是 mac 落到苹方、Windows 落到雅黑；代价是访问者要下载 CJK 分片。
+     这不会伤到西文：回退是逐字形的，Inter 分片没到时下一跳是 Noto 的拉丁字形（fontsource 的
+     Noto Sans SC 也覆盖 latin），不是苹方。系统链整条留在后面兜底。 */
+  --font-sans: "Inter Variable", "Noto Sans SC Variable", "Inter", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+    monospace;
 
   /* 密度：后台的正文基线是 13px，不是原版的 14px。这是整套主题里唯一为「更密」付的代价，
      其余密度都由组件自己的类决定（h-9 控件、gap-5 字段、表格行高 h-10）。 */
@@ -213,28 +211,105 @@
  * 模态阴影、浮层另换面与圆角）一律不再收——那类规则正是上一版踩坑最多的地方。
  */
 
-/* 侧栏当前项：左侧 2px 指示条 + 图标染色。shadcn 默认只有一块灰底，在长导航里「我在哪」
-   这个信号太弱。一级项与二级项是两个 slot，都要覆盖。 */
+/* 聚焦：1px 实边框 + 3px 同色光晕。
+ *
+ * 原语写的是 `focus-visible:border-ring` + `ring-ring/50` + `ring-[3px]`。那圈 50% 的光晕在任何
+ * 主题下都到不了 3:1 —— 承担对比度的从来只有那圈实边框。这里把光晕压到同色 10%（暗色 16%，
+ * 深底吃掉的对比更多），让它只做品牌气息，不假装在做无障碍。
+ *
+ * 光晕必须与边框同色：深色边框配另一支颜色的光晕，读出来是两个不相干的环套在一起。
+ *
+ * 只覆盖 `--tw-ring-color`（`ring-ring/50` 编译出来就是它），原语一个字都不用动，也不需要
+ * !important —— 未分层的规则本来就压过 Tailwind 的 utilities 层。
+ *
+ * 出错与危险态不压：原语在那里给的是 destructive 色的光晕，套上藏蓝就成了红边框外一圈蓝，
+ * 正是上面要防的异色环，而且出错时的焦点最需要看清。 */
+*:focus-visible:not([aria-invalid="true"], [data-variant="destructive"]),
+/* input-group 把环画在容器上而不是聚焦元素上，容器自己不是 :focus-visible，上一条够不着它——
+   不补的话带按钮的输入框比普通输入框重一档。 */
+[data-slot="input-group"]:has(> [data-slot="input-group-control"]:focus-visible):not(
+    :has([aria-invalid="true"])
+  ) {
+  --tw-ring-color: var(--focus-halo);
+}
+
+/* 侧栏是例外：`sidebar.tsx` 这五个 slot 的焦点写的是 `focus-visible:ring-2` + `ring-sidebar-ring`，
+ * 没有配实边框，那圈环就是唯一的指示。上面压光晕的前提是「另有实边框扛 3:1」，这里不成立，还它
+ * 满不透明度。只点名这五个：sidebar-trigger / sidebar-input 是 Button / Input 原语，自带实边框与
+ * 3px 光晕，按前缀一把抓会把它们画成 3px 实心环。 */
+[data-slot="sidebar-group-label"]:focus-visible,
+[data-slot="sidebar-group-action"]:focus-visible,
+[data-slot="sidebar-menu-button"]:focus-visible,
+[data-slot="sidebar-menu-action"]:focus-visible,
+[data-slot="sidebar-menu-sub-button"]:focus-visible {
+  --tw-ring-color: var(--sidebar-ring);
+}
+
+/* 浏览器自动填充的底色。Chrome 只给 <input> 本身刷那层浅蓝，而 input-group 的圆角边框包着
+ * input 加尾部按钮——于是密码框里出现一块方形蓝底，右边按钮那截还是白的，像控件裂开了。
+ * 内阴影是唯一盖得住的办法（background 会被 UA 样式赢过去）；取 --card，因为输入框都长在
+ * 卡片、抽屉或浮层上，三者在两个主题里是同一支面。 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  -webkit-text-fill-color: var(--foreground);
+  caret-color: var(--foreground);
+}
+
+/* 侧栏当前项：原语那块 sidebar-accent 底（比轨浮一档的面）之外，再加左侧 2px 指示条。
+ * 只有底时「我在哪」在长导航里读不出来；只有条时条得粗到难看才够醒目。两者一起，各自都可以很轻。
+ *
+ * 指示条单独一个令牌而不复用 primary：两个主题要的值不同，关系相同。
+ *
+ * **挂在 li 上，不能挂在按钮上。** 两个按钮原语都带 overflow-hidden，挂在按钮上的负偏移
+ * ::before 会被它自己裁掉——计算样式里有，屏幕上没有。li 本身就是 position: relative。
+ *
+ * 二级项的条压在 SidebarMenuSub 那条 border-l 上（-0.625rem 正好是它的 px-2.5），读作
+ * 「树线的这一段被点亮」，而不是又多出一条平行的线。 */
+[data-slot="sidebar-menu-item"]:has(> [data-active="true"])::before,
+[data-slot="sidebar-menu-sub-item"]:has(> [data-active="true"])::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.25rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--sidebar-indicator);
+}
+[data-slot="sidebar-menu-item"]:has(> [data-active="true"])::before {
+  left: -0.5rem;
+}
+[data-slot="sidebar-menu-sub-item"]:has(> [data-active="true"])::before {
+  left: -0.625rem;
+}
 [data-slot="sidebar-menu-sub-button"][data-active="true"] {
   font-weight: var(--font-weight-medium);
 }
-[data-slot="sidebar-menu-button"][data-active="true"],
-[data-slot="sidebar-menu-sub-button"][data-active="true"] {
-  position: relative;
+
+/* 用户区与导航之间一条发丝线：导航列表可滚动而用户区固定在底部，没有这条线时它读起来像列表里
+ * 最后一个导航项。顶部标识区不给——紧接着的搜索框自带边框，再加一条就是两条平行线。 */
+[data-slot="sidebar-footer"] {
+  border-top: 1px solid var(--sidebar-border);
 }
-[data-slot="sidebar-menu-button"][data-active="true"]::before,
-[data-slot="sidebar-menu-sub-button"][data-active="true"]::before {
-  content: "";
-  position: absolute;
-  inset-block: 0.375rem;
-  left: -0.5rem;
-  width: 2px;
-  border-radius: 9999px;
-  background: var(--primary);
+
+/* 单选 toggle（视图 / 模式切换）的选中态。原语默认 bg-accent，在这套色阶下压在抽屉底上只有
+ * 1.05:1，选中与未选中分不出来。不用主色填充：主色是「点这里」，填进表示「你在哪」的段里会让
+ * 品牌色获得数据含义。所以用中性墨边 + 字重；55% 是解出来的（浅色 4.09、暗色 5.62，40% 只有 2.59）。
+ *
+ * 只打单选：Radix 给单选 role="radio"（父级 radiogroup），多选是 aria-pressed，多选的选中态
+ * 往往另有含义（例如「这天不上班」的删除线），不能被这条盖掉。 */
+[data-slot="toggle-group"][role="radiogroup"] [data-slot="toggle-group-item"][data-state="on"] {
+  border-color: color-mix(in oklab, var(--foreground) 55%, transparent);
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
 }
-[data-slot="sidebar-menu-button"][data-active="true"] > svg,
-[data-slot="sidebar-menu-sub-button"][data-active="true"] svg {
-  color: var(--primary);
+
+/* 相连的段（spacing=0）除首段外没有左边框，段间那条线是前一段的右边框，墨边染不到它。
+ * 补回 1px 左边框并左移 1px 盖住前一段的右边框，布局宽度不变。 */
+[data-slot="toggle-group"][role="radiogroup"]
+  [data-slot="toggle-group-item"][data-spacing="0"][data-variant="outline"][data-state="on"]:not(:first-child) {
+  border-left-width: 1px;
+  margin-left: -1px;
 }
 
 /* 字段内部收紧到 6px：标签、说明、控件、错误是同一件东西的四个部分，而字段与字段之间是
@@ -248,6 +323,19 @@
    单独决定整张表的密度。 */
 [data-slot="table-cell"] {
   padding-block: 0;
+}
+
+/* 行栅格与工具条、分页脚共处一张卡片，三者共用同一条左右边界，取 16px。单元格 8px 内边距是
+ * 列间隙的一半，两列之间是 16px；外侧若只给 8px，首列看上去被挤在边框上。外边距与列间距相等，
+ * 栅格才匀。给在单元格而不是滚动容器上：容器的内边距会跟着横向滚动滚走。 */
+[data-slot="table-head"]:first-child,
+[data-slot="table-cell"]:first-child {
+  padding-left: --spacing(4);
+}
+
+[data-slot="table-head"]:last-child,
+[data-slot="table-cell"]:last-child {
+  padding-right: --spacing(4);
 }
 
 /* 抽屉回到 200ms。原语是开 500ms、关 300ms，开场比产品里第二慢的动画还慢 2.5 倍——
