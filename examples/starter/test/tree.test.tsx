@@ -6,10 +6,12 @@ import { Tree } from "@/components/tree/tree";
 import {
   collectSubtreeIds,
   deriveIndeterminate,
+  filterTree,
   findParentChain,
   type TreeNode,
 } from "@/components/tree/tree-helpers";
 import treeMessages from "@/components/tree/tree-messages.json";
+import { TreeMultiSelect } from "@/components/tree/tree-select";
 import { renderWithProviders } from "./test-utils";
 
 const nodes: TreeNode[] = [
@@ -191,5 +193,57 @@ describe("deriveIndeterminate", () => {
     ["does not double-mark a node already present in checked", ["root", "a"], []],
   ] as const)("%s", (_label, checked, expected) => {
     expect(deriveIndeterminate(tree, new Set(checked))).toEqual(new Set(expected));
+  });
+});
+
+describe("filterTree", () => {
+  const org: TreeNode[] = [
+    {
+      id: "hq",
+      label: "HQ",
+      children: [
+        { id: "rd", label: "R&D", children: [{ id: "fe", label: "Frontend" }] },
+        { id: "ops", label: "Ops" },
+      ],
+    },
+  ];
+
+  it("命中节点保留整棵子树，祖先链保留并展开", () => {
+    const { nodes: out, expanded } = filterTree(org, "r&d");
+    expect(out[0]?.children?.map((n) => n.id)).toEqual(["rd"]);
+    expect(out[0]?.children?.[0]?.children?.map((n) => n.id)).toEqual(["fe"]);
+    expect(expanded).toEqual(expect.arrayContaining(["hq", "rd"]));
+  });
+
+  it("深层命中时只保留通往它的祖先链", () => {
+    const { nodes: out } = filterTree(org, "front");
+    expect(out[0]?.children?.map((n) => n.id)).toEqual(["rd"]);
+  });
+
+  it("关键字为空白时原样返回", () => {
+    expect(filterTree(org, "  ").nodes).toBe(org);
+  });
+});
+
+describe("TreeMultiSelect", () => {
+  const flat: TreeNode[] = [
+    { id: "a", label: "Alpha" },
+    { id: "b", label: "Beta" },
+  ];
+
+  it("未选时触发器显示占位", async () => {
+    renderWithProviders(<TreeMultiSelect nodes={flat} values={[]} onChange={vi.fn()} />, {
+      messages: treeMessages,
+    });
+    expect(
+      await screen.findByRole("button", { name: treeMessages.en[""]["Tree:SelectPlaceholder"] }),
+    ).toBeTruthy();
+  });
+
+  it("选了少量节点时触发器逐个列出名称", async () => {
+    renderWithProviders(<TreeMultiSelect nodes={flat} values={["a", "b"]} onChange={vi.fn()} />, {
+      messages: treeMessages,
+    });
+    expect(await screen.findByRole("button", { name: "Alpha, Beta" })).toBeTruthy();
   });
 });

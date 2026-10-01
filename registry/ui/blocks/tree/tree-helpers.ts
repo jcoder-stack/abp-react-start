@@ -78,3 +78,36 @@ function subtreeState(node: TreeNode, checked: Set<string>): SubtreeState {
   }
   return "mixed";
 }
+
+/**
+ * 按关键字过滤树：命中节点连同其整棵子树保留（搜到上级还要能逐个勾它的下级），命中节点的祖先链
+ * 也保留，其余剔除；`expanded` 是保留下来的父节点 id，交给 `Tree` 的 `defaultExpanded` 才能直接
+ * 看到命中的深层节点。`label` 是 ReactNode，只对字符串 label 做匹配——非字符串节点视为不命中，
+ * 但其命中的子孙仍会把它保留下来。大小写不敏感；关键字为空白时原样返回，避免无谓重建。
+ */
+export function filterTree(
+  nodes: TreeNode[],
+  keyword: string,
+): { nodes: TreeNode[]; expanded: string[] } {
+  const needle = keyword.trim().toLowerCase();
+  if (needle === "") return { nodes, expanded: [] };
+  const expanded: string[] = [];
+  return { nodes: filterNodes(nodes, needle, expanded), expanded };
+}
+
+function filterNodes(nodes: TreeNode[], needle: string, expanded: string[]): TreeNode[] {
+  const result: TreeNode[] = [];
+  for (const node of nodes) {
+    const selfMatches = typeof node.label === "string" && node.label.toLowerCase().includes(needle);
+    if (selfMatches) {
+      if ((node.children?.length ?? 0) > 0) expanded.push(node.id);
+      result.push(node);
+      continue;
+    }
+    const children = filterNodes(node.children ?? [], needle, expanded);
+    if (children.length === 0) continue;
+    expanded.push(node.id);
+    result.push({ ...node, children });
+  }
+  return result;
+}
