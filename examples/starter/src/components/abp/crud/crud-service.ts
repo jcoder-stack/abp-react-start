@@ -21,7 +21,7 @@ export const ABP_RESERVED_LIST_PARAM_NAMES: ReadonlySet<string> = new Set([
 
 interface MutationCbs {
   onSuccess?: () => void;
-  onError?: () => void;
+  onError?: (error: unknown) => void;
 }
 
 /** 写操作的两个 hook。只读 service 不必满足，`WritableCrudService`（文件尾）交叉它把两者钉成必填。

@@ -19,6 +19,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { abpErrorMessage } from "@/components/abp/crud/abp-form-errors";
 import type { AbpTableSource } from "@/components/abp/crud/abp-table-source";
 import { useBoundComponents } from "@/components/abp/crud/create-bound-components";
 import {
@@ -85,6 +86,11 @@ export interface AbpTableRowConfig<TDto extends { id?: string }> {
   delete?: boolean;
   /** 默认：`onOpen` 存在时点行开详情；`false` 关闭；也可给自定义回调。 */
   click?: false | ((row: TDto) => void);
+  /** 逐行收窄删除项：返回 false 的行不出删除项（只隐藏不灰显），`t.BulkDelete` 也跳过它。只能收窄
+   *  不能放开——表级判定（权限、`delete`）不许删时，这里返回 true 也不出。引用必须稳定，同 `menu`。 */
+  canDelete?: (row: TDto) => boolean;
+  /** 删除确认框的说明，替换通用的「此操作不可撤销」；删除的后果因页而异时用它说清楚。 */
+  deleteConfirm?: string;
 }
 
 export interface UseAbpTableOptions<
@@ -121,6 +127,34 @@ export interface UseAbpTableOptions<
   tableOptions?: UseDataTableOptions<TDto>["tableOptions"];
   /** 顶部条「导出」图标的回调插槽；缺席不渲染导出按钮。组件库不内置导出实现。 */
   onExport?: () => void;
+  /** 搜索框的初始值（深链预填），只在挂载时播种一次。 */
+  initialFilter?: string;
+}
+
+/**
+ * 一页收到的行数不该超过 `MaxResultCount`。超了说明 `useList` 交上来的是全量数组：表格按
+ * `manualPagination` 渲染，页码照总数算出好几页，行却一行不切地全渲染，翻页毫无反应。这个形态
+ * 编译期与单测都看不见，只能在第一次打开页面时喊出来。
+ */
+export function warnIfUnpaged(
+  received: number,
+  maxResultCount: number,
+  listKey: () => readonly unknown[],
+): void {
+  if (!import.meta.env.DEV || received <= maxResultCount) return;
+  console.error(
+    `[useAbpTable] ${String(listKey()[0] ?? "list")} returned ${received} rows for MaxResultCount=${maxResultCount}. ` +
+      "useList is handing over the full array: page on the server, or slice by SkipCount/MaxResultCount in the wrapper.",
+  );
+}
+
+/** 某一行出不出删除项：表级结论与行级判定取与。 */
+export function isRowDeletable<TDto>(
+  tableAllows: boolean,
+  row: TDto,
+  canDelete?: (row: TDto) => boolean,
+): boolean {
+  return tableAllows && (canDelete?.(row) ?? true);
 }
 
 /**
@@ -148,13 +182,15 @@ function useServiceSource<
   });
   const totalCount = listQuery.data?.totalCount ?? 0;
   const pageCount = Math.max(Math.ceil(totalCount / listParams.MaxResultCount), 1);
+  warnIfUnpaged(listQuery.data?.items?.length ?? 0, listParams.MaxResultCount, service.listKey);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: service.listKey() });
   const deleted = () => {
     toast.success(L("Crud:Deleted"));
     void invalidate();
   };
-  const deleteFailed = () => toast.error(L("Crud:OperationFailed"));
+  const deleteFailed = (error: unknown) =>
+    toast.error(abpErrorMessage(error) ?? L("Crud:OperationFailed"));
 
   const useDeleteHook = service.useDelete ?? useNoopDelete;
   const rawDelete = useDeleteHook({ mutation: { onSuccess: deleted, onError: deleteFailed } });
@@ -166,17 +202,20 @@ function useServiceSource<
   const deleteMany = useCallback(
     async (ids: string[]) => {
       const failed: string[] = [];
+      const reasons = new Set<string>();
       // 顺序而非并发：ABP 的删除常连带关联清理，并发提交容易撞上后端的并发/死锁保护，
       // 把「后端拒绝」误算成「这条删不掉」。
       for (const id of ids) {
         try {
           await bulkMutateAsync({ id });
-        } catch {
+        } catch (error) {
           failed.push(id);
+          const reason = abpErrorMessage(error);
+          if (reason !== undefined) reasons.add(reason);
         }
       }
       await queryClient.invalidateQueries({ queryKey: service.listKey() });
-      return { failed };
+      return { failed, reasons: [...reasons] };
     },
     [bulkMutateAsync, queryClient, service.listKey],
   );
@@ -238,7 +277,10 @@ export function useAbpTable<
   opts: UseAbpTableOptions<TDto, TQueryDefaults>,
 ) {
   const L = useLocalization();
-  const state = useDataTableState({ defaultPageSize: opts.defaultPageSize });
+  const state = useDataTableState({
+    defaultPageSize: opts.defaultPageSize,
+    initialFilter: opts.initialFilter,
+  });
 
   const queryDefaults: TQueryDefaults = opts.query?.defaults ?? ({} as TQueryDefaults);
   const [params, setParams] = useState<Record<string, unknown>>(() => pruneEmpty(queryDefaults));
@@ -358,7 +400,12 @@ export function useAbpTable<
             onOpen: opts.onOpen,
             source: rowActionsSrc,
             rowActions: row.actions,
-            show: { view: showView, edit: showEdit, delete: showDelete },
+            show: {
+              view: showView,
+              edit: showEdit,
+              delete: isRowDeletable(showDelete, cellRow.original, row.canDelete),
+            },
+            deleteConfirm: row.deleteConfirm,
             items: row.menu,
           }),
       },
@@ -368,6 +415,8 @@ export function useAbpTable<
     opts.onOpen,
     row.actions,
     row.menu,
+    row.canDelete,
+    row.deleteConfirm,
     showView,
     showEdit,
     showDelete,
