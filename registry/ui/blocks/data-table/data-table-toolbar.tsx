@@ -52,7 +52,8 @@ export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarP
 
   // 即时值持有在组件本体而非条件子树：批量态会把整个左区换成 props.bulk，
   // 若把这份 state 放进搜索框所在的三元分支，批量态一进一出输入内容就丢了。
-  const [searchInput, setSearchInput] = useState("");
+  // 以已提交的搜索值起步：深链预填时输入框要显示它，而不是空着却在筛选。
+  const [searchInput, setSearchInput] = useState(state.params.filter);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { commitSearch } = state;
 
@@ -90,7 +91,7 @@ export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarP
     );
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
+    <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
       {left}
       <div className="ml-auto flex items-center gap-2">
         {props.actions}

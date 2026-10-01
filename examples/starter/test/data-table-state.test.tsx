@@ -28,3 +28,10 @@ describe("density", () => {
     expect(result.current.density).toBe("compact");
   });
 });
+
+describe("initialFilter", () => {
+  it("挂载时用 initialFilter 播种已提交的搜索值", () => {
+    const { result } = renderHook(() => useDataTableState({ initialFilter: "orwell" }));
+    expect(result.current.params.filter).toBe("orwell");
+  });
+});

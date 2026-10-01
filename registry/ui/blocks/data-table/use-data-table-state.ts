@@ -9,13 +9,14 @@ export type TableDensity = "comfortable" | "compact";
  * 行选择不在这里——所有权在表实例上（`table.atoms.rowSelection`），经 `useDataTable` 暴露。
  * 结构化查询参数不归这里管，那是 useAbpTable 的表单实例自己持有的东西。
  */
-export function useDataTableState(opts: { defaultPageSize?: number } = {}) {
+export function useDataTableState(opts: { defaultPageSize?: number; initialFilter?: string } = {}) {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: opts.defaultPageSize ?? 10,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [filter, setFilter] = useState("");
+  // 深链预填：只在挂载时播种一次，之后搜索值归用户
+  const [filter, setFilter] = useState(opts.initialFilter ?? "");
   const [density, setDensity] = useState<TableDensity>("comfortable");
 
   // 「当前这一页的语境」的版本号。resetPaging 每次都递增，哪怕 pageIndex 写回同值：
