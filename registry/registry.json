@@ -358,6 +358,11 @@
           "target": "components/form/form-card.tsx"
         },
         {
+          "path": "ui/blocks/form/field-layout.tsx",
+          "type": "registry:component",
+          "target": "components/form/field-layout.tsx"
+        },
+        {
           "path": "ui/blocks/form/optional-mark.tsx",
           "type": "registry:component",
           "target": "components/form/optional-mark.tsx"

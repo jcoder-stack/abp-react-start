@@ -106,6 +106,12 @@ export function ReadOnlyFields(props: { children: ReactNode }) {
   return <ReadOnlyContext.Provider value={true}>{props.children}</ReadOnlyContext.Provider>;
 }
 
+/** 当前是否处在查看态。字段组件自己会查，导出是给排版层用——查看态的容器只认识 `FieldRow`，
+ *  页面为录入态写的栅格与提示必须自行退场，否则会把键值卡的对齐和分隔线打散。 */
+export function useReadOnly(): boolean {
+  return useContext(ReadOnlyContext);
+}
+
 /**
  * 只读态的一行：左键右值，行高与表格同源（40px），值右对齐排成一条竖线。
  *
