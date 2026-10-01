@@ -322,3 +322,103 @@ describe("TextareaField", () => {
     expect(area.tagName).toBe("TEXTAREA");
   });
 });
+
+function NullableHarness(props: { readOnly?: boolean; initial: number | null }) {
+  const form = useAppForm({ defaultValues: { grace: props.initial } });
+  const field = (
+    <form.AppField name="grace">{(f) => <f.NumberField label="Grace" nullable />}</form.AppField>
+  );
+  return (
+    <>
+      {props.readOnly ? (
+        <ReadOnlyFields>
+          <dl>{field}</dl>
+        </ReadOnlyFields>
+      ) : (
+        field
+      )}
+      <form.Subscribe selector={(s) => s.values.grace}>
+        {/* JSON.stringify(NaN) 也是 "null"，必须分开写才能区分两者 */}
+        {(v) => <span data-testid="value">{v === null ? "null" : String(v)}</span>}
+      </form.Subscribe>
+    </>
+  );
+}
+
+describe("NumberField nullable", () => {
+  it("从 null 起始时输入框为空；清空写回 null 而不是 NaN", async () => {
+    renderWithProviders(<NullableHarness initial={null} />, { messages });
+    const input = (await screen.findByLabelText("Grace")) as HTMLInputElement;
+    expect(input.value).toBe("");
+    fireEvent.change(input, { target: { value: "5" } });
+    expect(screen.getByTestId("value").textContent).toBe("5");
+    fireEvent.change(input, { target: { value: "" } });
+    expect(screen.getByTestId("value").textContent).toBe("null");
+  });
+
+  it("查看态 null 显示「未填写」", async () => {
+    renderWithProviders(<NullableHarness initial={null} readOnly />, { messages });
+    expect(await screen.findByText(messages.en[""]["Form:Empty"])).toBeTruthy();
+  });
+});
+
+function EmptyOptionHarness() {
+  const form = useAppForm({ defaultValues: { status: "" } });
+  return (
+    <form.AppField name="status">
+      {(f) => (
+        <f.SelectField
+          label="Status"
+          options={[
+            { value: "", label: "All" },
+            { value: "on", label: "Enabled" },
+          ]}
+        />
+      )}
+    </form.AppField>
+  );
+}
+
+describe("SelectField 空值选项", () => {
+  it("当前值为空串时，触发器显示 value 为空的那个选项", async () => {
+    renderWithProviders(<EmptyOptionHarness />, { messages });
+    const trigger = await screen.findByRole("combobox", { name: "Status" });
+    expect(trigger.textContent).toContain("All");
+  });
+
+  it("打开下拉不报错，空值选项可见可选", async () => {
+    renderWithProviders(<EmptyOptionHarness />, { messages });
+    const trigger = await screen.findByRole("combobox", { name: "Status" });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    expect(await screen.findByRole("option", { name: "All" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Enabled" })).toBeTruthy();
+  });
+});
+
+function MultiHarness(props: { editable?: boolean }) {
+  const form = useAppForm({ defaultValues: { members: ["u1", "u9"] } });
+  return (
+    <ReadOnlyFields>
+      <dl>
+        <form.AppField name="members">
+          {(f) => (
+            <f.MultiComboboxField
+              label="Members"
+              editable={props.editable}
+              options={[{ value: "u1", label: "Alice" }]}
+            />
+          )}
+        </form.AppField>
+      </dl>
+    </ReadOnlyFields>
+  );
+}
+
+describe("MultiComboboxField", () => {
+  it("查看态把 id 换成 label，找不到的 id 原样显示", async () => {
+    renderWithProviders(<MultiHarness />, { messages });
+    expect(await screen.findByText("Alice")).toBeTruthy();
+    expect(screen.getByText("u9")).toBeTruthy();
+    expect(screen.queryByText("u1")).toBeNull();
+  });
+});
