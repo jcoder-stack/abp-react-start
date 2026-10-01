@@ -7,7 +7,12 @@ import { abpFormOptions } from "@/components/abp/crud/abp-form-options";
 import { useBoundComponents } from "@/components/abp/crud/create-bound-components";
 import type { WritableCrudService } from "@/components/abp/crud/crud-service";
 import { useAppForm } from "@/components/form/form-hook";
-import { SheetForm, type SheetFormMode, type SheetFormProps } from "@/components/form/sheet-form";
+import {
+  SheetForm,
+  type SheetFormMode,
+  type SheetFormProps,
+  type SheetFormSize,
+} from "@/components/form/sheet-form";
 
 /** form 块的入参。`emptyValues` 之外三个映射都可以省：`toValues` 缺省按 `emptyValues` 的键
  *  从记录里 pick，null/undefined 回退成空值，roles 这类「表单形状 ≡ DTO 子集」的页够用了。
@@ -156,8 +161,13 @@ export function useAbpSheet<
   } satisfies Omit<SheetFormProps, "children">;
 
   const bound = useBoundComponents({ sheetProps }, (read) => ({
-    Sheet: (p: { title?: string; children: ReactNode }) => (
-      <SheetForm {...read().sheetProps} {...(p.title !== undefined ? { title: p.title } : {})}>
+    // size 由调用方在渲染处给，不进 opts：它只影响外观，没有必要跟着 opts 走 ref 那一层。
+    Sheet: (p: { title?: string; size?: SheetFormSize; children: ReactNode }) => (
+      <SheetForm
+        {...read().sheetProps}
+        {...(p.title !== undefined ? { title: p.title } : {})}
+        {...(p.size !== undefined ? { size: p.size } : {})}
+      >
         {p.children}
       </SheetForm>
     ),

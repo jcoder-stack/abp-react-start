@@ -21,8 +21,25 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 export type SheetFormMode = "create" | "edit" | "view";
+
+/**
+ * 抽屉宽度档位。SheetForm 与手写的 `SheetContent` 共用这一份，页面里不直接写 `max-w`：
+ * 宽度一旦散落在各页，换一次档位就要逐页找。
+ *
+ * `sm` 是配置类表单的常规宽度；`md` 给字段略多的录入；`lg` 给需要一张小表或明细列表的抽屉；
+ * `xl` 留给要并排看表单与预览的页。
+ */
+export type SheetFormSize = "sm" | "md" | "lg" | "xl";
+
+export const SHEET_SIZE_CLASS: Record<SheetFormSize, string> = {
+  sm: "sm:max-w-md",
+  md: "sm:max-w-lg",
+  lg: "sm:max-w-2xl",
+  xl: "sm:max-w-5xl",
+};
 
 export interface SheetFormProps {
   mode: SheetFormMode;
@@ -38,6 +55,8 @@ export interface SheetFormProps {
   pending?: boolean;
   /** 表单是否有未保存的改动。为真时，任何关闭动作都先过一道确认。 */
   dirty?: boolean;
+  /** 抽屉宽度，默认 `sm`。见 `SheetFormSize`。 */
+  size?: SheetFormSize;
   children: ReactNode;
 }
 
@@ -63,7 +82,7 @@ export function SheetForm(props: SheetFormProps) {
       onOpenChange={(next) => (next ? props.onOpenChange(true) : requestClose())}
     >
       <SheetContent
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+        className={cn("flex w-full flex-col gap-0 p-0", SHEET_SIZE_CLASS[props.size ?? "sm"])}
         // Esc 自己兜一层，不依赖 Radix 的默认路径：焦点落在文本框里时浏览器会先消费掉这个键
         // （事件到达 document 时已 defaultPrevented），而表单一打开就自动聚焦第一个字段——
         // 于是模态最标准的退出键在实际使用中从来没生效过。
