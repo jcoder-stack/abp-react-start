@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { act, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Combobox } from "@/components/combobox/combobox";
@@ -221,5 +222,27 @@ describe("Combobox render cap", () => {
     fireEvent.change(input, { target: { value: "Asia" } });
     await waitFor(() => expect(screen.queryByText(/more matches/)).toBeNull());
     expect(screen.getAllByRole("option").length).toBe(30);
+  });
+});
+
+describe("Combobox 回显与录入", () => {
+  it("静态 options 超过渲染上限时，排在后面的已选值仍回显 label", async () => {
+    const many = Array.from({ length: 150 }, (_, i) => ({ value: `v${i}`, label: `Item ${i}` }));
+    renderWithProviders(<Combobox value="v140" onChange={vi.fn()} options={many} />, {
+      messages: comboboxMessages,
+    });
+    await waitFor(() =>
+      expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("Item 140"),
+    );
+  });
+
+  it("聚焦即全选已回显的 label，首次按键整体替换", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SingleHarness initial="apple" />, { messages: comboboxMessages });
+    const input = (await screen.findByRole("combobox")) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe("Apple"));
+    await user.click(input);
+    await user.keyboard("Ba");
+    expect(input.value).toBe("Ba");
   });
 });
