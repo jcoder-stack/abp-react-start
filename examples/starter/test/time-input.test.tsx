@@ -126,6 +126,11 @@ describe("TimeInput", () => {
     expect(onChange).not.toHaveBeenCalledWith("");
   });
 
+  it("关闭浏览器自动填充建议，免得遮住输入", () => {
+    render(<TimeInput aria-label="time" value="" onChange={vi.fn()} />);
+    expect(screen.getByLabelText("time").getAttribute("autocomplete")).toBe("off");
+  });
+
   it("外部改了值，输入框跟上", () => {
     const { rerender } = render(<TimeInput aria-label="time" value="08:00" onChange={vi.fn()} />);
     rerender(<TimeInput aria-label="time" value="17:45" onChange={vi.fn()} />);

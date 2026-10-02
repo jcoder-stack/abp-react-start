@@ -2,9 +2,22 @@ import type { ApplicationConfiguration } from "./application-configuration";
 
 /** 租户时区的唯一读取点：`Abp.Timing.TimeZone` 经 application-configuration 归一成 IANA 名。
  *  未配置或无法识别时按 UTC——后端 `SettingTenantTimeZoneProvider` 同样回落 UTC；回落到浏览器
- *  时区等于又多一个时区来源，SSR 与浏览器还会算出不同的结果。 */
+ *  时区等于又多一个时区来源，SSR 与浏览器还会算出不同的结果。运行时 Intl 不认识的名字同样按
+ *  UTC，于是这里返回的值永远能直接交给 `Intl`。 */
 export function tenantTimeZone(config: ApplicationConfiguration): string {
-  return config.timing?.timeZone?.iana?.timeZoneName || "UTC";
+  const name = config.timing?.timeZone?.iana?.timeZoneName;
+  return name && isSupportedTimeZone(name) ? name : "UTC";
+}
+
+/** 精简 ICU 的运行时可能不认识某些 IANA 名；在读取点就把它们收成 UTC。 */
+function isSupportedTimeZone(name: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: name });
+    return true;
+  } catch (error) {
+    if (error instanceof RangeError) return false;
+    throw error;
+  }
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -83,7 +96,8 @@ export function todayIso(timeZone: string, now: Date = new Date()): string {
 }
 
 /** 该时区某日（`yyyy-MM-dd`）0 点对应的 UTC 毫秒。偏移随时刻变（夏令时），所以用猜出的时刻
- *  再取一次偏移校正；0 点被跳过时返回当天第一个存在的时刻。 */
+ *  再取一次偏移校正；0 点被跳过时返回当天第一个存在的时刻。`isoDate` 不是 `yyyy-MM-dd` 时
+ *  抛 `RangeError`。 */
 export function zonedMidnightUtc(isoDate: string, timeZone: string): number {
   const wall = Date.UTC(
     Number(isoDate.slice(0, 4)),

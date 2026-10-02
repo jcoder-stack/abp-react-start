@@ -75,6 +75,8 @@ export function TimeInput(props: {
       id={props.id}
       name={props.name}
       inputMode="numeric"
+      // 字段名常是 start / end 这类，浏览器会弹出自动填充建议遮住输入
+      autoComplete="off"
       placeholder="--:--"
       className={cn("tabular-nums", props.className)}
       value={text}

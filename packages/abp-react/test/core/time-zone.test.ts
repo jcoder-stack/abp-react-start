@@ -28,6 +28,14 @@ describe("tenantTimeZone", () => {
     expect(tenantTimeZone(withTiming({ timeZone: { iana: { timeZoneName: "" } } }))).toBe("UTC");
     expect(tenantTimeZone(withTiming(undefined))).toBe("UTC");
   });
+
+  it("运行时不认识的时区名在读取点就回落 UTC，调用方交给 Intl 不会抛错", () => {
+    const zone = tenantTimeZone(
+      withTiming({ timeZone: { iana: { timeZoneName: "Mars/Olympus_Mons" } } }),
+    );
+    expect(zone).toBe("UTC");
+    expect(() => new Intl.DateTimeFormat("en-US", { timeZone: zone })).not.toThrow();
+  });
 });
 
 describe("formatInstant", () => {

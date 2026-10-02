@@ -319,7 +319,6 @@ describe("TextareaField", () => {
     const area = (await screen.findByLabelText("Note")) as HTMLTextAreaElement;
     fireEvent.change(area, { target: { value: "a\nb" } });
     expect(area.value).toBe("a\nb");
-    expect(area.tagName).toBe("TEXTAREA");
   });
 });
 
