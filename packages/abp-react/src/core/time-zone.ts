@@ -9,15 +9,23 @@ export function tenantTimeZone(config: ApplicationConfiguration): string {
   return name && isSupportedTimeZone(name) ? name : "UTC";
 }
 
-/** 精简 ICU 的运行时可能不认识某些 IANA 名；在读取点就把它们收成 UTC。 */
+const supportedTimeZones = new Map<string, boolean>();
+
+/** 精简 ICU 的运行时可能不认识某些 IANA 名；在读取点就把它们收成 UTC。按名字缓存判定结果：
+ *  `useTenantTimeZone` 每次渲染都会走到这里，`<Instant>` 更是每个单元格一次。 */
 function isSupportedTimeZone(name: string): boolean {
+  const cached = supportedTimeZones.get(name);
+  if (cached !== undefined) return cached;
+  let supported: boolean;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: name });
-    return true;
+    supported = true;
   } catch (error) {
-    if (error instanceof RangeError) return false;
-    throw error;
+    if (!(error instanceof RangeError)) throw error;
+    supported = false;
   }
+  supportedTimeZones.set(name, supported);
+  return supported;
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");

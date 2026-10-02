@@ -2,7 +2,7 @@
 
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { ChevronsUpDownIcon } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import { Tree } from "@/components/tree/tree";
 import { deriveIndeterminate, filterTree, type TreeNode } from "@/components/tree/tree-helpers";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,8 @@ export function TreeMultiSelect({
   const L = useLocalization();
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
+  // 外部 <label for> 关联到按钮后，label 文本会取代按钮内容成为可访问名称；当前选择挂成描述才念得出来
+  const valueId = useId();
 
   const checked = useMemo(() => new Set(values), [values]);
   // 半选态按完整树推导：过滤后的树缺了未命中的子节点，据此推导会把「部分勾选」误判成全选。
@@ -99,9 +101,13 @@ export function TreeMultiSelect({
           disabled={disabled}
           aria-required={ariaRequired}
           aria-invalid={ariaInvalid}
+          aria-describedby={valueId}
           className="w-full justify-between font-normal"
         >
-          <span className={values.length === 0 ? "truncate text-muted-foreground" : "truncate"}>
+          <span
+            id={valueId}
+            className={values.length === 0 ? "truncate text-muted-foreground" : "truncate"}
+          >
             {triggerText()}
           </span>
           <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />

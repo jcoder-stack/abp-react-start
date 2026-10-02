@@ -281,4 +281,21 @@ describe("TreeMultiSelect", () => {
     }) as HTMLInputElement;
     expect(search.value).toBe("");
   });
+
+  it("接上外部 label 后，当前选择仍作为触发按钮的描述被读出", async () => {
+    renderWithProviders(
+      <>
+        <label htmlFor="depts">Departments</label>
+        <TreeMultiSelect id="depts" nodes={flat} values={["a", "b"]} onChange={vi.fn()} />
+      </>,
+      { messages: treeMessages },
+    );
+    const trigger = await screen.findByLabelText("Departments");
+    const describedBy = trigger.getAttribute("aria-describedby") ?? "";
+    const description = describedBy
+      .split(" ")
+      .map((id) => document.getElementById(id)?.textContent ?? "")
+      .join(" ");
+    expect(description).toBe("Alpha, Beta");
+  });
 });
