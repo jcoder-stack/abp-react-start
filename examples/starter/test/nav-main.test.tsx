@@ -43,4 +43,3 @@ describe("NavMain", () => {
     expect(group?.getAttribute("data-has-active-child")).toBe("true");
   });
 });
-
