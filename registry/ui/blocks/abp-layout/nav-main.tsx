@@ -34,7 +34,13 @@ export function NavMain({ items }: { items: MenuItem[] }) {
               defaultOpen={item.children.some((child) => child.to === active)}
               className="group/collapsible"
             >
-              <SidebarMenuItem>
+              {/* 由 React 判定这一组是否含当前页：收成图标轨时靠它挂指示条。用户先折叠这一组时
+                  子项会被卸载，CSS 用 :has() 去找子按钮就找不到了 */}
+              <SidebarMenuItem
+                data-has-active-child={
+                  item.children.some((child) => child.to === active) || undefined
+                }
+              >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip={L(item.label)}>
                     {item.icon}

@@ -24,7 +24,8 @@ export interface AbpTableSource<TDto> {
     mutate: (id: string) => void;
     /** 整批删除：逐条删、汇总失败 id、结束后失效一次列表。别逐条 toast 或逐条失效，
      *  删 N 条会变成 N 个提示和 N 次重取；提示由 `t.BulkDelete` 按整批结果给一条。
-     *  不提供则 `t.BulkDelete` 不渲染，DEV 下告警。 *  `reasons` 是失败各条的后端理由（按文本去重），取不到理由的失败不计入。 */
+     *  不提供则 `t.BulkDelete` 不渲染，DEV 下告警。
+     *  `reasons` 是失败各条的后端理由（按文本去重），取不到理由的失败不计入。 */
     many?: (ids: string[]) => Promise<{ failed: string[]; reasons?: string[] }>;
   };
   can: { create: boolean; update: boolean; delete: boolean };

@@ -36,4 +36,11 @@ describe("NavMain", () => {
     const roles = await screen.findByText("Menu:Roles");
     expect(roles.closest("a")?.getAttribute("data-active")).toBe("true");
   });
+
+  it("子项是当前页时，一级项带上 data-has-active-child", async () => {
+    renderWithProviders(<NavMain items={items} />, { identity: admin, path: "/roles/42" });
+    const group = (await screen.findByText("Menu:Admin")).closest("[data-sidebar='menu-item']");
+    expect(group?.getAttribute("data-has-active-child")).toBe("true");
+  });
 });
+

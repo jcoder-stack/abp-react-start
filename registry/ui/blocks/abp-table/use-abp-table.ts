@@ -445,6 +445,13 @@ export function useAbpTable<
     }
   }, [isPending, isFetching, isError, pageIndex, src.pageCount, state.onPaginationChange]);
 
+  if (opts.initialFilter !== undefined && !src.supportsFilter) {
+    devWarn(
+      "abp-table:initial-filter-unsupported",
+      "useAbpTable: initialFilter is set but the source does not support Filter; the search box is hidden and the filter cannot be cleared.",
+    );
+  }
+
   const dt = useDataTable({
     state,
     columns: finalColumns,

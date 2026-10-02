@@ -287,10 +287,9 @@ input:-webkit-autofill:focus {
 /* 收成图标轨时二级项整组隐藏，当前页是二级页的话轨上就没有任何「我在哪」的提示——把指示条
  * 挂到它所属的一级项上。只在图标轨下生效：展开时二级项自己就有条，再给一级项一条就成了两条。
  *
- * 这里选 `data-sidebar` 而不是 `data-slot`：带子项的一级项外面套着 `Collapsible asChild`，
- * 它把 li 的 `data-slot` 改写成了 `collapsible`，只有 `data-sidebar="menu-item"` 原样留着。 */
-[data-collapsible="icon"]
-  [data-sidebar="menu-item"]:has([data-sidebar="menu-sub-button"][data-active="true"])::before {
+ * 由 React 判定一级项是否含当前页（nav-main 写的 `data-has-active-child`），不靠 `:has()` 找子按钮：
+ * 用户先折叠了这一组的话子项已被卸载，DOM 里找不到它们。 */
+[data-collapsible="icon"] [data-has-active-child="true"]::before {
   content: "";
   position: absolute;
   inset-block: 0.25rem;
