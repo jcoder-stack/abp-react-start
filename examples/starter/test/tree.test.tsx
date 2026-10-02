@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, screen } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import userEvent from "@testing-library/user-event";
+import { type ComponentProps, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Tree } from "@/components/tree/tree";
 import {
@@ -245,5 +246,39 @@ describe("TreeMultiSelect", () => {
       messages: treeMessages,
     });
     expect(await screen.findByRole("button", { name: "Alpha, Beta" })).toBeTruthy();
+  });
+
+  it("触发器可被外部 label 关联，必填带 aria-required", async () => {
+    renderWithProviders(
+      <>
+        <label htmlFor="depts">Departments</label>
+        <TreeMultiSelect id="depts" aria-required nodes={flat} values={[]} onChange={vi.fn()} />
+      </>,
+      { messages: treeMessages },
+    );
+    const trigger = await screen.findByLabelText("Departments");
+    expect(trigger.getAttribute("aria-required")).toBe("true");
+  });
+
+  it("搜索、勾选、清空；关闭再打开时搜索词已清空", async () => {
+    const user = userEvent.setup();
+    const en = treeMessages.en[""];
+    function Harness() {
+      const [values, setValues] = useState<string[]>([]);
+      return <TreeMultiSelect nodes={flat} values={values} onChange={setValues} />;
+    }
+    renderWithProviders(<Harness />, { messages: treeMessages });
+    await user.click(await screen.findByRole("button", { name: en["Tree:SelectPlaceholder"] }));
+    await user.type(screen.getByRole("textbox", { name: en["Tree:SelectSearch"] }), "bet");
+    expect(screen.queryByText("Alpha")).toBeNull();
+    await user.click(screen.getByTestId("tree-checkbox-b"));
+    expect(screen.getByRole("button", { name: "Beta" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: en["Tree:SelectClear"] }));
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: en["Tree:SelectPlaceholder"] }));
+    const search = screen.getByRole("textbox", {
+      name: en["Tree:SelectSearch"],
+    }) as HTMLInputElement;
+    expect(search.value).toBe("");
   });
 });

@@ -19,6 +19,10 @@ export interface TreeMultiSelectProps {
   /** 自定义触发按钮上的回显；缺省是「未选→placeholder，≤2 项→名称，>2 项→已选 N 项」。 */
   renderValue?: (count: number, labels: string[]) => ReactNode;
   disabled?: boolean;
+  /** 触发按钮的 id，供外部 `<Label htmlFor>` 关联。 */
+  id?: string;
+  "aria-required"?: boolean;
+  "aria-invalid"?: boolean;
 }
 
 /** 触发按钮上最多逐个列出的名称条数，再多就只报数量——长名字会把按钮撑出对话框。 */
@@ -46,6 +50,9 @@ export function TreeMultiSelect({
   emptyText,
   renderValue,
   disabled,
+  id,
+  "aria-required": ariaRequired,
+  "aria-invalid": ariaInvalid,
 }: TreeMultiSelectProps) {
   const L = useLocalization();
   const [open, setOpen] = useState(false);
@@ -76,12 +83,22 @@ export function TreeMultiSelect({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        // 关掉就丢掉搜索词：下次打开要看到完整的树，而不是上一次的过滤结果
+        if (!next) setKeyword("");
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           variant="outline"
           disabled={disabled}
+          aria-required={ariaRequired}
+          aria-invalid={ariaInvalid}
           className="w-full justify-between font-normal"
         >
           <span className={values.length === 0 ? "truncate text-muted-foreground" : "truncate"}>
@@ -96,6 +113,7 @@ export function TreeMultiSelect({
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             placeholder={searchPlaceholder ?? L("Tree:SelectSearch")}
+            aria-label={searchPlaceholder ?? L("Tree:SelectSearch")}
           />
         </div>
         <div className="max-h-64 overflow-y-auto p-2">
