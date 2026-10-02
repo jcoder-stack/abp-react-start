@@ -2,7 +2,7 @@
 
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { ChevronsUpDownIcon } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import { Tree } from "@/components/tree/tree";
 import { deriveIndeterminate, filterTree, type TreeNode } from "@/components/tree/tree-helpers";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ export interface TreeMultiSelectProps {
   /** 自定义触发按钮上的回显；缺省是「未选→placeholder，≤2 项→名称，>2 项→已选 N 项」。 */
   renderValue?: (count: number, labels: string[]) => ReactNode;
   disabled?: boolean;
+  /** 触发按钮的 id，供外部 `<Label htmlFor>` 关联。 */
+  id?: string;
+  "aria-required"?: boolean;
+  "aria-invalid"?: boolean;
 }
 
 /** 触发按钮上最多逐个列出的名称条数，再多就只报数量——长名字会把按钮撑出对话框。 */
@@ -46,10 +50,15 @@ export function TreeMultiSelect({
   emptyText,
   renderValue,
   disabled,
+  id,
+  "aria-required": ariaRequired,
+  "aria-invalid": ariaInvalid,
 }: TreeMultiSelectProps) {
   const L = useLocalization();
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
+  // 外部 <label for> 关联到按钮后，label 文本会取代按钮内容成为可访问名称；当前选择挂成描述才念得出来
+  const valueId = useId();
 
   const checked = useMemo(() => new Set(values), [values]);
   // 半选态按完整树推导：过滤后的树缺了未命中的子节点，据此推导会把「部分勾选」误判成全选。
@@ -76,15 +85,29 @@ export function TreeMultiSelect({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        // 关掉就丢掉搜索词：下次打开要看到完整的树，而不是上一次的过滤结果
+        if (!next) setKeyword("");
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           variant="outline"
           disabled={disabled}
+          aria-required={ariaRequired}
+          aria-invalid={ariaInvalid}
+          aria-describedby={valueId}
           className="w-full justify-between font-normal"
         >
-          <span className={values.length === 0 ? "truncate text-muted-foreground" : "truncate"}>
+          <span
+            id={valueId}
+            className={values.length === 0 ? "truncate text-muted-foreground" : "truncate"}
+          >
             {triggerText()}
           </span>
           <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" aria-hidden="true" />
@@ -96,6 +119,7 @@ export function TreeMultiSelect({
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             placeholder={searchPlaceholder ?? L("Tree:SelectSearch")}
+            aria-label={searchPlaceholder ?? L("Tree:SelectSearch")}
           />
         </div>
         <div className="max-h-64 overflow-y-auto p-2">

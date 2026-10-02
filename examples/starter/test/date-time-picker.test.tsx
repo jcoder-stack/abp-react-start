@@ -103,11 +103,18 @@ describe("DateTimePicker", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("时间框是文本输入而非原生 time 输入", async () => {
+  it("时间框收得下四位连写的时分（原生 time 输入收不下）", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<DateTimePicker onChange={vi.fn()} />, { messages: datePickerMessages });
+    const onChange = vi.fn();
+    renderWithProviders(<ControlledDateTimePicker onChange={onChange} />, {
+      messages: datePickerMessages,
+    });
     await user.click(await screen.findByRole("button", { name: /pick a date/i }));
-    expect(screen.getByLabelText(/time/i).getAttribute("type")).not.toBe("time");
+    const time = screen.getByLabelText(/time/i);
+    fireEvent.change(time, { target: { value: "1730" } });
+    fireEvent.blur(time);
+    const merged = onChange.mock.calls.at(-1)?.[0] as Date;
+    expect([merged.getHours(), merged.getMinutes()]).toEqual([17, 30]);
   });
 
   it("中文界面触发器文本用 24 小时制", async () => {

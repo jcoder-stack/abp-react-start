@@ -83,8 +83,8 @@ const monthFormatters = new Map<
 >();
 
 /** 年月下拉里的月份名。shadcn 的 Calendar 默认用 `toLocaleString("default", …)` 格式化月份下拉，
- *  走的是运行时 locale 而不是日历自己的 `locale`，中文界面里会冒出 Jan…Dec。按 locale 缓存：
- *  每渲染新建对象会让 react-day-picker 每次都拿到新的 formatters 引用。 */
+ *  走的是运行时 locale 而不是日历自己的 `locale`，中文界面里会冒出 Jan…Dec。按 locale 缓存，
+ *  免得每次渲染都新建一个闭包（shadcn 的 Calendar 会把它展开进自己的新对象，引用本身并不会因此稳定）。 */
 export function calendarFormatters(locale: Locale | undefined) {
   let cached = monthFormatters.get(locale);
   if (!cached) {

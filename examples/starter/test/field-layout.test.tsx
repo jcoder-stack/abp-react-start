@@ -2,7 +2,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { FieldHint, FieldLayout } from "@/components/form/field-layout";
-import { ReadOnlyFields, useReadOnly } from "@/components/form/form-hook";
+import { FieldRow, ReadOnlyFields, useReadOnly } from "@/components/form/form-hook";
+import formMessages from "@/components/form/form-messages.json";
+import { renderWithProviders } from "./test-utils";
 
 function Mode() {
   return <span data-testid="mode">{useReadOnly() ? "view" : "edit"}</span>;
@@ -36,25 +38,33 @@ describe("FieldHint", () => {
 });
 
 describe("FieldLayout", () => {
+  const rows = (
+    <FieldLayout className="grid gap-4">
+      <FieldRow label="Start" display="08:00" />
+      <FieldRow label="End" display="17:00" />
+    </FieldLayout>
+  );
   // 查看态下键值行必须是 <dl> 的直系子节点：分隔线与对齐都以此为前提
-  it("录入态包一层排版容器，查看态让子节点直接成为外层的子节点", () => {
-    const { container, rerender } = render(
-      <dl>
-        <FieldLayout className="grid gap-4">
-          <div data-testid="row" />
-        </FieldLayout>
-      </dl>,
-    );
-    expect(screen.getByTestId("row").parentElement?.tagName).toBe("DIV");
-    rerender(
+  const rowsSitDirectlyInList = () => {
+    const labels = [screen.getByText("Start"), screen.getByText("End")];
+    const list = labels[0]?.closest("dl");
+    return labels.every((label) => label.parentElement?.parentElement === list);
+  };
+
+  it("录入态包一层排版容器", async () => {
+    renderWithProviders(<dl>{rows}</dl>, { messages: formMessages });
+    await screen.findByText("Start");
+    expect(rowsSitDirectlyInList()).toBe(false);
+  });
+
+  it("查看态退场，键值行直接落在 dl 里", async () => {
+    renderWithProviders(
       <ReadOnlyFields>
-        <dl>
-          <FieldLayout className="grid gap-4">
-            <div data-testid="row" />
-          </FieldLayout>
-        </dl>
+        <dl>{rows}</dl>
       </ReadOnlyFields>,
+      { messages: formMessages },
     );
-    expect(screen.getByTestId("row").parentElement).toBe(container.querySelector("dl"));
+    await screen.findByText("Start");
+    expect(rowsSitDirectlyInList()).toBe(true);
   });
 });

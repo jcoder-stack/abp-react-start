@@ -76,4 +76,12 @@ describe("bulkDeleteNotice", () => {
     expect(bulkDeleteNotice(3, 1, 0, ["Still referenced"]).description).toBe("Still referenced");
     expect(bulkDeleteNotice(2, 0, 0, ["Still referenced"]).description).toBeUndefined();
   });
+
+  it("选中的行都没有 id 时不报成功", () => {
+    expect(bulkDeleteNotice(0, 0, 0)).toEqual({
+      kind: "error",
+      key: "Crud:OperationFailed",
+      args: [],
+    });
+  });
 });

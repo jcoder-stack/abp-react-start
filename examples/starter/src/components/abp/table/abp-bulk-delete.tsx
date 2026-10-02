@@ -63,6 +63,9 @@ export function bulkDeleteNotice(
 
 function bulkDeleteOutcome(requested: number, failed: number, skipped: number): BulkDeleteNotice {
   const deleted = requested - failed;
+  // 选中的行都没有 id：一条都没发出去，不能报「已删除」
+  if (requested === 0 && skipped === 0)
+    return { kind: "error", key: "Crud:OperationFailed", args: [] };
   if (requested === 0 && skipped > 0)
     return { kind: "error", key: "Crud:BulkDeleteNoneDeletable", args: [skipped] };
   if (skipped > 0)

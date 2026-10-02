@@ -313,7 +313,7 @@ export function NumberField(props: {
   step?: string;
   /**
    * 清空时写 `null` 而不是 `NaN`——用于「留空即不限制」这类可空字段：值要原样提交给后端，
-   * 不能被 `z.number()` 判失败态吞掉。
+   * 不能被 `z.number()` 判失败态吞掉。schema 要配 `z.number().nullable()`，否则清空后会被判失败。
    */
   nullable?: boolean;
 }) {
@@ -381,6 +381,9 @@ export function SwitchField(props: {
   );
 }
 
+/** SelectField 内部代表空串的值；不会出现在表单值里。 */
+const EMPTY_SELECT_VALUE = "__empty__";
+
 export function SelectField(props: {
   label: string;
   options: { value: string; label: string }[];
@@ -389,9 +392,10 @@ export function SelectField(props: {
   disabled?: boolean;
 }) {
   const field = useFieldContext<string>();
-  // Radix 把 value === "" 当作「未选」，即便选项里有 value=""：选中项的文字不会同步进触发器，
-  // 只会回退渲染 SelectValue 的 placeholder。给空值选项传它自己的 label 当 placeholder。
-  const emptyOptionLabel = props.options.find((option) => option.value === "")?.label;
+  // Radix 把 value === "" 当作「未选」：选中项文字不进触发器、触发器带占位样式。内部用一个哨兵值
+  // 代表空串，进出时换回来，「全部」这类空值选项就和其它选项一样是个正常的选中项。
+  const toSelect = (value: string) => (value === "" ? EMPTY_SELECT_VALUE : value);
+  const fromSelect = (value: string) => (value === EMPTY_SELECT_VALUE ? "" : value);
   return (
     <FieldShell
       label={props.label}
@@ -400,8 +404,8 @@ export function SelectField(props: {
       display={props.options.find((option) => option.value === field.state.value)?.label ?? null}
     >
       <Select
-        value={field.state.value}
-        onValueChange={(value) => field.handleChange(value)}
+        value={toSelect(field.state.value)}
+        onValueChange={(value) => field.handleChange(fromSelect(value))}
         disabled={props.disabled}
       >
         <SelectTrigger
@@ -409,11 +413,11 @@ export function SelectField(props: {
           className="w-full"
           aria-invalid={field.state.meta.errors.length > 0 || undefined}
         >
-          <SelectValue placeholder={emptyOptionLabel} />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {props.options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem key={option.value} value={toSelect(option.value)}>
               {option.label}
             </SelectItem>
           ))}
@@ -579,7 +583,8 @@ export function MultiComboboxField(props: {
   label: string;
   description?: string;
   options?: ComboboxOption[];
-  /** 远程搜索：候选过多时用它替代整份 options，内部已带防抖。 */
+  /** 远程搜索：候选过多时用它替代整份 options，内部已带防抖。查看态只能靠 `options` 把 id 换成
+   *  label：远程模式下把当前已选项（例如从 DTO 的名称字段拼出来）也作为 `options` 传进来。 */
   loadOptions?: (search: string) => Promise<ComboboxOption[]>;
   required?: boolean;
   placeholder?: string;
