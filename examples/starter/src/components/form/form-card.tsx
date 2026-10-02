@@ -19,7 +19,8 @@ export function FormCard(props: {
   className?: string;
 }) {
   return (
-    // div 而非 section：查看态的 SheetForm 把内容放进 <dl>，<dl> 里只允许 div 包裹 dt/dd
+    // div 而非 section：查看态的 SheetForm 把内容放进 <dl>。严格说 <dl> 里的 div 只该包 dt/dd，
+    // 这里的标题块不合这条——与 FormSection 同样的取舍，读屏影响小
     <div
       data-form-card=""
       className={cn(

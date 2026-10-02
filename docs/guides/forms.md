@@ -128,7 +128,7 @@ const form = useAppForm({
 
 查看态(`SheetForm` 的 `mode="view"`)由 `ReadOnlyFields` 把每个字段渲染成一行「键 / 值」。页面要自己排一行不是表单字段的内容(计算值、关联记录摘要)时,用同一文件导出的 `FieldRow`(`label` + `display`,空值渲染成「未填写」),它与生成字段落在同一条竖线上。`FormSection` 放进查看态的 `<dl>` 里会自动收成记录布局,不必另写分区容器。
 
-抽屉宽度用 `SheetForm` / `useAbpSheet().Sheet` 的 `size`(`sm` 默认、`md`、`lg`、`xl`);手写 `SheetContent` 时用 `SHEET_SIZE_CLASS`,不直接写 `max-w`。宽抽屉里的长表单用 `FormCard` 分区;为录入态写的多列栅格包进 `FieldLayout`,填写指引用 `FieldHint`,两者在查看态自动退场。`NumberField` 的可空字段传 `nullable`(清空写 `null`);`MultiComboboxField` 的值是 id 时传 `options` 让查看态显示 label,候选过多时传 `loadOptions` 走远程搜索。
+抽屉宽度用 `SheetForm` / `useAbpSheet().Sheet` 的 `size`(`sm` 默认、`md`、`lg`、`xl`);手写 `SheetContent` 时用 `SHEET_SIZE_CLASS`,不直接写 `max-w`。宽抽屉里的长表单用 `FormCard` 分区;为录入态写的多列栅格包进 `FieldLayout`,填写指引用 `FieldHint`,两者在查看态自动退场。`NumberField` 的可空字段传 `nullable`(清空写 `null`,schema 要配 `z.number().nullable()`);`MultiComboboxField` 的值是 id 时传 `options` 让查看态显示 label,候选过多时传 `loadOptions` 走远程搜索——远程模式下仍要把当前已选项作为 `options` 传进来,查看态才认得出名字。
 
 必填字段三件套:组件传 `required`(自带星号 + `aria-required`,**不用原生 `required`**——它会抢先弹浏览器气泡盖掉内联错误)+ schema 里 `.min(1, L("Form:Required"))` + `revalidateLogic`。星号纯视觉,真正的拦截靠 schema。
 

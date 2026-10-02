@@ -378,11 +378,45 @@ function EmptyOptionHarness() {
   );
 }
 
+function EmptyOptionWithValueHarness() {
+  const form = useAppForm({ defaultValues: { status: "" } });
+  return (
+    <>
+      <form.AppField name="status">
+        {(f) => (
+          <f.SelectField
+            label="Status"
+            options={[
+              { value: "", label: "All" },
+              { value: "on", label: "Enabled" },
+            ]}
+          />
+        )}
+      </form.AppField>
+      <form.Subscribe selector={(s) => s.values.status}>
+        {(v) => <span data-testid="status">{v}</span>}
+      </form.Subscribe>
+    </>
+  );
+}
+
 describe("SelectField 空值选项", () => {
   it("当前值为空串时，触发器显示 value 为空的那个选项", async () => {
     renderWithProviders(<EmptyOptionHarness />, { messages });
     const trigger = await screen.findByRole("combobox", { name: "Status" });
     expect(trigger.textContent).toContain("All");
+  });
+
+  it("选别的再选回空值选项：表单值回到空串，触发器不是占位样式", async () => {
+    renderWithProviders(<EmptyOptionWithValueHarness />, { messages });
+    const trigger = await screen.findByRole("combobox", { name: "Status" });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.click(await screen.findByRole("option", { name: "Enabled" }));
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("on"));
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.click(await screen.findByRole("option", { name: "All" }));
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe(""));
+    expect(trigger.hasAttribute("data-placeholder")).toBe(false);
   });
 
   it("打开下拉不报错，空值选项可见可选", async () => {
@@ -459,5 +493,22 @@ describe("ComboboxField 必填", () => {
     renderWithProviders(<RequiredComboHarness />, { messages });
     const input = await screen.findByLabelText(/Author/);
     expect(input.getAttribute("aria-required")).toBe("true");
+  });
+});
+
+describe("MultiComboboxField 缺省可编辑", () => {
+  it("不传 editable 时渲染输入框", async () => {
+    function Editable() {
+      const form = useAppForm({ defaultValues: { members: [] as string[] } });
+      return (
+        <form.AppField name="members">
+          {(f) => (
+            <f.MultiComboboxField label="Members" options={[{ value: "u1", label: "Alice" }]} />
+          )}
+        </form.AppField>
+      );
+    }
+    renderWithProviders(<Editable />, { messages });
+    expect(await screen.findByRole("combobox")).toBeTruthy();
   });
 });
