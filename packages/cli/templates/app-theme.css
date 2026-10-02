@@ -4,6 +4,7 @@
 /* 字体自托管，不走第三方 CDN：内网部署未必连得上 Google Fonts，连不上就整套排版失效；
    第三方字体源还会拿到每个访问者的 IP 与访问时间。按 unicode-range 切片，浏览器只取用到的几片。 */
 @import "@fontsource-variable/inter/opsz.css";
+@import "@fontsource-variable/inter/opsz-italic.css";
 @import "@fontsource-variable/noto-sans-sc";
 @import "@fontsource-variable/jetbrains-mono";
 
@@ -373,6 +374,13 @@ input:-webkit-autofill:focus {
 :lang(ko) [data-slot="table-head"] {
   font-size: var(--text-sm);
   text-transform: none;
+}
+
+/* 可排序表头里那颗按钮：浏览器默认样式表给 button 设了 text-transform:none，会盖掉 th 上继承来的
+   大小写（西文 uppercase、CJK 由上一条改回 none），可排序表头因此与其它表头不一致。放在主题层，
+   语言列表只维护上面那一处，新装的表格也自动继承。 */
+[data-slot="table-head"] button {
+  text-transform: inherit;
 }
 
 /* Radix 系 modal(Sheet/Dialog)打开时把 body 设为 pointer-events:none,只恢复自己的内容;

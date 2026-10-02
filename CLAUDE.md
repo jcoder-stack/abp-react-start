@@ -38,7 +38,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 骨架：`<section className="space-y-4">` + 页标题 `<h1 className="text-2xl font-normal">`（字号与字距由 `@theme` 的 text-2xl 带出，不写任意值）；卡片/表格横向充满内容区，不加 `max-w`（刻意居中的窄页如 profile 除外）。
 - 整页表单：`divide-y rounded-lg border bg-card` 容器 + `FormSection` 分区（左标题描述 / 右字段）；操作按钮在容器底部行 `justify-end`，primary 最右。成对短字段用 `grid gap-4 sm:grid-cols-2`。
 - 页签用 `<TabsList variant="line">`；行内状态用 `StatusBadge`，禁止拿 primary/destructive 实心 Badge 表状态。
-- 主题 token 只改 `packages/cli/templates/app-theme.css`（starter 的 `src/styles.css` 是它的镜像，两份必须一致）。改颜色令牌后跑 `bun run check:theme`（对比度 + 明度序，浅暗两色都要过）；新增覆盖要能在 DESIGN.md 的「定制层清单」里写出一行理由。
+- 主题 token 只改 `packages/cli/templates/app-theme.css`（starter 的 `src/styles.css` 是它的镜像，两份必须一致）。改颜色令牌后跑 `bun run check:theme`（对比度 + 明度序，浅暗两色都要过；色阶令牌在 `:root` / `.dark` 里必须直写 `oklch(...)`，校验读不了 `var()` / `color-mix()`）；新增覆盖要能在 DESIGN.md 的「定制层清单」里写出一行理由。
 - 尺寸/字号/字重/圆角一律走 `@theme` 的刻度类（`text-sm`、`font-medium`、`rounded-md`），禁止 `text-[13px]`、`tracking-[-0.02em]` 这类任意值——字距已随字号在 `@theme` 里给好。换主题时改刻度即可全站生效，任意值会漏。
 - 组件不 fork shadcn 原语：要改原语的观感（圆角、焦点环、暗色质感、导航项字重等）时写进主题层的 `[data-slot="…"]` 规则，这样 `shadcn add` 装进来的新组件自动继承。
 - 每个 `useQuery` 驱动的区块都要有 `isError` 分支（`FormErrorSummary` 或 destructive 文案）；禁止「失败停在骨架」与「失败渲染成空列表」。
