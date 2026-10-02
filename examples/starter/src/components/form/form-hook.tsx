@@ -561,6 +561,9 @@ export function ComboboxField(props: {
       }
     >
       <Combobox
+        id={field.name}
+        aria-required={props.required === true || undefined}
+        aria-invalid={field.state.meta.errors.length > 0 || undefined}
         value={field.state.value || undefined}
         onChange={(value) => field.handleChange(value ?? "")}
         options={props.options ?? []}

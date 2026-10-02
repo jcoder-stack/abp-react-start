@@ -30,4 +30,10 @@ describe("NavMain", () => {
     // 子项所在组默认展开（当前路径命中 children）
     expect(await screen.findByText("Menu:Roles")).toBeDefined();
   });
+
+  it("停在详情页时点亮所属的菜单项", async () => {
+    renderWithProviders(<NavMain items={items} />, { identity: admin, path: "/roles/42" });
+    const roles = await screen.findByText("Menu:Roles");
+    expect(roles.closest("a")?.getAttribute("data-active")).toBe("true");
+  });
 });

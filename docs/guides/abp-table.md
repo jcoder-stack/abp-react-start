@@ -503,7 +503,7 @@ const t = useAbpTable(roleService, {
 });
 ```
 
-`AbpTableRowConfig` 的六个键（`view`/`edit`/`delete` 三个各自独立、只是语义相近合并成一行展示）：
+`AbpTableRowConfig` 的八个键（`view`/`edit`/`delete` 三个各自独立、只是语义相近合并成一行展示）：
 
 | 键 | 签名 | 语义 |
 |---|---|---|
@@ -511,6 +511,10 @@ const t = useAbpTable(roleService, {
 | `actions` | `(row, table) => ReactNode` | 插入内置「···」菜单**左侧**，行内常驻 |
 | `view`/`edit`/`delete` | `boolean` | 覆盖对应内置项的默认出现条件 |
 | `click` | `false \| ((row) => void)` | 覆盖「点行开详情」的默认行为；`false` 关闭 |
+| `canDelete` | `(row) => boolean` | 逐行收窄删除项：返回 `false` 的行不出「删除」，`t.BulkDelete` 也跳过它并在提示里交代跳过了几条。只能收窄，表级不许删时返回 `true` 也不出；引用必须稳定 |
+| `deleteConfirm` | `string` | 删除确认框的说明，替换通用的「此操作不可撤销」 |
+
+深链进入列表页时，用 `useAbpTable` 的 `initialFilter` 预填搜索框：首个请求就带上它，搜索框里也显示它。删除被后端拒绝（4xx）时，提示里会带上后端给的理由；批量删除时各条理由逐行列出。
 
 内置项默认出现条件：查看——`click === false && onOpen !== undefined`（点行被关掉时才出现「查看」，两者都开会让同一个动作有两个入口）；编辑——`source.can.update && onOpen !== undefined`；删除——只读 service（无 `useDelete`）恒不出现，其余按 `source.can.delete`。菜单里一项都没有时，「···」触发器整个不渲染，不会留一个点开是空的按钮。
 

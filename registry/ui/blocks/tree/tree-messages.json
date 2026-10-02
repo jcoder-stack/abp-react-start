@@ -2,13 +2,25 @@
   "en": {
     "": {
       "Tree:Expand": "Expand",
-      "Tree:Collapse": "Collapse"
+      "Tree:Collapse": "Collapse",
+      "Tree:SelectPlaceholder": "Select",
+      "Tree:SelectSearch": "Search",
+      "Tree:SelectEmpty": "No matches",
+      "Tree:SelectCount": "{0} selected",
+      "Tree:SelectClear": "Clear",
+      "Tree:SelectSeparator": ", "
     }
   },
   "zh-Hans": {
     "": {
       "Tree:Expand": "展开",
-      "Tree:Collapse": "收起"
+      "Tree:Collapse": "收起",
+      "Tree:SelectPlaceholder": "选择",
+      "Tree:SelectSearch": "搜索",
+      "Tree:SelectEmpty": "无匹配项",
+      "Tree:SelectCount": "已选 {0} 项",
+      "Tree:SelectClear": "清空",
+      "Tree:SelectSeparator": "、"
     }
   }
 }

@@ -22,6 +22,58 @@ export interface AbpBulkDeleteViewProps<TDto extends { id?: string }> {
   /** 确认时才取选中行：选中态归表所有，渲染期读到的快照会陈旧。 */
   getSelectedRows: () => TDto[];
   keepSelected: (ids: string[]) => void;
+  /** 同 `row.canDelete`：返回 false 的选中行不发删除请求，计入跳过。 */
+  canDelete?: (row: TDto) => boolean;
+}
+
+/** 选中行拆成要删的 id 与跳过的行数。无 id 的行进不了删除端点，既不删也不算跳过——
+ *  否则会被算进「成功」的分母，让一次什么都没删的操作报成功。 */
+export function partitionDeletable<TDto extends { id?: string }>(
+  rows: TDto[],
+  canDelete?: (row: TDto) => boolean,
+): { ids: string[]; skipped: number } {
+  const ids: string[] = [];
+  let skipped = 0;
+  for (const row of rows) {
+    if (row.id === undefined) continue;
+    if (canDelete?.(row) ?? true) ids.push(row.id);
+    else skipped++;
+  }
+  return { ids, skipped };
+}
+
+export interface BulkDeleteNotice {
+  kind: "success" | "warning" | "error";
+  key: string;
+  args: number[];
+  /** 失败条目的后端理由，逐行一条。只说「N 项失败」用户不知道该去解除哪条引用。 */
+  description?: string;
+}
+
+/** 整批结局翻成一条提示。有跳过就不能报纯成功：用户勾了 N 条，只删掉一部分却看到「已删除」会以为全删了。 */
+export function bulkDeleteNotice(
+  requested: number,
+  failed: number,
+  skipped: number,
+  reasons: readonly string[] = [],
+): BulkDeleteNotice {
+  const notice = bulkDeleteOutcome(requested, failed, skipped);
+  return failed > 0 && reasons.length > 0 ? { ...notice, description: reasons.join("\n") } : notice;
+}
+
+function bulkDeleteOutcome(requested: number, failed: number, skipped: number): BulkDeleteNotice {
+  const deleted = requested - failed;
+  if (requested === 0 && skipped > 0)
+    return { kind: "error", key: "Crud:BulkDeleteNoneDeletable", args: [skipped] };
+  if (skipped > 0)
+    return {
+      kind: deleted === 0 ? "error" : "warning",
+      key: "Crud:BulkDeleteSkipped",
+      args: [deleted, failed, skipped],
+    };
+  if (failed === 0) return { kind: "success", key: "Crud:Deleted", args: [] };
+  if (deleted === 0) return { kind: "error", key: "Crud:OperationFailed", args: [] };
+  return { kind: "warning", key: "Crud:BulkDeletePartialFailure", args: [deleted, failed] };
 }
 
 /**
@@ -64,20 +116,17 @@ export function AbpBulkDeleteView<TDto extends { id?: string }>(
           <AlertDialogCancel>{L("Form:Cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={async () => {
-              // 无 id 的行进不了删除端点，先剔除，否则会被算进「成功」的分母，
-              // 让一次什么都没删的操作报成功。
-              const ids = props
-                .getSelectedRows()
-                .map((row) => row.id)
-                .filter((id): id is string => id !== undefined);
+              const { ids, skipped } = partitionDeletable(props.getSelectedRows(), props.canDelete);
               try {
-                const { failed } = await many(ids);
-                if (failed.length === 0) toast.success(L("Crud:Deleted"));
-                else if (failed.length === ids.length) toast.error(L("Crud:OperationFailed"));
+                const { failed, reasons } = ids.length > 0 ? await many(ids) : { failed: [] };
+                const notice = bulkDeleteNotice(ids.length, failed.length, skipped, reasons);
+                const message = L(notice.key, ...notice.args);
+                if (notice.description === undefined) toast[notice.kind](message);
                 else
-                  toast.warning(
-                    L("Crud:BulkDeletePartialFailure", ids.length - failed.length, failed.length),
-                  );
+                  toast[notice.kind](message, {
+                    description: <span className="whitespace-pre-line">{notice.description}</span>,
+                  });
+                // 跳过的行不留在勾选里：它们重试也删不掉，留着只会让下一次批量删除再报一遍跳过
                 props.keepSelected(failed);
               } finally {
                 setOpen(false);

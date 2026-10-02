@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { AbpApiError } from "@/api/mutator";
-import { abpErrorToFieldErrors, abpSubmitValidator } from "@/components/abp/crud/abp-form-errors";
+import {
+  abpErrorMessage,
+  abpErrorToFieldErrors,
+  abpSubmitValidator,
+} from "@/components/abp/crud/abp-form-errors";
 
 function makeAbpError(body: unknown): AbpApiError {
   return new AbpApiError(400, body, "POST", "/api/test");
@@ -59,5 +63,27 @@ describe("abpSubmitValidator", () => {
     await expect(validate({ value: {} })).resolves.toEqual({
       fields: { userName: "taken" },
     });
+  });
+});
+
+describe("abpErrorMessage", () => {
+  it("4xx 的业务理由原样给出，多条去重后逐行拼接", () => {
+    const single = new AbpApiError(403, { error: { message: "Still referenced" } }, "DELETE", "/x");
+    expect(abpErrorMessage(single)).toBe("Still referenced");
+    const multi = makeAbpError({
+      error: {
+        validationErrors: [
+          { message: "Too long", members: ["Name", "Code"] },
+          { message: "Required", members: ["Kind"] },
+        ],
+      },
+    });
+    expect(abpErrorMessage(multi)).toBe("Too long\nRequired");
+  });
+
+  it("5xx 与非 AbpApiError 不给理由，由调用方退回通用文案", () => {
+    const server = new AbpApiError(500, { error: { message: "Internal" } }, "DELETE", "/x");
+    expect(abpErrorMessage(server)).toBeUndefined();
+    expect(abpErrorMessage(new Error("network"))).toBeUndefined();
   });
 });

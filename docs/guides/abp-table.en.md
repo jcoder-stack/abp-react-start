@@ -505,7 +505,7 @@ const t = useAbpTable(roleService, {
 });
 ```
 
-`AbpTableRowConfig`'s six keys (`view`/`edit`/`delete` are three independent keys, merely shown on one line for their similar meaning):
+`AbpTableRowConfig`'s eight keys (`view`/`edit`/`delete` are three independent keys, merely shown on one line for their similar meaning):
 
 | Key | Signature | Meaning |
 |---|---|---|
@@ -513,6 +513,10 @@ const t = useAbpTable(roleService, {
 | `actions` | `(row, table) => ReactNode` | Inserted **left of** the built-in "···" menu, always visible in the row |
 | `view`/`edit`/`delete` | `boolean` | Overrides the corresponding built-in item's default visibility |
 | `click` | `false \| ((row) => void)` | Overrides the default "click row opens detail"; `false` disables |
+| `canDelete` | `(row) => boolean` | Narrows deletion per row: rows returning `false` get no Delete item, and `t.BulkDelete` skips them and reports how many were skipped. It can only narrow — when the table cannot delete, `true` adds nothing; keep the reference stable |
+| `deleteConfirm` | `string` | Body of the delete confirmation, replacing the generic "This cannot be undone" |
+
+For a deep link into a list page, pass `initialFilter` to `useAbpTable`: the first request already carries it and the search box shows it. When the backend rejects a delete with a 4xx, the toast carries the backend's reason; bulk deletes list each reason on its own line.
 
 Built-in default visibility: view — `click === false && onOpen !== undefined` ("view" appears only when row-click is off; both on would give one action two entries); edit — `source.can.update && onOpen !== undefined`; delete — never on a read-only service (no `useDelete`), otherwise per `source.can.delete`. When the menu has zero items, the "···" trigger doesn't render at all — no button that opens into nothing.
 

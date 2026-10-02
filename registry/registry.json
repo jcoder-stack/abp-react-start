@@ -43,6 +43,11 @@
           "target": "components/abp/layout/nav-main.tsx"
         },
         {
+          "path": "ui/blocks/abp-layout/nav-active.ts",
+          "type": "registry:component",
+          "target": "components/abp/layout/nav-active.ts"
+        },
+        {
           "path": "ui/blocks/abp-layout/nav-search.tsx",
           "type": "registry:component",
           "target": "components/abp/layout/nav-search.tsx"
@@ -538,7 +543,10 @@
       "title": "Tree",
       "description": "Generic hierarchical tree with expand/collapse and optional checkable rows; cascade logic is left to consumers via pure helper functions.",
       "registryDependencies": [
-        "checkbox"
+        "checkbox",
+        "button",
+        "input",
+        "popover"
       ],
       "dependencies": [
         "lucide-react",
@@ -560,6 +568,11 @@
           "path": "ui/blocks/tree/tree-helpers.ts",
           "type": "registry:component",
           "target": "components/tree/tree-helpers.ts"
+        },
+        {
+          "path": "ui/blocks/tree/tree-select.tsx",
+          "type": "registry:component",
+          "target": "components/tree/tree-select.tsx"
         },
         {
           "path": "ui/blocks/tree/tree-messages.json",

@@ -42,6 +42,26 @@ export function abpErrorToFieldErrors(error: unknown): FieldErrors {
   return out;
 }
 
+/**
+ * 后端拒绝一个动作时给用户看的理由；取不到可读理由时返回 `undefined`，由调用方退回通用失败文案。
+ *
+ * 只认 `AbpApiError`：网络失败等非 HTTP 异常的 `message` 是浏览器英文原文，不是给用户看的。
+ * 5xx 一律不认：ABP 对未处理异常只回通用文案，业务拒绝走 4xx（`BusinessException` 403、
+ * 校验 400、找不到 404）。
+ */
+export function abpErrorMessage(error: unknown): string | undefined {
+  if (!(error instanceof AbpApiError) || error.status >= 500) return undefined;
+  // 一条校验消息挂多个 member 时会被展开成多条，这里按文本去重
+  const messages = [
+    ...new Set(
+      abpErrorToFieldErrors(error)
+        .map((item) => item.message.trim())
+        .filter((message) => message !== ""),
+    ),
+  ];
+  return messages.length > 0 ? messages.join("\n") : undefined;
+}
+
 /** ABP 版 onSubmitAsync 校验器:serverSubmitValidator 预注入 ABP 错误映射。页面提交一律用它包 mutation。 */
 export function abpSubmitValidator<TValue>(
   submit: (value: TValue) => Promise<void>,

@@ -445,3 +445,20 @@ describe("MultiComboboxField 必填", () => {
     expect(input.getAttribute("aria-required")).toBe("true");
   });
 });
+
+function RequiredComboHarness() {
+  const form = useAppForm({ defaultValues: { authorId: "" } });
+  return (
+    <form.AppField name="authorId">
+      {(f) => <f.ComboboxField label="Author" required options={[{ value: "a1", label: "A" }]} />}
+    </form.AppField>
+  );
+}
+
+describe("ComboboxField 必填", () => {
+  it("label 关联到输入框，必填带 aria-required", async () => {
+    renderWithProviders(<RequiredComboHarness />, { messages });
+    const input = await screen.findByLabelText(/Author/);
+    expect(input.getAttribute("aria-required")).toBe("true");
+  });
+});

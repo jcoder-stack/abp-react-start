@@ -216,7 +216,9 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
                         onClick={header.column.getToggleSortingHandler()}
                         aria-describedby={showSortIndex ? sortPriorityId : undefined}
                         className={cn(
-                          "inline-flex w-full items-center gap-1.5 select-none hover:text-foreground",
+                          // 浏览器默认样式表给 button 设了 text-transform:none，会盖掉 th 上继承来的
+                          // uppercase，可排序表头因此比其它表头小一号。中日韩由主题改回不大写，这里要让位。
+                          "inline-flex w-full items-center gap-1.5 select-none uppercase [:lang(zh)_&]:normal-case [:lang(ja)_&]:normal-case [:lang(ko)_&]:normal-case hover:text-foreground",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           justifyClass(header.column.columnDef.meta?.align),
                         )}
@@ -303,7 +305,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
       </Table>
       {/* footer 返回 falsy（无限滚动这类不要页脚的接管）时连外壳一起不渲染，
           否则卡片底部会留一条 1px 上边框加一段空白。 */}
-      {footerContent ? <div className="border-t px-3 py-2">{footerContent}</div> : null}
+      {footerContent ? <div className="border-t px-4 py-2">{footerContent}</div> : null}
     </div>
   );
 }

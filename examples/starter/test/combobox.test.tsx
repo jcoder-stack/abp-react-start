@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { act, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Combobox } from "@/components/combobox/combobox";
@@ -221,5 +222,70 @@ describe("Combobox render cap", () => {
     fireEvent.change(input, { target: { value: "Asia" } });
     await waitFor(() => expect(screen.queryByText(/more matches/)).toBeNull());
     expect(screen.getAllByRole("option").length).toBe(30);
+  });
+});
+
+describe("Combobox 回显与录入", () => {
+  it("静态 options 超过渲染上限时，排在后面的已选值仍回显 label", async () => {
+    const many = Array.from({ length: 150 }, (_, i) => ({ value: `v${i}`, label: `Item ${i}` }));
+    renderWithProviders(<Combobox value="v140" onChange={vi.fn()} options={many} />, {
+      messages: comboboxMessages,
+    });
+    await waitFor(() =>
+      expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("Item 140"),
+    );
+  });
+
+  it("聚焦即全选已回显的 label，首次按键整体替换", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SingleHarness initial="apple" />, { messages: comboboxMessages });
+    const input = (await screen.findByRole("combobox")) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe("Apple"));
+    await user.click(input);
+    await user.keyboard("Ba");
+    expect(input.value).toBe("Ba");
+  });
+});
+
+describe("Combobox 受控回显的边界", () => {
+  it("远程模式：已选项的 label 晚到时不覆盖用户正在输入的文字", async () => {
+    // 首页结果里没有已选的 Banana，它的 label 要等用户搜到它才得知
+    const loadOptions = vi.fn(
+      async (search: string): Promise<ComboboxOption[]> =>
+        search === "" ? [FRUIT_OPTIONS[0] as ComboboxOption] : [FRUIT_OPTIONS[1] as ComboboxOption],
+    );
+    renderWithProviders(
+      <SingleHarness initial="banana" options={undefined} loadOptions={loadOptions} />,
+      { messages: comboboxMessages },
+    );
+    const input = (await screen.findByRole("combobox")) as HTMLInputElement;
+    openCombobox(input);
+    fireEvent.change(input, { target: { value: "B" } });
+    await waitFor(() => expect(loadOptions).toHaveBeenCalledWith("B"));
+    await screen.findByText("Banana");
+    // 给晚到的 label 一个回显的机会（effect 与随之而来的下一轮搜索都在这段时间里跑完）
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    });
+    expect(input.value).toBe("B");
+  });
+
+  it("值被外部清空时输入框跟着清空", async () => {
+    function ClearableHarness() {
+      const [value, setValue] = useState<string | undefined>("apple");
+      return (
+        <>
+          <Combobox value={value} onChange={setValue} options={FRUIT_OPTIONS} />
+          <button type="button" onClick={() => setValue(undefined)}>
+            reset
+          </button>
+        </>
+      );
+    }
+    renderWithProviders(<ClearableHarness />, { messages: comboboxMessages });
+    const input = (await screen.findByRole("combobox")) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe("Apple"));
+    fireEvent.click(screen.getByRole("button", { name: "reset" }));
+    await waitFor(() => expect(input.value).toBe(""));
   });
 });

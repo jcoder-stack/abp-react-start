@@ -17,6 +17,10 @@ export interface ComboboxProps {
   loadOptions?: (search: string) => Promise<ComboboxOption[]>;
   placeholder?: string;
   disabled?: boolean;
+  /** 输入框的 id，供外部 `<Label htmlFor>` 关联与表单「首错聚焦」定位；不给则输入框不带 id。 */
+  id?: string;
+  "aria-required"?: boolean;
+  "aria-invalid"?: boolean;
 }
 
 function isEqualOption(a: ComboboxOption, b: ComboboxOption): boolean {
@@ -31,6 +35,9 @@ export function Combobox({
   loadOptions,
   placeholder,
   disabled,
+  id,
+  "aria-required": ariaRequired,
+  "aria-invalid": ariaInvalid,
 }: ComboboxProps) {
   const L = useLocalization();
   const {
@@ -42,14 +49,23 @@ export function Combobox({
   } = useComboboxOptions({ options, loadOptions });
 
   const cacheRef = useRef(new Map<string, ComboboxOption>());
+  // resolvedOptions 受渲染上限截断，静态 options 要全量进缓存，否则排在上限之后的已选值回显不出 label。
+  for (const option of options ?? []) cacheRef.current.set(option.value, option);
   for (const option of resolvedOptions) cacheRef.current.set(option.value, option);
 
-  // value 由外部（受控）变化时，把该值已知的 label 同步进搜索框文本，让关闭态的输入框显示选中项。
+  const selectedLabel = value !== undefined ? cacheRef.current.get(value)?.label : undefined;
+
+  // 受控 value 的 label 变化（含 label 晚于 value 才得知）时同步进搜索框文本，让关闭态的输入框显示选中项。
   useEffect(() => {
-    if (value === undefined) return;
-    const cached = cacheRef.current.get(value);
-    if (cached && typeof cached.label === "string") setSearch(cached.label);
-    // setSearch 是 useState setter，引用稳定；只想在受控 value 变化时同步，search/cache 不应触发。
+    if (typeof selectedLabel === "string") setSearch(selectedLabel);
+  }, [selectedLabel, setSearch]);
+
+  // 值被外部清空（表单 reset 等）时输入框跟着清空，否则表单值已空、界面却还显示着旧选项。
+  // 只认「从有值变成无值」这一跳：一直无值时清空会冲掉用户正在敲的搜索词。
+  const previousValue = useRef(value);
+  useEffect(() => {
+    if (previousValue.current !== undefined && value === undefined) setSearch("");
+    previousValue.current = value;
   }, [value, setSearch]);
 
   const selected =
@@ -69,7 +85,15 @@ export function Combobox({
       filter={null}
       disabled={disabled}
     >
-      <ComboboxInput placeholder={placeholder ?? L("Combobox:Placeholder")} disabled={disabled} />
+      <ComboboxInput
+        id={id}
+        aria-required={ariaRequired}
+        aria-invalid={ariaInvalid}
+        placeholder={placeholder ?? L("Combobox:Placeholder")}
+        disabled={disabled}
+        // 聚焦时全选已回显的 label，首次按键即可整体替换，避免打字追加在旧文本后面。
+        onFocus={(event) => event.currentTarget.select()}
+      />
       <ComboboxContent>
         <ComboboxList>
           {(option: ComboboxOption) => (

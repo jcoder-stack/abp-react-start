@@ -45,6 +45,8 @@ export interface RowActionsMenuProps<TDto extends { id?: string }> {
   show: { view: boolean; edit: boolean; delete: boolean };
   items?: (row: TDto, table: CellTableInstance<TDto>) => ReactNode;
   render?: (row: TDto, builtins: RowActionBuiltins, table: CellTableInstance<TDto>) => ReactNode;
+  /** 删除确认框的说明；不给则用通用的「此操作不可撤销」。 */
+  deleteConfirm?: string;
 }
 
 /** 行操作合并为 `···` 菜单；删除确认用受控 AlertDialog，脱出 DropdownMenu 之外。
@@ -112,8 +114,10 @@ export function RowActionsMenu<TDto extends { id?: string }>(props: RowActionsMe
       onKeyDown={(e) => e.stopPropagation()}
     >
       {rowActions?.(record, table)}
+      {/* 常驻，不做 hover 才显形：这是编辑 / 删除的唯一入口，藏起来之后「操作」那一列是空的，
+          读出来是「我没权限改」。静止时压到 muted，行 hover 或键盘聚焦时加深。 */}
       {menuContent && (
-        <span className="opacity-0 focus-within:opacity-100 group-hover:opacity-100">
+        <span className="text-muted-foreground transition-colors focus-within:text-foreground group-hover:text-foreground">
           {menuContent}
         </span>
       )}
@@ -121,7 +125,9 @@ export function RowActionsMenu<TDto extends { id?: string }>(props: RowActionsMe
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{L("Crud:DeleteConfirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{L("Crud:DeleteConfirmBody")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {props.deleteConfirm ?? L("Crud:DeleteConfirmBody")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{L("Form:Cancel")}</AlertDialogCancel>
