@@ -56,6 +56,7 @@ bun add -D @jcoder-stack/cli @jcoder-stack/registry
 npx jc-abp init          # 需要 tenants/users/roles 等管理后台页面
 npx jc-abp init --no-admin   # 只要认证外壳与空壳布局
 npx jc-abp init --backend https://localhost:44316   # 脚本/CI：免交互直接给后端地址
+npx jc-abp init --with pwa,signalr   # 顺带装可选功能，见 optional-features.md
 ```
 
 交互终端下 init 会问一次 **ABP 后端地址**（回车跳过）。给了地址就一并填好三处：`.env` 的 `AUTH_ISSUER` 与 `AUTH_ABP_BASE_URL`，以及 `abp.api.config.ts` 的 swagger `input`（按 ABP 单体的约定取 `<地址>/swagger/v1/swagger.json`，分离部署后改即可）。非 TTY（CI、管道）自动跳过。
@@ -74,8 +75,9 @@ init 本身**从不连接后端**——地址只是写进配置，后端没启�
 4. **落认证外壳**：`src/auth/*` 五个文件、五个 API 路由、`src/env.ts`、`.env.example`。
 5. **让位首页**：脚手架自带的 `src/routes/index.tsx` 改名为 `.bak`，因为 app-shell 块要放自己的落地页。
 6. **按依赖序装 shadcn 块**：`abp-layout` → `abp-login` → `app-shell` → `data-table` → `combobox` → `date-picker` → `form` → `abp-table` → `tree` → `abp-permission-sheet`，默认再加 `admin-pages`。每块装完会校验声明的产物真的落盘——shadcn 有可能静默中止批量写入却仍然 exit 0。
-7. **接线根文件**：`src/routes/__root.tsx` 整份写入（两个 Provider、块词条深合并、`abp-fetch` 引入、错误边界），`src/router.tsx` 就地补 QueryClient 与 SSR 集成；两者的脚手架原版都备份为 `.bak`。同时播种 `src/i18n/app-messages.json`——分发的菜单引用 `App::` 词条，而那个桶归应用所有，没有块会提供。
-8. **收尾**：`--no-admin` 时覆写 `src/menu.tsx`；播种 `tsr.config.json` 并生成路由树；播种 `abp.api.config.ts`（给了后端地址则 `input` 已指好）；从 `.env.example` 生成 `.env`（会话密钥随机，见本节开头）。
+7. **接线根文件**：`src/routes/__root.tsx` 整份写入（两个 Provider、块词条深合并、`abp-fetch` 引入、错误边界），`src/router.tsx` 就地补 QueryClient 与 SSR 集成；两者的脚手架原版都备份为 `.bak`。同时播种 `src/i18n/app-messages.json`——分发的菜单引用 `App::` 词条，而那个桶归应用所有，没有块会提供。同时播种可选功能聚合点 src/features/index.ts 与 compose.ts（没装功能时它们什么也不做）。
+8. **可选功能**：给了 `--with` 时逐个安装，详见 [optional-features.md](optional-features.md)。
+9. **收尾**：`--no-admin` 时覆写 `src/menu.tsx`；播种 `tsr.config.json` 并生成路由树；播种 `abp.api.config.ts`（给了后端地址则 `input` 已指好）；从 `.env.example` 生成 `.env`（会话密钥随机，见本节开头）。
 
 css 入口的探测顺序是 `src/styles/app.css` → `src/styles.css` → `src/index.css` → `src/app.css`。都探不到且没有 `components.json` 时它会直接报错停下——先把 css 入口建好再跑。
 
@@ -88,6 +90,7 @@ css 入口的探测顺序是 `src/styles/app.css` → `src/styles.css` → `src/
 | css 入口、`src/routes/index.tsx` | 备份为 `.bak` 后替换/让位 |
 | `src/routes/__root.tsx` | 备份为 `.bak` 后整份替换（结构改造，见第 4 节） |
 | `src/router.tsx` | 备份为 `.bak` 后就地补四处；认不出脚手架形状时才整份替换 |
+| `src/features/index.ts`、`src/features/compose.ts` | 已存在则跳过；同名但不是聚合点时中止 |
 | shadcn 块的产物 | 强制覆盖 |
 | `src/menu.tsx` | 仅 `--no-admin` 时覆盖 |
 
