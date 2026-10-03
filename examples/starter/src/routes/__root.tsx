@@ -17,6 +17,7 @@ import formMessages from "@/components/form/form-messages.json";
 import treeMessages from "@/components/tree/tree-messages.json";
 import { Toaster } from "@/components/ui/sonner";
 import { clientEnv } from "@/env";
+import { FeatureProviders, featureHead, featureMessages } from "@/features";
 import en from "@/i18n/en.json";
 import zhHans from "@/i18n/zh-Hans.json";
 import appCss from "@/styles.css?url";
@@ -44,6 +45,7 @@ function mergeCatalogs(...catalogs: FrontendCatalog[]): FrontendCatalog {
  * 后到先赢，这样应用可以不改块源码、只在 src/i18n/*.json 里同名覆盖，就定制块默认文案。
  */
 const messages = mergeCatalogs(
+  ...featureMessages,
   layoutMessages,
   loginMessages,
   tableMessages,
@@ -77,6 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: clientEnv.VITE_APP_TITLE },
+      ...featureHead.meta,
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -92,6 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "any" },
       { rel: "apple-touch-icon", href: "/app-icon.svg" },
       { rel: "manifest", href: "/manifest.json" },
+      ...featureHead.links,
     ],
   }),
   errorComponent: RouteError,
@@ -111,7 +115,9 @@ function RootComponent() {
     <RootDocument lang={appState.config.localization.currentCulture.name}>
       <AppConfigProvider config={appState.config} messages={messages} fallbackCulture="en">
         <SessionProvider identity={appState.identity} fetchIdentity={fetchIdentity}>
-          <Outlet />
+          <FeatureProviders>
+            <Outlet />
+          </FeatureProviders>
         </SessionProvider>
       </AppConfigProvider>
     </RootDocument>

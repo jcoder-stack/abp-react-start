@@ -1,8 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { patchRootForFeatures } from "../src/feature";
+import { patchRootForFeatures, seedFeatureAggregator } from "../src/feature";
 
 const fixture = (name: string) =>
   readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf8");
@@ -144,5 +146,26 @@ describe("patchRootForFeatures", () => {
     ],
   ])("returns null (no partial patch) when %s", (_, mutate) => {
     expect(patchRootForFeatures(mutate(fixture("root-v0.4.tsx.txt")))).toBeNull();
+  });
+});
+
+describe("seedFeatureAggregator", () => {
+  it("seeds both aggregator files once and is a no-op afterwards", () => {
+    const app = mkdtempSync(join(tmpdir(), "jc-abp-agg-"));
+    expect(seedFeatureAggregator(app)).toEqual([
+      "src/features/index.ts",
+      "src/features/compose.ts",
+    ]);
+    expect(seedFeatureAggregator(app)).toEqual([]);
+  });
+
+  it("refuses to touch an app's own src/features/index.ts, writing nothing", () => {
+    const app = mkdtempSync(join(tmpdir(), "jc-abp-agg-"));
+    mkdirSync(join(app, "src", "features"), { recursive: true });
+    writeFileSync(join(app, "src", "features", "index.ts"), 'export * from "./orders";\n');
+    expect(() => seedFeatureAggregator(app)).toThrow(
+      /src\/features\/index\.ts.*not the jc-abp feature aggregator/,
+    );
+    expect(existsSync(join(app, "src", "features", "compose.ts"))).toBe(false);
   });
 });

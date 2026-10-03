@@ -1,3 +1,7 @@
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 const FEATURES_IMPORT =
   'import { FeatureProviders, featureHead, featureMessages } from "@/features";';
 const MERGE_ANCHOR = "= mergeCatalogs(";
@@ -209,4 +213,45 @@ export function patchRootForFeatures(source: string): string | null {
     [outletAt, (s) => wrapOutlet(s, outletAt, outlet[0].length, eol)],
   ];
   return edits.sort((a, b) => b[0] - a[0]).reduce((s, [, edit]) => edit(s), source);
+}
+
+/** The marker that tells the aggregator files apart from an app's own same-named files. */
+const AGGREGATOR_MARKER = "composeFeatures";
+
+const AGGREGATOR_FILES = [
+  {
+    template: fileURLToPath(new URL("../templates/features-index.ts.tpl", import.meta.url)),
+    target: "src/features/index.ts",
+  },
+  {
+    template: fileURLToPath(new URL("../templates/features-compose.ts", import.meta.url)),
+    target: "src/features/compose.ts",
+  },
+] as const;
+
+/**
+ * Seeds the feature aggregator (src/features/index.ts + compose.ts) when missing. Once seeded the
+ * files belong to the app. src/features is a common home for an app's own modules, so a same-named
+ * file that is not ours is refused before anything is written rather than overwritten.
+ * @returns the project-relative paths written this run.
+ */
+export function seedFeatureAggregator(cwd: string): string[] {
+  for (const { target } of AGGREGATOR_FILES) {
+    const path = resolve(cwd, target);
+    if (existsSync(path) && !readFileSync(path, "utf8").includes(AGGREGATOR_MARKER)) {
+      throw new Error(
+        `${target} already exists and is not the jc-abp feature aggregator; optional features need ` +
+          "that path. Move your own file aside and rerun.",
+      );
+    }
+  }
+  const seeded: string[] = [];
+  for (const { template, target } of AGGREGATOR_FILES) {
+    const path = resolve(cwd, target);
+    if (existsSync(path)) continue;
+    mkdirSync(dirname(path), { recursive: true });
+    copyFileSync(template, path);
+    seeded.push(target);
+  }
+  return seeded;
 }

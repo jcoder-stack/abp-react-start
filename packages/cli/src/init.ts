@@ -16,6 +16,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type AddResult, findAddConflicts, resolveRegistryDir, runAdd } from "./add";
 import { asRecord, type CommandRunner, installShadcnBlock } from "./blocks";
+import { seedFeatureAggregator } from "./feature";
 
 export type { CommandRunner } from "./blocks";
 
@@ -772,6 +773,13 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     completed.push("src/menu.tsx (overwritten with the minimal menu for --no-admin)");
   }
 
+  // 0.5 的根模板 import "@/features"，聚合点必须先于根文件落盘。
+  try {
+    const seeded = seedFeatureAggregator(opts.cwd);
+    if (seeded.length > 0) completed.push(`${seeded.join(", ")} (feature aggregator)`);
+  } catch (error) {
+    throw new InitError(errorMessage(error), completed);
+  }
   const rootWiring = seedRootWiring(opts.cwd, completed);
 
   const tsrConfigPath = resolve(opts.cwd, "tsr.config.json");

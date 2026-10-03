@@ -9,7 +9,9 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { patchRootForFeatures } from "../src/feature";
 import {
   InitError,
   normalizeBackendUrl,
@@ -46,6 +48,16 @@ const SHADCN_BLOCKS = [
   "tree",
   "abp-permission-sheet",
 ];
+
+/** 只看语法：产物至少得是能被编译器读懂的 TSX。 */
+function syntaxErrors(source: string): string[] {
+  const out = ts.transpileModule(source, {
+    fileName: "__root.tsx",
+    reportDiagnostics: true,
+    compilerOptions: { jsx: ts.JsxEmit.Preserve, target: ts.ScriptTarget.ES2022 },
+  });
+  return (out.diagnostics ?? []).map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n"));
+}
 
 interface RunnerCall {
   cmd: string;
@@ -136,6 +148,21 @@ function recordingRunner(): {
 }
 
 describe("runInit", () => {
+  it("writes a root already wired for optional features and seeds the aggregator", async () => {
+    const { app } = fakeWorkspace();
+    const { runner } = recordingRunner();
+
+    await initWithStubbedProbe({ cwd: app, runner });
+
+    const root = readFileSync(join(app, "src", "routes", "__root.tsx"), "utf8");
+    expect(syntaxErrors(root)).toEqual([]);
+    expect(patchRootForFeatures(root)).toBe(root);
+    expect(readFileSync(join(app, "src", "features", "index.ts"), "utf8")).toContain(
+      "composeFeatures",
+    );
+    expect(existsSync(join(app, "src", "features", "compose.ts"))).toBe(true);
+  });
+
   it("runs auth add then the shadcn blocks in dependency order, admin-pages last", async () => {
     const { app, registryDir } = fakeWorkspace();
     const { runner, calls } = recordingRunner();
