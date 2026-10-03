@@ -29,6 +29,30 @@ describe("classifyStartError", () => {
     ).toBe("unauthorized");
   });
 
+  it("reads a 403 negotiate failure as a hub the user may not use", () => {
+    expect(
+      classifyStartError(
+        new Error(
+          "Failed to complete negotiation with the server: Error: Forbidden: Status code '403'",
+        ),
+      ),
+    ).toBe("forbidden");
+  });
+
+  it("trusts the error type when the message lacks the negotiate prefix", () => {
+    const error = Object.assign(new Error("Error: Unauthorized: Status code '401'"), {
+      errorType: "FailedToNegotiateWithServerError",
+    });
+    expect(classifyStartError(error)).toBe("unauthorized");
+  });
+
+  it("ignores a status from a transport failure: only negotiate decides about the hub", () => {
+    const error = new Error(
+      "Unable to connect to the server with any of the available transports. Error: LongPolling failed: Error: Not Found: Status code '404'",
+    );
+    expect(classifyStartError(error)).toBe("transient");
+  });
+
   it("treats everything else as transient", () => {
     expect(classifyStartError(new Error("Failed to fetch"))).toBe("transient");
     expect(classifyStartError(new Error("Bad Gateway: Status code '502'"))).toBe("transient");

@@ -1,5 +1,10 @@
 import { createLogger, type Logger } from "../logger";
-import { assertHubName, classifyStartError, nextReconnectDelay } from "./policy";
+import {
+  assertHubName,
+  classifyStartError,
+  nextReconnectDelay,
+  RECONNECT_DELAYS_MS,
+} from "./policy";
 import { signalRConnectionFactory } from "./signalr-factory";
 import { createTokenSource, type TokenSource } from "./token-source";
 import type { ConnectionFactory, GetConnectionInfo, HubConnectionLike, HubState } from "./types";
@@ -39,7 +44,10 @@ interface HubEntry {
   state: HubState;
   /** True while a connect loop is running or a connection is up. */
   running: boolean;
-  /** Set once a fresh token was rejected; the hub stays down for the page instead of retrying on every navigation. */
+  /**
+   * Set once a fresh token was rejected or the hub refused the user (403); the hub stays down for
+   * the page instead of retrying on every navigation.
+   */
   rejected: boolean;
   /** Bumped by every stop; a connect loop holding an older value has been superseded. */
   generation: number;
@@ -59,7 +67,8 @@ function messageOf(error: unknown): string {
 
 /**
  * One SignalR connection per hub per tab, shared by reference count. Connecting is lazy (first
- * subscriber) and nothing happens at construction, so it is safe to create during SSR.
+ * subscriber) and nothing happens at construction, so it is safe to create during SSR. The initial
+ * connect gives up once the backoff schedule is exhausted; reconnects after a successful start never do.
  */
 export function createRealtimeClient(opts: RealtimeClientOptions): RealtimeClient {
   const factory = opts.connectionFactory ?? signalRConnectionFactory;
@@ -175,14 +184,25 @@ export function createRealtimeClient(opts: RealtimeClientOptions): RealtimeClien
           });
           return settle(entry, "unavailable");
         }
-        if (failure === "unauthorized") {
-          if (!retriedUnauthorized) {
-            retriedUnauthorized = true;
-            entry.tokens.invalidate();
-            continue;
-          }
+        if (failure === "unauthorized" && !retriedUnauthorized) {
+          retriedUnauthorized = true;
+          entry.tokens.invalidate();
+          continue;
+        }
+        if (failure === "unauthorized" || failure === "forbidden") {
           entry.rejected = true;
-          logger.debug("hub rejected a fresh token; giving up", { hub: entry.name });
+          logger.debug("hub refused the user; giving up for this page", {
+            hub: entry.name,
+            failure,
+          });
+          return settle(entry, "disconnected");
+        }
+        if (attempt >= RECONNECT_DELAYS_MS.length) {
+          // Not sticky: the next subscriber (usually the next page) starts a fresh run, so a fixed backend needs no reload.
+          logger.warn("hub could not be reached; giving up until a new subscriber", {
+            hub: entry.name,
+            error: messageOf(error),
+          });
           return settle(entry, "disconnected");
         }
         logger.debug("hub connection failed; retrying", {

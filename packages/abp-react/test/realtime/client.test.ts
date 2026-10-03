@@ -181,7 +181,12 @@ describe("createRealtimeClient", () => {
   });
 
   it("refetches the token once after a 401 and stops after a second one", async () => {
-    const getConnectionInfo = vi.fn(signedIn);
+    // A token still fresh by its expiry: only invalidate() can make the retry fetch a new one.
+    const getConnectionInfo = vi.fn<GetConnectionInfo>(async (hub) => ({
+      url: `https://abp.example/signalr-hubs/${hub}`,
+      accessToken: "token",
+      expiresAt: Date.now() + 3_600_000,
+    }));
     const { factory, connections } = fakeFactory([
       () => Promise.reject(statusError(401)),
       () => Promise.reject(statusError(401)),
@@ -240,6 +245,54 @@ describe("createRealtimeClient", () => {
     await vi.advanceTimersByTimeAsync(5_000); // attempt 4 succeeds
     expect(connections).toHaveLength(4);
     expect(client.getState("dashboard")).toBe("connected");
+  });
+
+  it("gives up a first connect that never succeeds once the backoff schedule is exhausted", async () => {
+    const down = () => Promise.reject(new Error("Failed to fetch"));
+    const { factory, connections } = fakeFactory(Array.from({ length: 6 }, () => down));
+    const { sink, records } = createMemorySink();
+    const client = createRealtimeClient({
+      getConnectionInfo: signedIn,
+      connectionFactory: factory,
+      unavailable: memoryStore(),
+      logger: createLogger({ scope: "realtime", sink }),
+    });
+    client.on("dashboard", "Changed", vi.fn());
+
+    // Six attempts, separated by the five scheduled waits: 0 + 2 + 5 + 10 + 30 s.
+    await vi.advanceTimersByTimeAsync(47_000);
+    expect(connections).toHaveLength(6);
+    expect(client.getState("dashboard")).toBe("disconnected");
+    const warnings = records.filter((r) => r.level === "warn");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.fields).toMatchObject({ hub: "dashboard", error: "Failed to fetch" });
+
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(connections).toHaveLength(6);
+
+    client.on("dashboard", "Changed", vi.fn());
+    await flush();
+    expect(connections).toHaveLength(7);
+    expect(client.getState("dashboard")).toBe("connected");
+  });
+
+  it("stays down for the page after a 403: the user lacks the hub's permission", async () => {
+    const getConnectionInfo = vi.fn(signedIn);
+    const { factory, connections } = fakeFactory([() => Promise.reject(statusError(403))]);
+    const client = createRealtimeClient({
+      getConnectionInfo,
+      connectionFactory: factory,
+      unavailable: memoryStore(),
+    });
+    client.on("reports", "Ready", vi.fn());
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(connections).toHaveLength(1);
+    expect(client.getState("reports")).toBe("disconnected");
+
+    client.on("reports", "Ready", vi.fn());
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(connections).toHaveLength(1);
+    expect(getConnectionInfo).toHaveBeenCalledOnce();
   });
 
   it("hands the transport the same backoff for reconnects", async () => {
