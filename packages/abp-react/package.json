@@ -22,14 +22,19 @@
     "./proxy": "./src/proxy/index.ts",
     "./react": "./src/react/index.ts",
     "./router": "./src/router/index.ts",
+    "./realtime": "./src/realtime/index.ts",
     "./package.json": "./package.json"
   },
   "peerDependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "@tanstack/react-router": "^1.170.18",
     "react": "^18 || ^19",
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
+    "@microsoft/signalr": {
+      "optional": true
+    },
     "@tanstack/react-router": {
       "optional": true
     },
@@ -38,6 +43,7 @@
     }
   },
   "devDependencies": {
+    "@microsoft/signalr": "^10.0.11",
     "@tanstack/react-router": "^1.0.0",
     "react": "^19.0.0",
     "zod": "^4.0.0"
@@ -79,6 +85,10 @@
       "./router": {
         "types": "./dist/router.d.ts",
         "default": "./dist/router.js"
+      },
+      "./realtime": {
+        "types": "./dist/realtime.d.ts",
+        "default": "./dist/realtime.js"
       },
       "./package.json": "./package.json"
     }
