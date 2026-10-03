@@ -1,5 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "noEmit": true, "declaration": false },
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "paths": { "@jcoder-stack/abp-react/*": ["../abp-react/src/*/index.ts"] }
+  },
   "include": ["templates"]
 }

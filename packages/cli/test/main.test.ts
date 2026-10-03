@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -58,6 +58,19 @@ describe("jc-abp bin", () => {
 });
 
 describe("main", () => {
+  it("rejects an unknown --with feature before writing anything", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "jc-abp-with-"));
+    const cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(await main(["init", "--with", "nope", "--backend", "https://x.example"])).toBe(1);
+
+    expect(error.mock.calls.flat().join("\n")).toContain("unknown feature: nope");
+    expect(readdirSync(dir)).toEqual([]);
+    cwd.mockRestore();
+    error.mockRestore();
+  });
+
   it("prints usage and returns 0 for help", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     expect(await main([])).toBe(0);

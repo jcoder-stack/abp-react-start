@@ -14,7 +14,17 @@ import {
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type AddResult, findAddConflicts, parseJsonc, resolveRegistryDir, runAdd } from "./add";
+import { type AddResult, findAddConflicts, resolveRegistryDir, runAdd } from "./add";
+import { asRecord, type CommandRunner, installShadcnBlock } from "./blocks";
+import {
+  assertAggregatorPathsFree,
+  type FeatureDefinition,
+  type FeatureInstallResult,
+  installFeature,
+  seedFeatureAggregator,
+} from "./feature";
+
+export type { CommandRunner } from "./blocks";
 
 const CONFIG_TEMPLATE_PATH = fileURLToPath(
   new URL("../templates/abp.api.config.ts", import.meta.url),
@@ -112,15 +122,10 @@ const SHADCN_BLOCKS = [
 const ADMIN_PAGES_BLOCK = "admin-pages";
 
 /**
- * 外部脚手架 CLI 锁到已验证的 minor：本文件的多处前提都绑在具体行为上（shadcn 4.13 在缺 components.json
- * 时的 preset 变化、router-cli 的 tsr.config.json 契约），`@latest` 会在某天把它们悄悄换掉。
+ * router-cli 锁到已验证的 minor：tsr.config.json 契约绑在具体行为上，`@latest` 会在某天把它悄悄换掉。
  * 升级时改这里并重跑一遍真实 init 端到端。
  */
-const SHADCN_CLI = "shadcn@4.13";
 const ROUTER_CLI = "@tanstack/router-cli@1.167";
-
-/** Runs one non-interactive shell command; the real implementation shells out to npx, tests inject a stub. */
-export type CommandRunner = (cmd: string, args: string[], cwd: string) => Promise<void>;
 
 /** cmd.exe 认的元字符（含引号与空白）。`^` 逐字符前置后它们全部失去语法含义。 */
 const CMD_METACHARS = /[()[\]%!^"`<>&|;, *?\t]/g;
@@ -182,6 +187,8 @@ export interface InitOptions {
   runner?: CommandRunner;
   /** Overrides the npm allow-scripts probe (see AllowScriptsProbe); tests inject one to stay off the real npm. */
   allowScriptsProbe?: AllowScriptsProbe;
+  /** Optional features to install once the base project is fully initialized (from --with). */
+  features?: FeatureDefinition[];
 }
 
 /** What runInit did. One field per step: what the auth copy-in wrote, which blocks were
@@ -207,6 +214,7 @@ export interface InitResult {
   envSeeded: boolean;
   /** 交互/--backend 给出的后端地址（规范化后）；跳过为 null。 */
   backendUrl: string | null;
+  features: FeatureInstallResult[];
 }
 
 /**
@@ -258,12 +266,6 @@ function seedEnvFile(cwd: string, backend: string | undefined, completed: string
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-/** JSON.parse 的产物是 any，先收窄成 record 再取字段，成员访问才受类型检查约束。 */
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
-  return value as Record<string, unknown>;
 }
 
 function findCssEntry(cwd: string): string | undefined {
@@ -710,80 +712,13 @@ function renameConflictingScaffoldIndex(cwd: string, completed: string[]): boole
   return true;
 }
 
-interface RegistryFileEntry {
-  path: string;
-  target?: string;
-}
-
-function readJsonFile(
-  path: string,
-  parse: (text: string) => unknown,
-): Record<string, unknown> | undefined {
-  if (!existsSync(path)) return undefined;
+/** Preflight twin of the aggregator seed: a foreign src/features/index.ts or compose.ts must stop init before it writes anything. */
+function assertAggregatorPathsAvailable(cwd: string, completed: string[]): void {
   try {
-    return asRecord(parse(readFileSync(path, "utf8")));
-  } catch {
-    return undefined;
+    assertAggregatorPathsFree(cwd);
+  } catch (error) {
+    throw new InitError(errorMessage(error), completed);
   }
-}
-
-/** Where shadcn drops a registry file that declares no target: the project's own `ui` alias
- *  from components.json, walked through tsconfig `paths`. So `"@/primitives"` with
- *  `"@/*": ["./src/*"]` resolves to `src/primitives`.
- *
- *  Falls back to the default `src/components/ui` when either side is missing or unresolvable.
- *  A wrong guess here would report installed artifacts as missing and abort init. */
-function resolveUiDir(cwd: string): string {
-  const fallback = join("src", "components", "ui");
-  const alias = asRecord(readJsonFile(resolve(cwd, "components.json"), JSON.parse)?.aliases)?.ui;
-  if (typeof alias !== "string") return fallback;
-  const tsconfig = readJsonFile(resolve(cwd, "tsconfig.json"), parseJsonc);
-  const paths = asRecord(asRecord(tsconfig?.compilerOptions)?.paths) ?? {};
-  for (const [pattern, targets] of Object.entries(paths)) {
-    const prefix = pattern.endsWith("/*") ? pattern.slice(0, -1) : undefined;
-    if (prefix === undefined || !alias.startsWith(prefix)) continue;
-    const first = Array.isArray(targets) ? targets[0] : undefined;
-    if (typeof first !== "string" || !first.endsWith("/*")) continue;
-    return join(first.slice(0, -2), alias.slice(prefix.length));
-  }
-  return fallback;
-}
-
-/**
- * Where a registry item's file ends up on disk, relative to cwd. Every file this repo's own registry emits
- * declares an explicit target (either "components/..." → src/components/..., or an already-root-relative
- * "src/..." for pages); shadcn resolves those against the project root, prefixing src/ because init always
- * leaves a src dir behind (it seeds src/lib/utils.ts before any block installs). Items without a target
- * (shadcn ui primitives pulled in via registryDependencies, not our own files[]) land under `uiDir`.
- */
-function resolveArtifactTarget(file: RegistryFileEntry, uiDir: string): string {
-  if (file.target) {
-    return file.target.startsWith("src/") ? file.target : join("src", file.target);
-  }
-  return join(uiDir, file.path.split("/").pop() ?? file.path);
-}
-
-function isRegistryFileEntry(value: unknown): value is RegistryFileEntry {
-  const entry = asRecord(value);
-  if (typeof entry?.path !== "string") return false;
-  return entry.target === undefined || typeof entry.target === "string";
-}
-
-/** Reads a shadcn block's own registry JSON and returns which of its declared file targets are
- *  missing on disk. That's the tell for shadcn silently aborting a batch write while still
- *  exiting 0. */
-function findMissingArtifacts(cwd: string, jsonPath: string): string[] {
-  let files: RegistryFileEntry[];
-  try {
-    const declared = asRecord(JSON.parse(readFileSync(jsonPath, "utf8")))?.files;
-    files = Array.isArray(declared) ? declared.filter(isRegistryFileEntry) : [];
-  } catch {
-    return [];
-  }
-  const uiDir = resolveUiDir(cwd);
-  return files
-    .map((file) => resolveArtifactTarget(file, uiDir))
-    .filter((relTarget) => !existsSync(resolve(cwd, relTarget)));
 }
 
 /** Runs the init steps in order, stopping at the first failure. There is no rollback: InitError
@@ -791,19 +726,22 @@ function findMissingArtifacts(cwd: string, jsonPath: string): string[] {
  *
  *  Steps: components.json → lib/utils.ts + theme css + their deps → auth shell → shadcn blocks
  *  in dependency order → rename a conflicting scaffold src/routes/index.tsx → --no-admin menu
- *  → tsr.config.json + route tree (best-effort) → abp.api.config.ts. */
+ *  → feature aggregator seed → root/router wiring → tsr.config.json + route tree (best-effort)
+ *  → abp.api.config.ts → .env → optional features (--with), last so that a failing feature
+ *  leaves a fully initialized project to retry with `jc-abp add`. */
 export async function runInit(opts: InitOptions): Promise<InitResult> {
   const runner = opts.runner ?? defaultRunner;
   const blocks = opts.admin === false ? SHADCN_BLOCKS : [...SHADCN_BLOCKS, ADMIN_PAGES_BLOCK];
   const completed: string[] = [];
 
-  // 两道前置闸都在第一次写盘之前：init 无回滚，能提前判死的组合就别让它走到半路。
+  // 三道前置闸都在第一次写盘之前：init 无回滚，能提前判死的组合就别让它走到半路。
   assertNoPriorInit(opts.cwd, completed);
   assertNpmCanInstallBlocks(
     opts.cwd,
     opts.allowScriptsProbe ?? npmRejectsEnvAllowScripts,
     completed,
   );
+  assertAggregatorPathsAvailable(opts.cwd, completed);
 
   const { seeded: componentsJsonSeeded, cssPath: componentsJsonCssPath } =
     seedOrRequireComponentsJson(opts.cwd, completed);
@@ -841,35 +779,10 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   const scaffoldIndexRenamed = renameConflictingScaffoldIndex(opts.cwd, completed);
 
   for (const block of blocks) {
-    const jsonPath = join(registryDir, "public", "r", `${block}.json`);
-    if (!existsSync(jsonPath)) {
-      throw new InitError(
-        `shadcn block "${block}" not found in the registry (expected at ${jsonPath})`,
-        completed,
-      );
-    }
     try {
-      // --overwrite is required alongside --yes: --yes only skips the "continue installing?" prompt,
-      // not shadcn's per-file "already exists, overwrite?" prompt. Without it, a cross-block file
-      // conflict (e.g. two blocks sharing label.tsx with different content) makes shadcn silently
-      // abort that block's entire write batch on a non-TTY stdin while still exiting 0. The exit
-      // code alone can't be trusted, hence findMissingArtifacts below.
-      // npx 自身的 -y：交互终端下（用户真实场景）npx 首次下载 CLI 会停在 "Ok to proceed?" 等确认，
-      // init 的进度输出会把这个提问淹没，看起来像挂死。非 TTY 下 npx 本就静默继续，加了也无副作用。
-      await runner("npx", ["-y", SHADCN_CLI, "add", jsonPath, "--yes", "--overwrite"], opts.cwd);
+      await installShadcnBlock(opts.cwd, registryDir, block, runner);
     } catch (error) {
-      throw new InitError(
-        `installing shadcn block "${block}" failed: ${errorMessage(error)}`,
-        completed,
-      );
-    }
-    const missing = findMissingArtifacts(opts.cwd, jsonPath);
-    if (missing.length > 0) {
-      throw new InitError(
-        `shadcn block "${block}" reported success (exit 0), but these declared files are missing on disk — ` +
-          `most likely shadcn silently aborted the whole write batch: ${missing.join(", ")}`,
-        completed,
-      );
+      throw new InitError(errorMessage(error), completed);
     }
     completed.push(`shadcn block ${block}`);
   }
@@ -881,6 +794,13 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     completed.push("src/menu.tsx (overwritten with the minimal menu for --no-admin)");
   }
 
+  // 0.5 的根模板 import "@/features"，聚合点必须先于根文件落盘。
+  try {
+    const seeded = seedFeatureAggregator(opts.cwd);
+    if (seeded.length > 0) completed.push(`${seeded.join(", ")} (feature aggregator)`);
+  } catch (error) {
+    throw new InitError(errorMessage(error), completed);
+  }
   const rootWiring = seedRootWiring(opts.cwd, completed);
 
   const tsrConfigPath = resolve(opts.cwd, "tsr.config.json");
@@ -925,6 +845,20 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
 
   const envSeeded = seedEnvFile(opts.cwd, opts.backend, completed);
 
+  const features: FeatureInstallResult[] = [];
+  for (const feature of opts.features ?? []) {
+    try {
+      features.push(await installFeature({ cwd: opts.cwd, registryDir, feature, runner }));
+    } catch (error) {
+      throw new InitError(
+        `installing feature "${feature.name}" failed: ${errorMessage(error)} — the project is otherwise ` +
+          `fully initialized; retry with jc-abp add ${feature.name}`,
+        completed,
+      );
+    }
+    completed.push(`feature ${feature.name}`);
+  }
+
   return {
     addResult,
     shadcnBlocks: [...blocks],
@@ -941,5 +875,38 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     designDocSeeded,
     envSeeded,
     backendUrl: opts.backend ?? null,
+    features,
   };
+}
+
+export interface AddFeatureOptions {
+  cwd: string;
+  feature: FeatureDefinition;
+  /** Registry dir override (--from); default resolution walks up for node_modules/@jcoder-stack/registry. */
+  from?: string;
+  runner?: CommandRunner;
+  allowScriptsProbe?: AllowScriptsProbe;
+}
+
+/**
+ * `jc-abp add <feature>` on an existing project. Same installFeature as `init --with`, behind the
+ * preflight init does: the project must already be initialized (the feature's block relies on
+ * components.json, the providers in __root.tsx and the auth shell), and npm must be able to run shadcn.
+ */
+export async function runAddFeature(opts: AddFeatureOptions): Promise<FeatureInstallResult> {
+  for (const required of ["components.json", ROOT_TARGET]) {
+    if (!existsSync(resolve(opts.cwd, required))) {
+      throw new Error(
+        `jc-abp add ${opts.feature.name} needs a project set up by jc-abp init (missing ${required}); ` +
+          `run jc-abp init first, or jc-abp init --with ${opts.feature.name} for a new project`,
+      );
+    }
+  }
+  assertNpmCanInstallBlocks(opts.cwd, opts.allowScriptsProbe ?? npmRejectsEnvAllowScripts, []);
+  return installFeature({
+    cwd: opts.cwd,
+    registryDir: resolveRegistryDir(opts.cwd, opts.from),
+    feature: opts.feature,
+    runner: opts.runner ?? defaultRunner,
+  });
 }

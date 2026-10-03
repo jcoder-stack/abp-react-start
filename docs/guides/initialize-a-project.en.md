@@ -56,6 +56,7 @@ Package responsibilities: `react` provides the providers and hooks, `auth` is th
 npx jc-abp init          # you want the tenants/users/roles admin pages
 npx jc-abp init --no-admin   # auth shell and empty layout only
 npx jc-abp init --backend https://localhost:44316   # scripts/CI: pass the backend URL, no interaction
+npx jc-abp init --with pwa,signalr   # also install optional features, see optional-features.en.md
 ```
 
 In an interactive terminal, init asks once for your **ABP backend URL** (Enter skips). Answering fills three places in one go: `AUTH_ISSUER` and `AUTH_ABP_BASE_URL` in `.env`, and the swagger `input` in `abp.api.config.ts` (following the ABP monolith convention of `<url>/swagger/v1/swagger.json` — adjust later for split deployments). Non-TTY runs (CI, pipes) skip automatically.
@@ -74,8 +75,9 @@ In order:
 4. **Land the auth shell**: the five `src/auth/*` files, five API routes, `src/env.ts`, `.env.example`.
 5. **Move the home page aside**: the scaffold's `src/routes/index.tsx` is renamed to `.bak`, because the app-shell block places its own landing page there.
 6. **Install the shadcn blocks in dependency order**: `abp-layout` → `abp-login` → `app-shell` → `data-table` → `combobox` → `date-picker` → `form` → `abp-table` → `tree` → `abp-permission-sheet`, plus `admin-pages` by default. After each block, the declared artifacts are verified on disk — shadcn can silently abort a write batch and still exit 0.
-7. **Wire the root files**: `src/routes/__root.tsx` is written whole (both providers, deep-merged block messages, the `abp-fetch` import, error boundaries); `src/router.tsx` gets QueryClient and the SSR integration patched in place; the scaffold originals of both are backed up as `.bak`. `src/i18n/app-messages.json` is seeded too — the distributed menu references `App::` entries, and that bucket belongs to the app; no block provides it.
-8. **Wrap up**: overwrite `src/menu.tsx` under `--no-admin`; seed `tsr.config.json` and generate the route tree; seed `abp.api.config.ts` (with `input` already pointed if a backend was given); generate `.env` from `.env.example` (random session secret, see the top of this section).
+7. **Wire the root files**: `src/routes/__root.tsx` is written whole (both providers, deep-merged block messages, the `abp-fetch` import, error boundaries); `src/router.tsx` gets QueryClient and the SSR integration patched in place; the scaffold originals of both are backed up as `.bak`. `src/i18n/app-messages.json` is seeded too — the distributed menu references `App::` entries, and that bucket belongs to the app; no block provides it. It also seeds the optional-feature aggregator `src/features/index.ts` and `src/features/compose.ts` (inert until a feature is installed).
+8. **Optional features**: with `--with`, each is installed in turn; see [optional-features.en.md](optional-features.en.md).
+9. **Wrap up**: overwrite `src/menu.tsx` under `--no-admin`; seed `tsr.config.json` and generate the route tree; seed `abp.api.config.ts` (with `input` already pointed if a backend was given); generate `.env` from `.env.example` (random session secret, see the top of this section).
 
 The css entry probe order is `src/styles/app.css` → `src/styles.css` → `src/index.css` → `src/app.css`. If none exists and there is no `components.json`, it stops with an error — create the css entry first.
 
@@ -88,6 +90,7 @@ The css entry probe order is `src/styles/app.css` → `src/styles.css` → `src/
 | The css entry, `src/routes/index.tsx` | Backed up as `.bak`, then replaced / moved aside |
 | `src/routes/__root.tsx` | Backed up as `.bak`, then replaced whole (structural change, see section 4) |
 | `src/router.tsx` | Backed up as `.bak`, then patched in four places; replaced whole only if the scaffold shape isn't recognized |
+| `src/features/index.ts`, `src/features/compose.ts` | Skipped if present; aborts if a same-named file is not the aggregator |
 | shadcn block artifacts | Force-overwritten |
 | `src/menu.tsx` | Overwritten only under `--no-admin` |
 

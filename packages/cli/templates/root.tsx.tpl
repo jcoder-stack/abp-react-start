@@ -6,6 +6,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { getAppStateFn, getIdentityFn } from "@/auth/server-fns";
+import { FeatureProviders, featureHead, featureMessages } from "@/features";
 import { Toaster } from "@/components/ui/sonner";
 import { clientEnv } from "@/env";
 import appCss from "@/styles.css?url";
@@ -30,8 +31,9 @@ function mergeCatalogs(...catalogs: FrontendCatalog[]): FrontendCatalog {
 /**
  * 静态词条表，引用稳定，免得 AppConfigProvider 的 translator memo 每次渲染都重建。
  * 同名 key 后到先赢：在末尾追加你自己的词条即可覆盖块的默认文案，不必改块源码。
+ * 可选功能的词条（featureMessages）排最前、优先级最低。
  */
-const messages = mergeCatalogs(__MESSAGE_ARGS__);
+const messages = mergeCatalogs(...featureMessages, __MESSAGE_ARGS__);
 
 /** 首绘前应用主题，避免暗色闪白；与 ThemeToggle 共用 localStorage.theme 约定。 */
 const THEME_SCRIPT = `(()=>{try{var t=localStorage.getItem("theme");var d=t==="dark"||((t===null||t==="system")&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d)}catch(e){}})()`;
@@ -53,6 +55,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: clientEnv.VITE_APP_TITLE },
+      ...featureHead.meta,
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -63,6 +66,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=JetBrains+Mono:wght@400;500&display=swap",
       },
       { rel: "stylesheet", href: appCss },
+      ...featureHead.links,
     ],
   }),
   errorComponent: RouteError,
@@ -82,7 +86,9 @@ function RootComponent() {
     <RootDocument lang={appState.config.localization.currentCulture.name}>
       <AppConfigProvider config={appState.config} messages={messages} fallbackCulture="en">
         <SessionProvider identity={appState.identity} fetchIdentity={fetchIdentity}>
-          <Outlet />
+          <FeatureProviders>
+            <Outlet />
+          </FeatureProviders>
         </SessionProvider>
       </AppConfigProvider>
     </RootDocument>

@@ -78,6 +78,7 @@ bun add -D @jcoder-stack/cli @jcoder-stack/registry
 # 3. 一站式初始化：播种基线配置与主题，落认证外壳，装齐所有块，接好 __root.tsx / router.tsx，
 #    问一次后端地址（回车跳过，或 --backend 直接给）并生成 .env（会话密钥已随机）
 npx jc-abp init          # --no-admin 可跳过管理后台五页
+#    可选功能：--with pwa,signalr，或事后 npx jc-abp add pwa（见 docs/guides/optional-features.md）
 
 # 4. 补全 .env 的 AUTH_CLIENT_ID（后端 OpenIddict 里注册的那一个，.env 注释里有探测方法）
 

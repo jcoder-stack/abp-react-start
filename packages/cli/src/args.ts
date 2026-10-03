@@ -11,6 +11,8 @@ export interface CliFlags {
   admin?: boolean;
   /** init only: ABP backend origin; fills .env and the swagger input without the prompt. */
   backend?: string;
+  /** init only: optional features to install last, after the rest of init (--with pwa,signalr). */
+  with?: string[];
 }
 
 /** A parsed jc-abp invocation: the command, its positionals, and flags. */
@@ -24,7 +26,7 @@ export interface CliInvocation {
 const COMMAND_FLAGS: Record<CliInvocation["command"], readonly string[]> = {
   gen: ["input", "output", "config"],
   add: ["from", "dest"],
-  init: ["no-admin", "backend"],
+  init: ["no-admin", "backend", "with"],
   help: [],
 };
 
@@ -44,6 +46,7 @@ export function parseCliArgs(argv: string[]): CliInvocation {
       from: { type: "string" },
       dest: { type: "string" },
       backend: { type: "string" },
+      with: { type: "string" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -75,6 +78,22 @@ export function parseCliArgs(argv: string[]): CliInvocation {
   if (values.from !== undefined) flags.from = values.from;
   if (values.dest !== undefined) flags.dest = values.dest;
   if (values.backend !== undefined) flags.backend = values.backend;
+  if (values.with !== undefined) flags.with = parseFeatureList(values.with);
   if (command === "init") flags.admin = !noAdmin;
   return { command, positionals: positionalRest, flags };
+}
+
+/** `--with "a, b,a"` → ["a", "b"]: trimmed, deduped, first-seen order. */
+function parseFeatureList(raw: string): string[] {
+  const names = [
+    ...new Set(
+      raw
+        .split(",")
+        .map((name) => name.trim())
+        .filter((name) => name !== ""),
+    ),
+  ];
+  if (names.length === 0)
+    throw new Error("--with needs at least one feature name, e.g. --with pwa");
+  return names;
 }

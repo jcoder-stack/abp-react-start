@@ -80,6 +80,7 @@ bun add -D @jcoder-stack/cli @jcoder-stack/registry
 #    blocks, wires __root.tsx / router.tsx, asks once for your backend URL (Enter skips,
 #    or pass --backend), and generates .env with a random session secret
 npx jc-abp init          # --no-admin skips the five admin pages
+#    optional features: --with pwa,signalr, or later npx jc-abp add pwa (see docs/guides/optional-features.en.md)
 
 # 4. Fill AUTH_CLIENT_ID in .env (the client registered in your backend's OpenIddict;
 #    the notes in .env show how to probe for it)

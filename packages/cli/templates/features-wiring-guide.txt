@@ -1,0 +1,10 @@
+src/routes/__root.tsx was not wired for optional features automatically: its shape is not one
+jc-abp recognizes, so it was left exactly as it was. Make these edits by hand and the feature is live:
+
+  1. import { FeatureProviders, featureHead, featureMessages } from "@/features";
+  2. head(): end the meta array with  ...featureHead.meta,  and the links array with  ...featureHead.links,
+  3. const messages = mergeCatalogs(...featureMessages, <your catalogs>);
+  4. Wrap the outlet inside SessionProvider:
+       <SessionProvider …><FeatureProviders><Outlet /></FeatureProviders></SessionProvider>
+
+You only do this once; features installed later need no further root edits.
