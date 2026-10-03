@@ -45,9 +45,17 @@ app.Use(async (httpContext, next) =>
 
 只对 `/signalr-hubs` 生效。如果后端改了 Hub 路由前缀，中间件里的 `StartsWithSegments("/signalr-hubs")` 与前端 `.env` 的 `SIGNALR_HUB_PREFIX` 必须一起改成同一个值。token 会出现在 URL 上，**访问日志不要记录 query string**。
 
-### 3. CORS
+漏了这一步不会报 401：negotiate 请求带着 `Authorization` 头照样通过，只是 WebSocket 与 SSE 握手失败，SignalR 悄悄退回长轮询——功能正常，但每条消息都是一次 HTTP 往返。如果 DevTools 里看到反复的 `…/signalr-hubs/<hub>?id=…` 轮询请求而不是一条 WebSocket，就是这个中间件没加，或者加在了 `UseAuthentication()` 之后。
 
-浏览器直连后端，把前端源（如 `http://localhost:3000`）加进 `appsettings.json` 的 `App:CorsOrigins`。前端用 Bearer，不需要跨域 cookie。
+### 3. 前提：浏览器能直连后端（CORS）
+
+SignalR 不经 BFF，浏览器直接连 `AUTH_ABP_BASE_URL`，所以：
+
+- 把前端源（如 `http://localhost:3000`）加进 `appsettings.json` 的 `App:CorsOrigins`。前端用 Bearer，不需要跨域 cookie。
+- `AUTH_ABP_BASE_URL` 必须是用户浏览器能访问的地址，不能是只在内网或 docker 网络里可达的主机名。
+- 前端是 https 时，`AUTH_ABP_BASE_URL` 也必须是 https。
+
+任何一条不满足，控制台会出现 CORS 或混合内容（mixed content）错误，Hub 状态停在 `connecting`，约 50 秒后放弃，直到下一个订阅者出现（页面级 Hub 是下次进入订阅它的页面；通知 Hub 挂在根上，是下次整页加载）。
 
 ### 4. 通知 Hub 与推送服务
 
@@ -149,9 +157,13 @@ useHubEvent("chat", "MessageReceived", (user, text) => append(String(user), Stri
 | --- | --- |
 | 未登录 | 不建连 |
 | 后端没有这个 Hub（404） | 状态 `unavailable`，本标签页不再尝试 |
-| token 被拒（401） | 重取一次 token 再试；仍被拒则 `disconnected`，本页面内不再尝试（通常是后端漏了第 2 步的中间件） |
-| 网络断开 / 后端重启 | 按 0、2、5、10、30 秒退避重连，之后每 60 秒一次，不放弃 |
+| token 被拒（401） | 重取一次 token 再试；仍被拒则 `disconnected`，本页面内不再尝试（token 本身不被后端接受，例如 audience 或 scope 不对） |
+| 用户缺少 Hub 要求的权限（403） | `disconnected`，本页面内不再尝试 |
+| 首次连接失败（网络、CORS、后端不可达） | 按 0、2、5、10、30 秒重试，仍不成功则 `disconnected`，本次页面访问内放弃，直到下一个订阅者 |
+| 连上之后断开（网络断开 / 后端重启） | 按 0、2、5、10、30 秒退避重连，之后每 60 秒一次，不放弃 |
 | 登出 / 切租户 / 切语言 | 整页跳转，连接随页面结束 |
+
+「Hub 不在」的标记存在本标签页的 sessionStorage 里，刷新页面不会清除。后端补上 Hub 之后，新开一个标签页（或清掉该站点的 session storage）再试。
 
 `.env` 里的 `SIGNALR_HUB_PREFIX` 只在后端改过 Hub 路由前缀时才需要设置（默认 `/signalr-hubs`）。
 

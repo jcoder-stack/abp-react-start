@@ -43,7 +43,7 @@ Dependencies flow in one direction only; lower layers don't know the upper ones 
         ├─────────────────────────────────────────────┤
  React  │  /react       providers + hooks             │
         │  /router      beforeLoad route guards       │
-        │  /realtime    SignalR connection + hooks (opt.)│
+        │  /realtime    SignalR + hooks (optional)    │
         ├─────────────────────────────────────────────┤
  Domain │  /auth        strategy layer + session layer│
         │  /proxy       ABP proxy gateway + runtime   │

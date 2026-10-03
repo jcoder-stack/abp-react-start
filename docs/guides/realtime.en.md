@@ -45,9 +45,17 @@ app.Use(async (httpContext, next) =>
 
 It applies to `/signalr-hubs` only. If the backend changes the hub route prefix, the middleware's `StartsWithSegments("/signalr-hubs")` and the frontend's `SIGNALR_HUB_PREFIX` in `.env` must be changed to the same value. The token appears in the URL, so **do not log the query string in access logs**.
 
-### 3. CORS
+Missing this step does not produce a 401: the negotiate request carries the `Authorization` header and succeeds, but the WebSocket and SSE handshakes fail and SignalR silently falls back to long polling — it works, but every message is an HTTP round trip. If DevTools shows repeated `…/signalr-hubs/<hub>?id=…` polling requests instead of a single WebSocket, this middleware is missing or runs after `UseAuthentication()`.
 
-The browser connects to the backend directly: add the frontend origin (for example `http://localhost:3000`) to `App:CorsOrigins` in `appsettings.json`. The frontend uses a Bearer token, so no cross-origin cookies are needed.
+### 3. Precondition: the browser can reach the backend (CORS)
+
+SignalR bypasses the BFF: the browser connects to `AUTH_ABP_BASE_URL` directly, so:
+
+- Add the frontend origin (for example `http://localhost:3000`) to `App:CorsOrigins` in `appsettings.json`. The frontend uses a Bearer token, so no cross-origin cookies are needed.
+- `AUTH_ABP_BASE_URL` must be reachable from the user's browser, not a hostname that only resolves on an internal or docker network.
+- When the app is served over https, `AUTH_ABP_BASE_URL` must be https too.
+
+If any of these fails, the console shows CORS or mixed-content errors, the hub state stays `connecting`, and after about 50 seconds the frontend gives up until the next subscriber (for a page-level hub, the next visit to a page that subscribes to it; the notifications hub is mounted at the root, so the next full page load).
 
 ### 4. The notification hub and pusher
 
@@ -149,9 +157,13 @@ A hub has exactly one connection per tab, shared by however many components subs
 | --- | --- |
 | Signed out | No connection |
 | The backend has no such hub (404) | State `unavailable`; no further attempts in this tab |
-| Token rejected (401) | Fetch a fresh token and retry once; if still rejected, `disconnected` and no more attempts on this page (usually the backend is missing the middleware from step 2) |
-| Network drop / backend restart | Reconnect with backoff at 0, 2, 5, 10, 30 seconds, then every 60 seconds, never giving up |
+| Token rejected (401) | Fetch a fresh token and retry once; if still rejected, `disconnected` and no more attempts on this page (the backend does not accept the token itself, e.g. its audience or scope) |
+| The user lacks the hub's permission (403) | `disconnected`; no more attempts on this page |
+| First connect fails (network, CORS, backend unreachable) | Retry at 0, 2, 5, 10, 30 seconds; if still failing, `disconnected` and give up for this page view until the next subscriber |
+| Drop after a successful connect (network drop / backend restart) | Reconnect with backoff at 0, 2, 5, 10, 30 seconds, then every 60 seconds, never giving up |
 | Sign-out / tenant switch / language switch | Full-page redirect; the connection ends with the page |
+
+The "hub not found" marker lives in this tab's sessionStorage, so reloading does not clear it. After adding the hub to the backend, open a new tab (or clear the site's session storage) and try again.
 
 `SIGNALR_HUB_PREFIX` in `.env` only needs setting if you changed the hub route prefix on the backend (default `/signalr-hubs`).
 

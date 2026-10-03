@@ -43,7 +43,7 @@ middleware.ts      authMiddleware（取会话、过期就刷新并回写 cookie�
         ├─────────────────────────────────────────────┤
  React  │  /react       Provider + hooks              │
         │  /router      beforeLoad 路由守卫            │
-        │  /realtime    SignalR 连接 + hooks（可选）    │
+        │  /realtime    SignalR 连接 + hooks（可选）  │
         ├─────────────────────────────────────────────┤
  领域   │  /auth        策略层 + 会话层                 │
         │  /proxy       ABP 代理网关 + 运行时工厂        │
