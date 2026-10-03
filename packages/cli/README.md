@@ -20,7 +20,7 @@ One-stop setup: install the auth shell, install the shadcn admin blocks in depen
 
 In an interactive terminal, init asks one question — your ABP backend URL (Enter skips it). Answering fills `AUTH_ISSUER`, `AUTH_ABP_BASE_URL`, and the swagger `input` in one go, and a short reachability probe at the end tells you if the backend is down or its certificate is untrusted (informational only — init never fails because of it). `--backend` answers the question for scripts and CI.
 
-Two preflight checks run before anything is written (has init run here before; can npm install the blocks) — if either fails, init aborts without touching a file. A mid-run failure lists the steps already completed; init does not roll back.
+Three preflight checks run before anything is written (has init run here before; can npm install the blocks; is `src/features/index.ts` free for the feature aggregator) — if any fails, init aborts without touching a file. A mid-run failure lists the steps already completed; init does not roll back.
 
 ### `jc-abp gen [--input <url|file>] [--output <dir>] [--config <file>]`
 
