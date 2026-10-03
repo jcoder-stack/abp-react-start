@@ -32,6 +32,8 @@ const APP_THEME_CSS_TEMPLATE_PATH = fileURLToPath(
   new URL("../templates/app-theme.css", import.meta.url),
 );
 
+const DESIGN_DOC_TEMPLATE_PATH = fileURLToPath(new URL("../templates/DESIGN.md", import.meta.url));
+
 const MENU_NO_ADMIN_TEMPLATE_PATH = fileURLToPath(
   new URL("../templates/menu-no-admin.tsx.tpl", import.meta.url),
 );
@@ -199,6 +201,8 @@ export interface InitResult {
   /** __root.tsx / router.tsx 是否已写入接线模板（脚手架原版备份到同名 .bak）。 */
   rootWired: boolean;
   routerWired: boolean;
+  /** DESIGN.md 是否本次写入项目根（已存在则不动）。 */
+  designDocSeeded: boolean;
   /** .env 是否本次生成（已存在则不动）。 */
   envSeeded: boolean;
   /** 交互/--backend 给出的后端地址（规范化后）；跳过为 null。 */
@@ -306,6 +310,17 @@ function seedLibUtils(cwd: string, completed: string[]): boolean {
   mkdirSync(dirname(utilsPath), { recursive: true });
   copyFileSync(LIB_UTILS_TEMPLATE_PATH, utilsPath);
   completed.push(`${LIB_UTILS_TARGET} (seeded, shadcn cn() helper)`);
+  return true;
+}
+
+/** Seeds DESIGN.md at the project root: the theme's design rules travel with the theme css, so agents
+ *  working in the app style new UI the way the blocks were styled. Once seeded it belongs to the app
+ *  (teams extend it with their own conventions), so an existing file is never overwritten. */
+function seedDesignDoc(cwd: string, completed: string[]): boolean {
+  const designPath = resolve(cwd, "DESIGN.md");
+  if (existsSync(designPath)) return false;
+  copyFileSync(DESIGN_DOC_TEMPLATE_PATH, designPath);
+  completed.push("DESIGN.md (seeded, design rules for the theme)");
   return true;
 }
 
@@ -796,6 +811,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   seedLibUtils(opts.cwd, completed);
   const cssEntryPath = resolveCssEntryPath(opts.cwd, componentsJsonCssPath);
   seedThemeCss(opts.cwd, cssEntryPath, completed);
+  const designDocSeeded = seedDesignDoc(opts.cwd, completed);
   await installSeededDependencies(
     opts.cwd,
     existsSync(resolve(opts.cwd, LIB_UTILS_TARGET)),
@@ -922,6 +938,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     routeTreeGenerated,
     rootWired: rootWiring.root,
     routerWired: rootWiring.router,
+    designDocSeeded,
     envSeeded,
     backendUrl: opts.backend ?? null,
   };
