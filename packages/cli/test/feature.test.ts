@@ -65,6 +65,59 @@ describe("patchRootForFeatures", () => {
     expect(out).toContain('} from "@/i18n/app-messages.json";\nimport { FeatureProviders');
   });
 
+  it("finds the import end past a trailing comment, even with a multi-line tag below", () => {
+    const source = fixture("root-v0.4.tsx.txt")
+      .replace(
+        'import appMessages from "@/i18n/app-messages.json";',
+        'import appMessages from "@/i18n/app-messages.json"; // app-owned',
+      )
+      .replace(
+        '<Toaster richColors position="top-center" />',
+        '<Toaster\n          richColors\n          position="top-center"\n        />',
+      );
+    const out = expectWired(patchRootForFeatures(source));
+    expect(out).toContain(
+      'import appMessages from "@/i18n/app-messages.json"; // app-owned\nimport { FeatureProviders',
+    );
+  });
+
+  it("puts the import after one that ends in an import attribute", () => {
+    const source = fixture("root-v0.4.tsx.txt").replace(
+      'import appMessages from "@/i18n/app-messages.json";',
+      'import appMessages from "@/i18n/app-messages.json" with { type: "json" };',
+    );
+    const out = expectWired(patchRootForFeatures(source));
+    expect(out).toContain('with { type: "json" };\nimport { FeatureProviders');
+  });
+
+  it("returns null when a multi-line import has a shape we do not know", () => {
+    const source = fixture("root-v0.4.tsx.txt").replace(
+      'import appMessages from "@/i18n/app-messages.json";',
+      'import {\n\n  default as appMessages,\n} from "@/i18n/app-messages.json";',
+    );
+    expect(patchRootForFeatures(source)).toBeNull();
+  });
+
+  it("does not leave a hole when the last link is followed by a block comment", () => {
+    const source = fixture("root-v0.4.tsx.txt").replace(
+      '{ rel: "stylesheet", href: appCss },',
+      '{ rel: "stylesheet", href: appCss }, /* app css */',
+    );
+    const out = expectWired(patchRootForFeatures(source));
+    expect(out).not.toContain(",,");
+    expect(out).not.toContain("*/,");
+    expect(out).toContain("appCss }, /* app css */");
+  });
+
+  it("puts the comma before a line comment that follows an uncommaed last link", () => {
+    const source = fixture("root-v0.4.tsx.txt").replace(
+      '{ rel: "stylesheet", href: appCss },',
+      '{ rel: "stylesheet", href: appCss } // app css',
+    );
+    const out = expectWired(patchRootForFeatures(source));
+    expect(out).toContain("appCss }, // app css");
+  });
+
   it("feeds featureMessages to an empty mergeCatalogs()", () => {
     const source = fixture("root-v0.4.tsx.txt").replace(
       "mergeCatalogs(layoutMessages, appMessages)",

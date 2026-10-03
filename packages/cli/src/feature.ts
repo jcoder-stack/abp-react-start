@@ -47,23 +47,58 @@ function closingBracket(source: string, open: number): number {
   return -1;
 }
 
-/** End offset (exclusive of the line break) of the last top-level import statement; -1 if none. */
+/** The line minus trailing `//` and inline block comments; quotes are honoured so `"http://x"` survives. */
+function stripLineComments(line: string): string {
+  let out = "";
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i] ?? "";
+    if (ch === '"' || ch === "'" || ch === "`") {
+      const close = skipString(line, i);
+      if (close === -1) return out + line.slice(i);
+      out += line.slice(i, close + 1);
+      i = close;
+    } else if (ch === "/" && line[i + 1] === "/") {
+      return out;
+    } else if (ch === "/" && line[i + 1] === "*") {
+      const close = line.indexOf("*/", i + 2);
+      if (close === -1) return out;
+      i = close + 1;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+/** A statement-ending line of an import: closing quote, optional `with { … }` / `assert { … }`, optional `;`. */
+const IMPORT_END = /["'](\s*(with|assert)\s*\{[^}]*\})?\s*;?$/;
+/** Lines allowed between `import {` and its `} from`: names, `type X`, `default as X`, commas, braces. */
+const IMPORT_BODY = /^[\w$*\s,{}]+$/;
+
+/** End offset (exclusive of the line break) of the last top-level import statement; -1 if none, or if
+ *  an import does not look like any shape we know (we would rather skip the patch than guess). */
 function endOfImports(source: string): number {
   let offset = 0;
   let end = -1;
   let inImport = false;
   for (const rawLine of source.split("\n")) {
     const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-    const trimmed = line.trim();
-    if (inImport || /^import[\s"'{*]/.test(trimmed)) {
-      inImport = !/["'];?$/.test(trimmed);
-      if (!inImport) end = offset + line.length;
-    } else if (trimmed !== "" && !/^(\/\/|\/\*|\*)/.test(trimmed)) {
+    const code = stripLineComments(line).trim();
+    if (inImport || /^import[\s"'{*]/.test(code)) {
+      if (IMPORT_END.test(code)) {
+        inImport = false;
+        end = offset + line.length;
+      } else if (inImport && !IMPORT_BODY.test(code)) {
+        return -1;
+      } else {
+        inImport = true;
+      }
+    } else if (code !== "" && !/^(\/\/|\/\*|\*)/.test(line.trim())) {
       break;
     }
     offset += rawLine.length + 1;
   }
-  return end;
+  return inImport ? -1 : end;
 }
 
 function lineIndent(source: string, index: number): string {
@@ -75,13 +110,40 @@ function insertAt(source: string, at: number, text: string): string {
   return source.slice(0, at) + text + source.slice(at);
 }
 
-/** Appends `item` as the array's last element, matching the last element's indentation. */
-function appendLastItem(source: string, close: number, item: string, eol: string): string {
-  let last = close - 1;
-  while (last >= 0 && /\s/.test(source[last] ?? "")) last--;
-  if (source[last] === "[") return insertAt(source, close, item);
-  const separator = source[last] === "," ? "" : ",";
-  return insertAt(source, last + 1, `${separator}${eol}${lineIndent(source, last)}${item},`);
+/** Index of the last character before `close` that is neither whitespace nor inside a comment; `open` if there is none. */
+function lastSignificant(source: string, open: number, close: number): number {
+  let last = open;
+  for (let i = open + 1; i < close; i++) {
+    const ch = source[i] ?? "";
+    if (ch === '"' || ch === "'" || ch === "`") {
+      i = skipString(source, i);
+      last = i;
+    } else if (ch === "/" && source[i + 1] === "/") {
+      i = source.indexOf("\n", i);
+    } else if (ch === "/" && source[i + 1] === "*") {
+      i = source.indexOf("*/", i + 2) + 1;
+    } else if (!/\s/.test(ch)) {
+      last = i;
+    }
+  }
+  return last;
+}
+
+/** Appends `item` as the array's last element, matching the last element's indentation. The comma goes
+ *  right after the last real token (never inside a trailing comment); the item goes after any comments. */
+function appendLastItem(
+  source: string,
+  open: number,
+  close: number,
+  item: string,
+  eol: string,
+): string {
+  const significant = lastSignificant(source, open, close);
+  if (significant === open) return insertAt(source, close, item);
+  let end = close - 1;
+  while (/\s/.test(source[end] ?? "")) end--;
+  const withItem = insertAt(source, end + 1, `${eol}${lineIndent(source, significant)}${item},`);
+  return source[significant] === "," ? withItem : insertAt(withItem, significant + 1, ",");
 }
 
 /** Inserts `item` as the first argument of the call whose `(` ends right before `at`. */
@@ -132,16 +194,18 @@ export function patchRootForFeatures(source: string): string | null {
   }
   const outletAt = outlet.index;
   if (!(sessionOpen !== -1 && sessionOpen < outletAt && outletAt < sessionClose)) return null;
-  const metaClose = closingBracket(source, meta + "meta: ".length);
-  const linksClose = closingBracket(source, links + "links: ".length);
+  const metaOpen = meta + "meta: ".length;
+  const linksOpen = links + "links: ".length;
+  const metaClose = closingBracket(source, metaOpen);
+  const linksClose = closingBracket(source, linksOpen);
   if (metaClose === -1 || linksClose === -1) return null;
 
   // 从后往前改，前面算好的下标才一直指向原文。
   const edits: [number, (s: string) => string][] = [
     [imports, (s) => insertAt(s, imports, `${eol}${FEATURES_IMPORT}`)],
     [merge, (s) => prependFirstArg(s, merge + MERGE_ANCHOR.length, "...featureMessages", eol)],
-    [metaClose, (s) => appendLastItem(s, metaClose, "...featureHead.meta", eol)],
-    [linksClose, (s) => appendLastItem(s, linksClose, "...featureHead.links", eol)],
+    [metaClose, (s) => appendLastItem(s, metaOpen, metaClose, "...featureHead.meta", eol)],
+    [linksClose, (s) => appendLastItem(s, linksOpen, linksClose, "...featureHead.links", eol)],
     [outletAt, (s) => wrapOutlet(s, outletAt, outlet[0].length, eol)],
   ];
   return edits.sort((a, b) => b[0] - a[0]).reduce((s, [, edit]) => edit(s), source);
