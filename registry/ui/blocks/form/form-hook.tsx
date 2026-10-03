@@ -381,9 +381,6 @@ export function SwitchField(props: {
   );
 }
 
-/** SelectField 内部代表空串的值；不会出现在表单值里。 */
-const EMPTY_SELECT_VALUE = "__empty__";
-
 export function SelectField(props: {
   label: string;
   options: { value: string; label: string }[];
@@ -392,20 +389,23 @@ export function SelectField(props: {
   disabled?: boolean;
 }) {
   const field = useFieldContext<string>();
-  // Radix 把 value === "" 当作「未选」：选中项文字不进触发器、触发器带占位样式。内部用一个哨兵值
-  // 代表空串，进出时换回来，「全部」这类空值选项就和其它选项一样是个正常的选中项。
-  const toSelect = (value: string) => (value === "" ? EMPTY_SELECT_VALUE : value);
-  const fromSelect = (value: string) => (value === EMPTY_SELECT_VALUE ? "" : value);
+  // Radix 把 value === "" 当作「未选」：选中项文字不进触发器、触发器带占位样式。内部改用选项下标
+  // 作值，「全部」这类空值选项就和其它选项一样是个正常的选中项；下标不会和任何业务值撞名，
+  // 换成哨兵串则总有业务值恰好等于它的可能。值不在选项里时给 ""，保持未选。
+  const selected = props.options.findIndex((option) => option.value === field.state.value);
   return (
     <FieldShell
       label={props.label}
       required={props.required}
       description={props.description}
-      display={props.options.find((option) => option.value === field.state.value)?.label ?? null}
+      display={props.options[selected]?.label ?? null}
     >
       <Select
-        value={toSelect(field.state.value)}
-        onValueChange={(value) => field.handleChange(fromSelect(value))}
+        value={selected === -1 ? "" : String(selected)}
+        onValueChange={(index) => {
+          const option = props.options[Number(index)];
+          if (option !== undefined) field.handleChange(option.value);
+        }}
         disabled={props.disabled}
       >
         <SelectTrigger
@@ -416,8 +416,8 @@ export function SelectField(props: {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {props.options.map((option) => (
-            <SelectItem key={option.value} value={toSelect(option.value)}>
+          {props.options.map((option, index) => (
+            <SelectItem key={option.value} value={String(index)}>
               {option.label}
             </SelectItem>
           ))}
