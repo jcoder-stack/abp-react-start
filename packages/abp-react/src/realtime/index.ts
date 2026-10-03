@@ -8,6 +8,13 @@ export {
   RECONNECT_STEADY_DELAY_MS,
   type StartFailure,
 } from "./policy";
+export {
+  type HubHandle,
+  RealtimeProvider,
+  type RealtimeProviderProps,
+  useHub,
+  useHubEvent,
+} from "./react";
 export { signalRConnectionFactory } from "./signalr-factory";
 export { createTokenSource, type TokenSource } from "./token-source";
 export type {
