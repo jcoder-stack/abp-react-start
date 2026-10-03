@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { type AddResult, findAddConflicts, resolveRegistryDir, runAdd } from "./add";
 import { asRecord, type CommandRunner, installShadcnBlock } from "./blocks";
 import {
+  assertAggregatorPathsFree,
   type FeatureDefinition,
   type FeatureInstallResult,
   installFeature,
@@ -186,7 +187,7 @@ export interface InitOptions {
   runner?: CommandRunner;
   /** Overrides the npm allow-scripts probe (see AllowScriptsProbe); tests inject one to stay off the real npm. */
   allowScriptsProbe?: AllowScriptsProbe;
-  /** Optional features to install after the base blocks and root wiring (from --with). */
+  /** Optional features to install once the base project is fully initialized (from --with). */
   features?: FeatureDefinition[];
 }
 
@@ -711,24 +712,36 @@ function renameConflictingScaffoldIndex(cwd: string, completed: string[]): boole
   return true;
 }
 
+/** Preflight twin of the aggregator seed: a foreign src/features/index.ts or compose.ts must stop init before it writes anything. */
+function assertAggregatorPathsAvailable(cwd: string, completed: string[]): void {
+  try {
+    assertAggregatorPathsFree(cwd);
+  } catch (error) {
+    throw new InitError(errorMessage(error), completed);
+  }
+}
+
 /** Runs the init steps in order, stopping at the first failure. There is no rollback: InitError
  *  names the failed step and everything already completed.
  *
  *  Steps: components.json → lib/utils.ts + theme css + their deps → auth shell → shadcn blocks
  *  in dependency order → rename a conflicting scaffold src/routes/index.tsx → --no-admin menu
- *  → tsr.config.json + route tree (best-effort) → abp.api.config.ts. */
+ *  → feature aggregator seed → root/router wiring → tsr.config.json + route tree (best-effort)
+ *  → abp.api.config.ts → .env → optional features (--with), last so that a failing feature
+ *  leaves a fully initialized project to retry with `jc-abp add`. */
 export async function runInit(opts: InitOptions): Promise<InitResult> {
   const runner = opts.runner ?? defaultRunner;
   const blocks = opts.admin === false ? SHADCN_BLOCKS : [...SHADCN_BLOCKS, ADMIN_PAGES_BLOCK];
   const completed: string[] = [];
 
-  // 两道前置闸都在第一次写盘之前：init 无回滚，能提前判死的组合就别让它走到半路。
+  // 三道前置闸都在第一次写盘之前：init 无回滚，能提前判死的组合就别让它走到半路。
   assertNoPriorInit(opts.cwd, completed);
   assertNpmCanInstallBlocks(
     opts.cwd,
     opts.allowScriptsProbe ?? npmRejectsEnvAllowScripts,
     completed,
   );
+  assertAggregatorPathsAvailable(opts.cwd, completed);
 
   const { seeded: componentsJsonSeeded, cssPath: componentsJsonCssPath } =
     seedOrRequireComponentsJson(opts.cwd, completed);
@@ -790,19 +803,6 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   }
   const rootWiring = seedRootWiring(opts.cwd, completed);
 
-  const features: FeatureInstallResult[] = [];
-  for (const feature of opts.features ?? []) {
-    try {
-      features.push(await installFeature({ cwd: opts.cwd, registryDir, feature, runner }));
-    } catch (error) {
-      throw new InitError(
-        `installing feature "${feature.name}" failed: ${errorMessage(error)}`,
-        completed,
-      );
-    }
-    completed.push(`feature ${feature.name}`);
-  }
-
   const tsrConfigPath = resolve(opts.cwd, "tsr.config.json");
   const tsrConfigSeeded = !existsSync(tsrConfigPath);
   if (tsrConfigSeeded) {
@@ -844,6 +844,20 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   }
 
   const envSeeded = seedEnvFile(opts.cwd, opts.backend, completed);
+
+  const features: FeatureInstallResult[] = [];
+  for (const feature of opts.features ?? []) {
+    try {
+      features.push(await installFeature({ cwd: opts.cwd, registryDir, feature, runner }));
+    } catch (error) {
+      throw new InitError(
+        `installing feature "${feature.name}" failed: ${errorMessage(error)} — the project is otherwise ` +
+          `fully initialized; retry with jc-abp add ${feature.name}`,
+        completed,
+      );
+    }
+    completed.push(`feature ${feature.name}`);
+  }
 
   return {
     addResult,

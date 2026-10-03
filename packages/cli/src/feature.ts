@@ -231,12 +231,11 @@ const AGGREGATOR_FILES = [
 ] as const;
 
 /**
- * Seeds the feature aggregator (src/features/index.ts + compose.ts) when missing. Once seeded the
- * files belong to the app. src/features is a common home for an app's own modules, so a same-named
- * file that is not ours is refused before anything is written rather than overwritten.
- * @returns the project-relative paths written this run.
+ * Read-only: throws when an aggregator path holds a file that is not ours. src/features is a common
+ * home for an app's own modules, so a same-named file is refused rather than overwritten; init runs
+ * this in its preflight so the refusal comes before any write.
  */
-export function seedFeatureAggregator(cwd: string): string[] {
+export function assertAggregatorPathsFree(cwd: string): void {
   for (const { target } of AGGREGATOR_FILES) {
     const path = resolve(cwd, target);
     if (existsSync(path) && !readFileSync(path, "utf8").includes(AGGREGATOR_MARKER)) {
@@ -246,6 +245,15 @@ export function seedFeatureAggregator(cwd: string): string[] {
       );
     }
   }
+}
+
+/**
+ * Seeds the feature aggregator (src/features/index.ts + compose.ts) when missing. Once seeded the
+ * files belong to the app; a foreign file at either path is refused before anything is written.
+ * @returns the project-relative paths written this run.
+ */
+export function seedFeatureAggregator(cwd: string): string[] {
+  assertAggregatorPathsFree(cwd);
   const seeded: string[] = [];
   for (const { template, target } of AGGREGATOR_FILES) {
     const path = resolve(cwd, target);

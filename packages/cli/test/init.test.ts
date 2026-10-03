@@ -1118,7 +1118,7 @@ describe("runInit config backend substitution", () => {
 describe("runInit features", () => {
   const DEMO: FeatureDefinition = { name: "demo", env: [] };
 
-  it("installs requested features after the base blocks and before the route tree", async () => {
+  it("installs requested features last, after the route tree", async () => {
     const { app, registryDir } = fakeWorkspace();
     writeFileSync(join(registryDir, "public", "r", "demo.json"), "{}\n");
     const { runner, calls } = recordingRunner();
@@ -1126,12 +1126,47 @@ describe("runInit features", () => {
     const result = await initWithStubbedProbe({ cwd: app, runner, features: [DEMO] });
 
     const npx = calls.filter((c) => c.cmd === "npx").map((c) => c.args.join(" "));
-    expect(npx.at(-2)).toContain(join(registryDir, "public", "r", "demo.json"));
+    expect(npx.at(-1)).toContain(join(registryDir, "public", "r", "demo.json"));
+    expect(npx.at(-2)).toContain("generate");
     expect(npx.at(-3)).toContain("admin-pages.json");
-    expect(npx.at(-1)).toContain("generate");
     expect(result.features).toEqual([
       { name: "demo", aggregatorSeeded: [], root: "already", envKeysAdded: [] },
     ]);
+  });
+
+  it("leaves .env and abp.api.config.ts written when a feature fails, and points at jc-abp add", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, ".env.example"), ENV_EXAMPLE_FIXTURE);
+    const { runner } = recordingRunner();
+
+    const failure = await initWithStubbedProbe({ cwd: app, runner, features: [DEMO] }).catch(
+      (error: unknown) => error,
+    );
+
+    expect(failure).toBeInstanceOf(InitError);
+    expect((failure as InitError).message).toContain('installing feature "demo" failed');
+    expect((failure as InitError).message).toContain("jc-abp add demo");
+    expect(existsSync(join(app, ".env"))).toBe(true);
+    expect(existsSync(join(app, "abp.api.config.ts"))).toBe(true);
+  });
+
+  it("refuses a foreign src/features/index.ts before writing anything", async () => {
+    const { app } = fakeWorkspaceWithoutComponentsJson();
+    writeCssEntry(app, "src/styles/app.css");
+    mkdirSync(join(app, "src", "features"), { recursive: true });
+    writeFileSync(join(app, "src", "features", "index.ts"), "export const mine = 1;\n");
+    const { runner, calls } = recordingRunner();
+
+    const failure = await initWithStubbedProbe({ cwd: app, runner }).catch(
+      (error: unknown) => error,
+    );
+
+    expect(failure).toBeInstanceOf(InitError);
+    expect((failure as InitError).message).toContain("src/features/index.ts");
+    expect((failure as InitError).message).toContain("no steps completed");
+    expect(calls).toEqual([]);
+    expect(existsSync(join(app, "components.json"))).toBe(false);
+    expect(existsSync(join(app, "src", "auth"))).toBe(false);
   });
 
   it("reports no features when none were requested", async () => {
