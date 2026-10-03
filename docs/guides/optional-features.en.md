@@ -18,7 +18,7 @@ Existing project (anything `jc-abp init` generated, 0.4 onwards), later:
 npx jc-abp add pwa
 ```
 
-`add <feature>` is safe to rerun: what is already there is skipped, only the gaps are filled.
+Rerunning `add <feature>` skips the aggregator, the root wiring and the env keys that are already there, but it reinstalls the feature's own files and the shadcn components it declares, overwriting your edits under `src/features/<name>/`. Commit your changes first.
 
 ## What lands in the project
 

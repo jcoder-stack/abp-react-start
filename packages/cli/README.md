@@ -16,7 +16,7 @@ bun add -D @jcoder-stack/cli @jcoder-stack/registry
 
 ### `jc-abp init [--no-admin] [--backend <url>] [--with <feature,...>]`
 
-One-stop setup: install the auth shell, install the shadcn admin blocks in dependency order, seed `abp.api.config.ts` and `.env`, and generate the route tree. `--no-admin` skips admin-pages and swaps in a minimal menu. `--with` installs optional features after the base blocks.
+One-stop setup: install the auth shell, install the shadcn admin blocks in dependency order, seed `abp.api.config.ts` and `.env`, and generate the route tree. `--no-admin` skips admin-pages and swaps in a minimal menu. `--with` installs optional features last, once everything else is in place.
 
 In an interactive terminal, init asks one question — your ABP backend URL (Enter skips it). Answering fills `AUTH_ISSUER`, `AUTH_ABP_BASE_URL`, and the swagger `input` in one go, and a short reachability probe at the end tells you if the backend is down or its certificate is untrusted (informational only — init never fails because of it). `--backend` answers the question for scripts and CI.
 
@@ -43,7 +43,7 @@ The CLI as a whole requires Node ≥ 18, but a `.ts` config needs a runtime that
 
 ### `jc-abp add <name> [--from <registryDir>] [--dest <dir>]`
 
-Copies a registry shell (e.g. `auth`) into the project, landing in `src/<name>` by default, and **refuses to overwrite any existing file**. Entries with a manifest are distributed to their declared target directories with relative imports rewritten. When `<name>` is an optional feature (see docs/guides/optional-features.en.md), it is installed into an initialized project instead, and rerunning it only fills what is missing.
+Copies a registry shell (e.g. `auth`) into the project, landing in `src/<name>` by default, and **refuses to overwrite any existing file**. Entries with a manifest are distributed to their declared target directories with relative imports rewritten. When `<name>` is an optional feature (see docs/guides/optional-features.en.md), it is installed into an initialized project instead. Rerunning skips the aggregator, root wiring and env keys that are already there, but reinstalls the feature's own files and the shadcn components it declares, so commit your edits first.
 
 ### `jc-abp help`
 

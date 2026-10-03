@@ -11,7 +11,7 @@ export interface CliFlags {
   admin?: boolean;
   /** init only: ABP backend origin; fills .env and the swagger input without the prompt. */
   backend?: string;
-  /** init only: optional features to install after the base blocks (--with pwa,signalr). */
+  /** init only: optional features to install last, after the rest of init (--with pwa,signalr). */
   with?: string[];
 }
 

@@ -18,7 +18,7 @@ npx jc-abp init --with pwa,signalr
 npx jc-abp add pwa
 ```
 
-`add <功能>` 可以重复执行：已经有的部分跳过，只补缺的。
+`add <功能>` 可以重复执行：聚合点、根接线和 .env 里已经有的部分会跳过，但功能自己的文件和它声明的 shadcn 组件会重新安装（覆盖 `src/features/<名字>/` 下你改过的内容），重跑前先把改动提交。
 
 ## 装进来的是什么
 

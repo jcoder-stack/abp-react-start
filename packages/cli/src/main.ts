@@ -26,7 +26,7 @@ Usage:
   jc-abp init [--no-admin] [--backend <url>] [--with <feature,...>]
       One-stop setup: auth shell + shadcn admin blocks in dependency order (--no-admin skips admin-pages
       and swaps in a minimal menu) + seed abp.api.config.ts and .env + generate the route tree.
-      --with installs optional features right after the base blocks.
+      --with installs optional features last, once everything else is in place.
       Interactive terminals get one question — the ABP backend URL (Enter skips); --backend answers it for scripts/CI.
   jc-abp help
 `;
