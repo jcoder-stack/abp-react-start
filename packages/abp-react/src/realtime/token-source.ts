@@ -23,20 +23,29 @@ export function createTokenSource(
   const skewMs = opts.skewMs ?? DEFAULT_SKEW_MS;
   let cached: HubConnectionInfo | null = null;
   let inflight: Promise<HubConnectionInfo | null> | null = null;
+  let generation = 0;
 
   const isFresh = (value: HubConnectionInfo) =>
     value.expiresAt !== null && now() < value.expiresAt - skewMs;
 
   function info(): Promise<HubConnectionInfo | null> {
     if (cached !== null && isFresh(cached)) return Promise.resolve(cached);
-    inflight ??= getConnectionInfo(hub)
-      .then((result) => {
-        cached = result;
-        return result;
-      })
-      .finally(() => {
-        inflight = null;
-      });
+    inflight ??= (() => {
+      const currentGeneration = generation;
+      return getConnectionInfo(hub)
+        .then((result) => {
+          if (generation === currentGeneration) {
+            cached = result;
+          }
+          return result;
+        })
+        .finally(() => {
+          if (inflight === currentPromise) {
+            inflight = null;
+          }
+        });
+    })();
+    const currentPromise = inflight;
     return inflight;
   }
 
@@ -49,6 +58,8 @@ export function createTokenSource(
     },
     invalidate: () => {
       cached = null;
+      inflight = null;
+      generation += 1;
     },
   };
 }

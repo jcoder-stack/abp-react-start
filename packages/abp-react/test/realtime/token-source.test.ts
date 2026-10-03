@@ -55,4 +55,27 @@ describe("createTokenSource", () => {
     expect(await source.info()).toBeNull();
     await expect(source.token()).rejects.toThrow(/not signed in/);
   });
+
+  it("invalidate wins over a token fetch already in flight", async () => {
+    let resolveFirstFetch: ((value: HubConnectionInfo) => void) | undefined;
+    const firstFetch = new Promise<HubConnectionInfo>((resolve) => {
+      resolveFirstFetch = resolve;
+    });
+    const get = vi.fn();
+    get.mockReturnValueOnce(firstFetch);
+    get.mockResolvedValueOnce(info("fresh", Date.now() + 3_600_000));
+
+    const source = createTokenSource("notifications", get);
+
+    const firstToken = source.token();
+    source.invalidate();
+    const secondToken = source.token();
+
+    expect(await secondToken).toBe("fresh");
+    resolveFirstFetch?.(info("stale", Date.now() + 3_600_000));
+    await firstToken;
+
+    expect(await source.token()).toBe("fresh");
+    expect(get).toHaveBeenCalledTimes(2);
+  });
 });
