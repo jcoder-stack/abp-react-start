@@ -43,7 +43,7 @@ app.Use(async (httpContext, next) =>
 });
 ```
 
-It applies to `/signalr-hubs` only. The token appears in the URL, so **do not log the query string in access logs**.
+It applies to `/signalr-hubs` only. If the backend changes the hub route prefix, the middleware's `StartsWithSegments("/signalr-hubs")` and the frontend's `SIGNALR_HUB_PREFIX` in `.env` must be changed to the same value. The token appears in the URL, so **do not log the query string in access logs**.
 
 ### 3. CORS
 

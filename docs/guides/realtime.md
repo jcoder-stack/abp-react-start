@@ -43,7 +43,7 @@ app.Use(async (httpContext, next) =>
 });
 ```
 
-只对 `/signalr-hubs` 生效。token 会出现在 URL 上，**访问日志不要记录 query string**。
+只对 `/signalr-hubs` 生效。如果后端改了 Hub 路由前缀，中间件里的 `StartsWithSegments("/signalr-hubs")` 与前端 `.env` 的 `SIGNALR_HUB_PREFIX` 必须一起改成同一个值。token 会出现在 URL 上，**访问日志不要记录 query string**。
 
 ### 3. CORS
 

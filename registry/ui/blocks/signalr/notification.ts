@@ -1,9 +1,12 @@
 import { z } from "zod";
 
-/** Plain text, or a localization key resolved in the browser so each recipient sees their own language. */
+/**
+ * Plain text, or a localization key resolved in the browser so each recipient sees their own language.
+ * `resource` and `args` may be null: ASP.NET Core's SignalR JSON protocol serializes unset C# members as null.
+ */
 export type LocalizableText =
   | string
-  | { key: string; resource?: string; args?: Record<string, string> };
+  | { key: string; resource?: string | null; args?: Record<string, string> | null };
 
 export type NotificationSeverity = "info" | "success" | "warning" | "error";
 
@@ -41,8 +44,8 @@ const localizableText = z.union([
   z.string(),
   z.object({
     key: z.string().min(1),
-    resource: z.string().optional(),
-    args: z.record(z.string(), z.string()).optional(),
+    resource: z.string().nullish(),
+    args: z.record(z.string(), z.string()).nullish(),
   }),
 ]);
 
@@ -76,6 +79,6 @@ export function localizeText(
   L: (key: string, ...args: unknown[]) => string,
 ): string {
   if (typeof text === "string") return text;
-  const key = text.resource === undefined ? text.key : `${text.resource}::${text.key}`;
-  return text.args === undefined ? L(key) : L(key, text.args);
+  const key = text.resource == null ? text.key : `${text.resource}::${text.key}`;
+  return text.args == null ? L(key) : L(key, text.args);
 }

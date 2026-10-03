@@ -25,6 +25,12 @@ describe("parseNotification", () => {
     });
   });
 
+  it("accepts null resource and args, which the SignalR JSON protocol sends for unset C# members", () => {
+    const title = { key: "Some:Key", resource: null, args: null };
+    expect(parseNotification({ id: "n", title })?.title).toEqual(title);
+    expect(parseNotification({ id: "n", title: "t", message: title })?.message).toEqual(title);
+  });
+
   it("downgrades an unknown or missing severity to info", () => {
     expect(parseNotification({ id: "n", severity: "fatal", title: "t" })?.severity).toBe("info");
     expect(parseNotification({ id: "n", title: "t" })?.severity).toBe("info");
@@ -99,5 +105,11 @@ describe("localizeText", () => {
 
   it("looks up a bare key without args", () => {
     expect(localizeText({ key: "Notifications:View" }, L)).toBe("Notifications:View|[]");
+  });
+
+  it("treats a null resource and null args like absent ones", () => {
+    expect(localizeText({ key: "Notifications:View", resource: null, args: null }, L)).toBe(
+      "Notifications:View|[]",
+    );
   });
 });

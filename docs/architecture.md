@@ -108,7 +108,7 @@ SignalR 必须由浏览器直连后端 Hub，WebSocket 又带不了 `Authorizati
 | 用途 | 只给 SignalR 的 `accessTokenFactory`；业务 API 仍全部走 BFF 代理 |
 | 下发 | server fn `getHubConnectionInfoFn`，经 `authMiddleware`，快过期的会话先刷新；Hub 地址由服务端拼，前端不能指定主机 |
 | 存放 | 只在 JS 内存；不写 localStorage / sessionStorage / cookie |
-| 生命周期 | 每次建连 / 重连重新获取；按过期时间减 60 秒在内存缓存 |
+| 生命周期 | 传输层每次 negotiate / 重连都会要 token；离过期 60 秒前从内存缓存取，不知道过期时间时不缓存 |
 | 威胁 | XSS 能读到它；但 XSS 本来就能经 BFF 代调任意 API，新增的是「token 被带出站」，由既有的 CSP 与输出转义承担 |
 | 传输 | 走 `?access_token=`；后端须避免在访问日志里记录 query string |
 

@@ -108,7 +108,7 @@ SignalR requires the browser to connect to the backend hub directly, and a WebSo
 | Purpose | Only for SignalR's `accessTokenFactory`; business APIs still all go through the BFF proxy |
 | Issuance | The server fn `getHubConnectionInfoFn`, behind `authMiddleware`; a session about to expire is refreshed first. The hub URL is assembled on the server, so the frontend cannot choose the host |
 | Storage | JS memory only; never localStorage / sessionStorage / cookies |
-| Lifetime | Fetched again on every connect / reconnect; cached in memory until 60 seconds before expiry |
+| Lifetime | The transport asks for the token on every negotiate and reconnect; it is served from memory until 60 s before expiry, and not cached when the expiry is unknown |
 | Threat | XSS can read it; but XSS can already call any API through the BFF, so what is new is "the token leaves the browser", which the existing CSP and output escaping carry |
 | Transport | Sent as `?access_token=`; the backend must avoid logging the query string in access logs |
 
