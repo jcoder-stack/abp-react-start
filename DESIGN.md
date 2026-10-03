@@ -266,6 +266,8 @@ Inter、Noto Sans SC、JetBrains Mono 三支变量字体经 fontsource **自托�
 
 主题里有十来条 `data-slot` / 伪类规则。收录标准很严：**只放原版给不了、且帮助信息传达的东西**。观感类的（圆形图标钮、五层模态阴影、给弹窗另换面与圆角）一律不收——那类规则正是上一版踩坑最多的地方。
 
+这些规则刻意不进 `@layer`：原语自带 `p-2` 这类 utility，放进 `@layer components` 反而会被它压住。代价是调用方在单个实例上用工具类改同一属性时也会被这些规则压住，这时用 Tailwind v4 的 `!` 后缀（如 `<TableCell className="py-2!">`），不要回头改主题规则。
+
 | 规则 | 为什么 |
 | --- | --- |
 | `*:focus-visible` 与 input-group `:has()` 覆盖 `--tw-ring-color` | 把原语那圈 50% 光晕压到同色 10%/16%。只改一个自定义属性，原语不用 fork，也不需要 `!important` |

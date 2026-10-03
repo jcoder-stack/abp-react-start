@@ -62,9 +62,10 @@ describe.each(THEMES)("主题令牌（%s）", (_name, theme) => {
     expect(contrast(c, over(c, rgb("card"), PILL_ALPHA))).toBeGreaterThanOrEqual(TEXT);
   });
 
-  it("单选 toggle 选中态的 55% 墨边对抽屉底达到 3:1", () => {
-    const edge = over(rgb("foreground"), rgb("popover"), 0.55);
-    expect(contrast(edge, rgb("popover"))).toBeGreaterThanOrEqual(NON_TEXT);
+  // toggle 既出现在抽屉表单里，也出现在卡片里的整页表单与查询栏
+  it.each(["popover", "card"])("单选 toggle 选中态的 55%% 墨边对 %s 底达到 3:1", (bg) => {
+    const edge = over(rgb("foreground"), rgb(bg), 0.55);
+    expect(contrast(edge, rgb(bg))).toBeGreaterThanOrEqual(NON_TEXT);
   });
 
   // 对比度看不见这一组：曾有暗色侧栏比内容还亮、当前项比轨还暗，而每一对对比度都达标。

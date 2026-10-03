@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { MenuItem } from "@jcoder-stack/abp-react/react";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { NavMain } from "@/components/abp/layout/nav-main";
 import { admin, anonymous, renderWithProviders } from "./test-utils";
@@ -40,6 +40,15 @@ describe("NavMain", () => {
   it("子项是当前页时，一级项带上 data-has-active-child", async () => {
     renderWithProviders(<NavMain items={items} />, { identity: admin, path: "/roles/42" });
     const group = (await screen.findByText("Menu:Admin")).closest("[data-sidebar='menu-item']");
+    expect(group?.getAttribute("data-has-active-child")).toBe("true");
+  });
+
+  it("手动折叠所属组后，一级项仍带 data-has-active-child", async () => {
+    renderWithProviders(<NavMain items={items} />, { identity: admin, path: "/roles/42" });
+    const trigger = await screen.findByRole("button", { name: "Menu:Admin" });
+    fireEvent.click(trigger);
+    await waitFor(() => expect(screen.queryByText("Menu:Roles")).toBeNull());
+    const group = trigger.closest("[data-sidebar='menu-item']");
     expect(group?.getAttribute("data-has-active-child")).toBe("true");
   });
 });
