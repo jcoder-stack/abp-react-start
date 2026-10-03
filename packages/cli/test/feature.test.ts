@@ -1,10 +1,17 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { patchRootForFeatures, seedFeatureAggregator } from "../src/feature";
+import type { CommandRunner } from "../src/blocks";
+import {
+  type FeatureDefinition,
+  installFeature,
+  patchRootForFeatures,
+  resolveFeatures,
+  seedFeatureAggregator,
+} from "../src/feature";
 
 const fixture = (name: string) =>
   readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf8");
@@ -167,5 +174,156 @@ describe("seedFeatureAggregator", () => {
       /src\/features\/index\.ts.*not the jc-abp feature aggregator/,
     );
     expect(existsSync(join(app, "src", "features", "compose.ts"))).toBe(false);
+  });
+});
+
+const DEMO: FeatureDefinition = { name: "demo", env: ["DEMO_URL=http://x", "# DEMO_MODE=fast"] };
+
+/** 一个 0.4 形态的已 init 项目 + 只含 demo 块的 registry。 */
+function project(opts: { root?: string; envExample?: string; env?: string } = {}) {
+  const base = mkdtempSync(join(tmpdir(), "jc-abp-feature-"));
+  const registryDir = join(base, "registry");
+  mkdirSync(join(registryDir, "public", "r"), { recursive: true });
+  writeFileSync(
+    join(registryDir, "public", "r", "demo.json"),
+    JSON.stringify({
+      files: [
+        { path: "feature.tsx", type: "registry:file", target: "src/features/demo/feature.tsx" },
+        { path: "demo.txt", type: "registry:file", target: "~/public/demo.txt" },
+      ],
+    }),
+  );
+  const app = join(base, "app");
+  mkdirSync(join(app, "src", "routes"), { recursive: true });
+  writeFileSync(
+    join(app, "src", "routes", "__root.tsx"),
+    opts.root ?? fixture("root-v0.4.tsx.txt"),
+  );
+  if (opts.envExample !== undefined) writeFileSync(join(app, ".env.example"), opts.envExample);
+  if (opts.env !== undefined) writeFileSync(join(app, ".env"), opts.env);
+  return { app, registryDir };
+}
+
+/** 像 shadcn 一样把 demo 块的两个文件写进项目。 */
+function shadcn(app: string): CommandRunner {
+  return async () => {
+    for (const rel of ["src/features/demo/feature.tsx", "public/demo.txt"]) {
+      mkdirSync(dirname(join(app, rel)), { recursive: true });
+      writeFileSync(join(app, rel), "x");
+    }
+  };
+}
+
+const read = (app: string, rel: string) => readFileSync(join(app, rel), "utf8");
+
+describe("installFeature", () => {
+  it("wires a 0.4 project end to end and keeps the previous root next to it", async () => {
+    const { app, registryDir } = project({
+      envExample: "AUTH_ISSUER=\n",
+      env: "AUTH_ISSUER=https://a\n",
+    });
+    const before = read(app, "src/routes/__root.tsx");
+
+    const result = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: DEMO,
+      runner: shadcn(app),
+    });
+
+    expect(result).toEqual({
+      name: "demo",
+      aggregatorSeeded: ["src/features/index.ts", "src/features/compose.ts"],
+      root: "wired",
+      envKeysAdded: ["DEMO_URL", "DEMO_MODE"],
+    });
+    expect(read(app, "src/routes/__root.tsx")).toContain("<FeatureProviders>");
+    expect(read(app, "src/routes/__root.tsx.pre-features.bak")).toBe(before);
+    expect(read(app, ".env.example")).toBe("AUTH_ISSUER=\nDEMO_URL=http://x\n# DEMO_MODE=fast\n");
+    expect(read(app, ".env")).toBe("AUTH_ISSUER=https://a\nDEMO_URL=http://x\n# DEMO_MODE=fast\n");
+  });
+
+  it("changes nothing on a rerun", async () => {
+    const { app, registryDir } = project({ envExample: "" });
+    await installFeature({ cwd: app, registryDir, feature: DEMO, runner: shadcn(app) });
+    const root = read(app, "src/routes/__root.tsx");
+    const example = read(app, ".env.example");
+
+    const again = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: DEMO,
+      runner: shadcn(app),
+    });
+
+    expect(again).toEqual({
+      name: "demo",
+      aggregatorSeeded: [],
+      root: "already",
+      envKeysAdded: [],
+    });
+    expect(read(app, "src/routes/__root.tsx")).toBe(root);
+    expect(read(app, ".env.example")).toBe(example);
+  });
+
+  it("never overwrites a key the env file already has, commented or not", async () => {
+    const { app, registryDir } = project({ envExample: "# DEMO_URL=keep-me\n" });
+    const result = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: DEMO,
+      runner: shadcn(app),
+    });
+    expect(result.envKeysAdded).toEqual(["DEMO_MODE"]);
+    expect(read(app, ".env.example")).toBe("# DEMO_URL=keep-me\n# DEMO_MODE=fast\n");
+  });
+
+  it("starts appended lines on their own line when the env file has no trailing newline", async () => {
+    const { app, registryDir } = project({ envExample: "AUTH_ISSUER=" });
+    await installFeature({ cwd: app, registryDir, feature: DEMO, runner: shadcn(app) });
+    expect(read(app, ".env.example")).toBe("AUTH_ISSUER=\nDEMO_URL=http://x\n# DEMO_MODE=fast\n");
+  });
+
+  it("does not create a .env the project never had", async () => {
+    const { app, registryDir } = project({ envExample: "" });
+    await installFeature({ cwd: app, registryDir, feature: DEMO, runner: shadcn(app) });
+    expect(existsSync(join(app, ".env"))).toBe(false);
+  });
+
+  it("leaves an unrecognized root byte-identical but still installs the feature", async () => {
+    const odd = "export const Route = createRootRoute({ component: App });\n";
+    const { app, registryDir } = project({ root: odd });
+    const result = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: DEMO,
+      runner: shadcn(app),
+    });
+    expect(result.root).toBe("manual");
+    expect(read(app, "src/routes/__root.tsx")).toBe(odd);
+    expect(existsSync(join(app, "src/routes/__root.tsx.pre-features.bak"))).toBe(false);
+    expect(existsSync(join(app, "src/features/demo/feature.tsx"))).toBe(true);
+  });
+
+  it("fails loudly when shadcn exits 0 without writing the feature", async () => {
+    const { app, registryDir } = project();
+    await expect(
+      installFeature({ cwd: app, registryDir, feature: DEMO, runner: async () => {} }),
+    ).rejects.toThrow(/reported success \(exit 0\)/);
+  });
+});
+
+describe("resolveFeatures", () => {
+  const table = [DEMO, { name: "other", env: [] }];
+
+  it("resolves known names in the order given", () => {
+    expect(resolveFeatures(["other", "demo"], table).map((f) => f.name)).toEqual(["other", "demo"]);
+  });
+
+  it("names every unknown feature and what is available", () => {
+    expect(() => resolveFeatures(["demo", "x", "y"], table)).toThrow(
+      "unknown feature: x, y (available: demo, other)",
+    );
+    expect(() => resolveFeatures(["x"], [])).toThrow("unknown feature: x (available: none)");
   });
 });

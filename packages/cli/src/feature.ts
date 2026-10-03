@@ -1,6 +1,7 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { type CommandRunner, installShadcnBlock } from "./blocks";
 
 const FEATURES_IMPORT =
   'import { FeatureProviders, featureHead, featureMessages } from "@/features";';
@@ -254,4 +255,115 @@ export function seedFeatureAggregator(cwd: string): string[] {
     seeded.push(target);
   }
   return seeded;
+}
+
+/** An optional feature: a registry block of the same name plus the env lines it needs. */
+export interface FeatureDefinition {
+  name: string;
+  /** `KEY=value` or commented `# KEY=value` lines appended to .env.example (and .env when present). */
+  env: readonly string[];
+}
+
+/** Features `init --with` and `add <name>` know about. Each feature's PR adds its entry. */
+export const FEATURES: readonly FeatureDefinition[] = [];
+
+export function findFeature(
+  name: string,
+  features: readonly FeatureDefinition[] = FEATURES,
+): FeatureDefinition | undefined {
+  return features.find((feature) => feature.name === name);
+}
+
+/** Resolves feature names, throwing before anything is written when one is unknown. */
+export function resolveFeatures(
+  names: readonly string[],
+  features: readonly FeatureDefinition[] = FEATURES,
+): FeatureDefinition[] {
+  const unknown = names.filter((name) => findFeature(name, features) === undefined);
+  if (unknown.length > 0) {
+    const available = features.map((feature) => feature.name).join(", ") || "none";
+    throw new Error(`unknown feature: ${unknown.join(", ")} (available: ${available})`);
+  }
+  return names.flatMap((name) => {
+    const feature = findFeature(name, features);
+    return feature === undefined ? [] : [feature];
+  });
+}
+
+const ROOT_FILE = "src/routes/__root.tsx";
+/** __root.tsx.bak already holds init's backup of the scaffold original; this one must not clobber it. */
+const ROOT_BACKUP_SUFFIX = ".pre-features.bak";
+
+export const FEATURES_WIRING_GUIDE_PATH = fileURLToPath(
+  new URL("../templates/features-wiring-guide.txt", import.meta.url),
+);
+
+export type RootWiring = "wired" | "already" | "manual";
+
+function wireRootForFeatures(cwd: string): RootWiring {
+  const rootPath = resolve(cwd, ROOT_FILE);
+  if (!existsSync(rootPath)) return "manual";
+  const source = readFileSync(rootPath, "utf8");
+  const patched = patchRootForFeatures(source);
+  if (patched === null) return "manual";
+  if (patched === source) return "already";
+  copyFileSync(rootPath, `${rootPath}${ROOT_BACKUP_SUFFIX}`);
+  writeFileSync(rootPath, patched);
+  return "wired";
+}
+
+/** `KEY=` or `# KEY=`: a commented key still counts as present, so a user's deliberate opt-out survives. */
+const ENV_KEY = /^#?\s*([A-Z][A-Z0-9_]*)=/;
+
+/**
+ * Appends the lines whose key the file lacks. A missing file is left missing: creating .env here
+ * would produce one without the auth secrets init derives.
+ * @returns the keys appended.
+ */
+function appendEnvLines(path: string, lines: readonly string[]): string[] {
+  if (!existsSync(path)) return [];
+  const text = readFileSync(path, "utf8");
+  const present = new Set(text.split(/\r?\n/).flatMap((line) => ENV_KEY.exec(line)?.[1] ?? []));
+  const missing = lines.filter((line) => {
+    const key = ENV_KEY.exec(line)?.[1];
+    return key !== undefined && !present.has(key);
+  });
+  if (missing.length === 0) return [];
+  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+  const lead = text === "" || text.endsWith("\n") ? "" : eol;
+  writeFileSync(path, `${text}${lead}${missing.join(eol)}${eol}`);
+  return missing.flatMap((line) => ENV_KEY.exec(line)?.[1] ?? []);
+}
+
+export interface FeatureInstallResult {
+  name: string;
+  /** Aggregator files written this run; empty once the project has them. */
+  aggregatorSeeded: string[];
+  /** "manual": the root's shape was not recognized and it was left untouched; print the wiring guide. */
+  root: RootWiring;
+  /** Env keys appended to .env.example and/or .env this run. */
+  envKeysAdded: string[];
+}
+
+/**
+ * Installs one optional feature into an initialized project: aggregator, root wiring, the block
+ * itself, then its env lines. Every step only fills what is missing, so rerunning is safe.
+ * Throws a plain Error when the aggregator path is taken or the block install fails.
+ */
+export async function installFeature(opts: {
+  cwd: string;
+  registryDir: string;
+  feature: FeatureDefinition;
+  runner: CommandRunner;
+}): Promise<FeatureInstallResult> {
+  const aggregatorSeeded = seedFeatureAggregator(opts.cwd);
+  const root = wireRootForFeatures(opts.cwd);
+  await installShadcnBlock(opts.cwd, opts.registryDir, opts.feature.name, opts.runner);
+  const envKeysAdded = [
+    ...new Set([
+      ...appendEnvLines(resolve(opts.cwd, ".env.example"), opts.feature.env),
+      ...appendEnvLines(resolve(opts.cwd, ".env"), opts.feature.env),
+    ]),
+  ];
+  return { name: opts.feature.name, aggregatorSeeded, root, envKeysAdded };
 }
