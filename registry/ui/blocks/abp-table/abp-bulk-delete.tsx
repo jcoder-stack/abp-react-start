@@ -26,8 +26,8 @@ export interface AbpBulkDeleteViewProps<TDto extends { id?: string }> {
   canDelete?: (row: TDto) => boolean;
 }
 
-/** 选中行拆成要删的 id 与跳过的行数。无 id 的行进不了删除端点，既不删也不算跳过——
- *  否则会被算进「成功」的分母，让一次什么都没删的操作报成功。 */
+/** 选中行拆成要删的 id 与跳过的行数。无 id 的行进不了删除端点，与行级判定为假的行一样计入跳过——
+ *  否则它们悄无声息地消失，混在可删行里时整批会报成纯成功。 */
 export function partitionDeletable<TDto extends { id?: string }>(
   rows: TDto[],
   canDelete?: (row: TDto) => boolean,
@@ -35,8 +35,7 @@ export function partitionDeletable<TDto extends { id?: string }>(
   const ids: string[] = [];
   let skipped = 0;
   for (const row of rows) {
-    if (row.id === undefined) continue;
-    if (canDelete?.(row) ?? true) ids.push(row.id);
+    if (row.id !== undefined && (canDelete?.(row) ?? true)) ids.push(row.id);
     else skipped++;
   }
   return { ids, skipped };
@@ -63,7 +62,7 @@ export function bulkDeleteNotice(
 
 function bulkDeleteOutcome(requested: number, failed: number, skipped: number): BulkDeleteNotice {
   const deleted = requested - failed;
-  // 选中的行都没有 id：一条都没发出去，不能报「已删除」
+  // 空选择：一条都没发出去，不能报「已删除」
   if (requested === 0 && skipped === 0)
     return { kind: "error", key: "Crud:OperationFailed", args: [] };
   if (requested === 0 && skipped > 0)

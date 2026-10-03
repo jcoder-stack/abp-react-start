@@ -141,6 +141,11 @@ export async function main(argv: string[]): Promise<number> {
           ? `created ${result.configPath}${result.backendUrl !== null ? " (input points at your backend)" : ""}`
           : `${result.configPath} already exists, left as is`,
       );
+      if (result.designDocSeeded) {
+        console.log(
+          "created DESIGN.md (the theme's design rules) — point your agent instructions (CLAUDE.md / AGENTS.md) at it",
+        );
+      }
       if (result.envSeeded) {
         console.log(
           result.backendUrl !== null

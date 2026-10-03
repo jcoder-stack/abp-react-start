@@ -31,7 +31,7 @@ token 全程不进浏览器——所有请求经服务端代理，会话是一�
 | 校验 | zod 4 | server function 入参、env、表单三处共用一套 schema |
 | 后端 | ABP Framework | 认证走 OpenIddict（Authorization Code + PKCE）或密码登录 |
 
-主题是一套完整的设计系统，不是 shadcn 默认配色——色板、排版刻度、层次、组件规格见 [`DESIGN.md`](DESIGN.md)。
+主题是一套完整的设计系统，不是 shadcn 默认配色——色板、排版刻度、组件约定见 [`DESIGN.md`](DESIGN.md)（英文，便于 Agent 读取）。`jc-abp init` 会把它复制进你的应用，在应用里工作的 Agent 遵循同一套规则。
 
 ## 组成
 
@@ -103,7 +103,7 @@ npx jc-abp gen && bun run dev
 | [按需装块](docs/guides/install-blocks.md) | 只装某几块时的顺序与前置依赖 |
 | [列表页与 CRUD](docs/guides/abp-table.md) | `useAbpTable` / `useAbpSheet` 从 service 描述符到整页接线 |
 | [表单体系](docs/guides/forms.md) | 四层架构、字段组件、校验的四条通道 |
-| [设计规范](DESIGN.md) | 色板、排版、层次、组件规格 |
+| [设计规范](DESIGN.md) | 色板、排版、组件约定（英文） |
 
 ## 开发
 

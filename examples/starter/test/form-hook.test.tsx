@@ -378,20 +378,17 @@ function EmptyOptionHarness() {
   );
 }
 
-function EmptyOptionWithValueHarness() {
+const EMPTY_AND_ON = [
+  { value: "", label: "All" },
+  { value: "on", label: "Enabled" },
+];
+
+function EmptyOptionWithValueHarness(props: { options?: { value: string; label: string }[] }) {
   const form = useAppForm({ defaultValues: { status: "" } });
   return (
     <>
       <form.AppField name="status">
-        {(f) => (
-          <f.SelectField
-            label="Status"
-            options={[
-              { value: "", label: "All" },
-              { value: "on", label: "Enabled" },
-            ]}
-          />
-        )}
+        {(f) => <f.SelectField label="Status" options={props.options ?? EMPTY_AND_ON} />}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values.status}>
         {(v) => <span data-testid="status">{v}</span>}
@@ -417,6 +414,23 @@ describe("SelectField 空值选项", () => {
     fireEvent.click(await screen.findByRole("option", { name: "All" }));
     await waitFor(() => expect(screen.getByTestId("status").textContent).toBe(""));
     expect(trigger.hasAttribute("data-placeholder")).toBe(false);
+  });
+
+  it("业务值与内部表示撞名时仍按原值进出", async () => {
+    renderWithProviders(
+      <EmptyOptionWithValueHarness
+        options={[
+          { value: "", label: "All" },
+          { value: "__empty__", label: "Blank" },
+        ]}
+      />,
+      { messages },
+    );
+    const trigger = await screen.findByRole("combobox", { name: "Status" });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.click(await screen.findByRole("option", { name: "Blank" }));
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("__empty__"));
+    expect(trigger.textContent).toContain("Blank");
   });
 
   it("打开下拉不报错，空值选项可见可选", async () => {

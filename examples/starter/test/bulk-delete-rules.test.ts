@@ -13,10 +13,10 @@ describe("partitionDeletable", () => {
     expect(partitionDeletable(rows, unlocked)).toEqual({ ids: ["a", "c"], skipped: 1 });
   });
 
-  it("没有 id 的行进不了删除端点，也不算跳过", () => {
+  it("没有 id 的行进不了删除端点，计入跳过", () => {
     expect(partitionDeletable([{ locked: false }, { id: "a", locked: false }], unlocked)).toEqual({
       ids: ["a"],
-      skipped: 0,
+      skipped: 1,
     });
   });
 
@@ -77,7 +77,7 @@ describe("bulkDeleteNotice", () => {
     expect(bulkDeleteNotice(2, 0, 0, ["Still referenced"]).description).toBeUndefined();
   });
 
-  it("选中的行都没有 id 时不报成功", () => {
+  it("空选择时不报成功", () => {
     expect(bulkDeleteNotice(0, 0, 0)).toEqual({
       kind: "error",
       key: "Crud:OperationFailed",

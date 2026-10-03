@@ -30,6 +30,8 @@ const APP_THEME_CSS_TEMPLATE_PATH = fileURLToPath(
   new URL("../templates/app-theme.css", import.meta.url),
 );
 
+const DESIGN_DOC_TEMPLATE_PATH = fileURLToPath(new URL("../templates/DESIGN.md", import.meta.url));
+
 const SHADCN_BLOCKS = [
   "abp-layout",
   "abp-login",
@@ -206,6 +208,7 @@ describe("runInit", () => {
     const initError = caught as InitError;
     expect(initError.message).toContain('installing shadcn block "data-table" failed');
     expect(initError.completedSteps).toEqual([
+      "DESIGN.md (seeded, design rules for the theme)",
       "runtime dependencies for seeded files installed (npm): @tanstack/react-router-ssr-query",
       "auth shell (jc-abp add auth)",
       "shadcn block abp-layout",
@@ -338,6 +341,7 @@ describe("runInit", () => {
     // abp-layout, abp-login, and app-shell declare no files (their fixture json is "{}"), so they pass
     // verification trivially and land in completedSteps; data-table is where it stops.
     expect(initError.completedSteps).toEqual([
+      "DESIGN.md (seeded, design rules for the theme)",
       "runtime dependencies for seeded files installed (npm): @tanstack/react-router-ssr-query",
       "auth shell (jc-abp add auth)",
       "shadcn block abp-layout",
@@ -442,6 +446,30 @@ describe("runInit", () => {
     expect(readFileSync(join(app, "src", "lib", "utils.ts"), "utf8")).toBe(
       "export function cn() {}\n",
     );
+  });
+
+  it("seeds DESIGN.md at the project root so agents working in the app read the same design rules", async () => {
+    const { app } = fakeWorkspace();
+    const { runner } = recordingRunner();
+
+    const result = await initWithStubbedProbe({ cwd: app, runner });
+
+    expect(readFileSync(join(app, "DESIGN.md"), "utf8")).toBe(
+      readFileSync(DESIGN_DOC_TEMPLATE_PATH, "utf8"),
+    );
+    expect(result.designDocSeeded).toBe(true);
+  });
+
+  it("leaves an existing DESIGN.md untouched: once seeded it belongs to the app", async () => {
+    const { app } = fakeWorkspace();
+    writeFileSync(join(app, "DESIGN.md"), "# Our own rules\n");
+    const { runner } = recordingRunner();
+
+    const result = await initWithStubbedProbe({ cwd: app, runner });
+
+    expect(readFileSync(join(app, "DESIGN.md"), "utf8")).toBe("# Our own rules\n");
+    expect(result.designDocSeeded).toBe(false);
+    expect(existsSync(join(app, "DESIGN.md.bak"))).toBe(false);
   });
 
   it("replaces a theme-less css entry with the baseline template, backing up the original", async () => {

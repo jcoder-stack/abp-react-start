@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 const DEFAULT_SKELETON_ROWS = 5;
 
 function alignClass(align?: "left" | "right" | "center") {
-  // 右对齐即数字列（DESIGN.md）：一并给等宽数字，否则 Inter 的比例数字宽窄不一，
+  // 右对齐即数字列（DESIGN.md「Tables」）：一并给等宽数字，否则 Inter 的比例数字宽窄不一，
   // 同列上下对不齐、跨组件（分页/页码）看着像换了字体。
   if (align === "right") return "text-right tabular-nums";
   if (align === "center") return "text-center";
@@ -204,7 +204,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
                     }
                     className={cn(
                       // label-caps：正字距的大写小字把表头标记为"分类"而非内容，
-                      // 是这套系统里唯一用正字距的地方（DESIGN.md Typography）。
+                      // 是这套系统里唯一用正字距的地方（DESIGN.md「Typography」）。
                       "bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground",
                       alignClass(header.column.columnDef.meta?.align),
                       header.column.columnDef.meta?.className,
