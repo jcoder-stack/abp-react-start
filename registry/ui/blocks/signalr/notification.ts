@@ -15,9 +15,26 @@ export interface AppNotification {
   url?: string;
 }
 
-/** Same-origin paths only: `//host` and `/\host` are protocol-relative in browsers, i.e. an open redirect. */
+/**
+ * Same-origin paths only: `//host` and `/\host` are protocol-relative in browsers, i.e. an open
+ * redirect. Browsers also strip tab/CR/LF before parsing, so `/<tab>/host` is protocol-relative
+ * too; any control character, space or DEL is therefore rejected.
+ */
 export function isSafeRelativeUrl(url: string): boolean {
-  return url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\");
+  return (
+    url.startsWith("/") &&
+    !url.startsWith("//") &&
+    !url.startsWith("/\\") &&
+    !hasControlOrSpace(url)
+  );
+}
+
+function hasControlOrSpace(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code <= 0x20 || code === 0x7f) return true;
+  }
+  return false;
 }
 
 const localizableText = z.union([

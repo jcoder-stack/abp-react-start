@@ -36,6 +36,10 @@ describe("parseNotification", () => {
     "https://evil.example",
     "javascript:alert(1)",
     "approvals/7",
+    "/\t/evil.example",
+    "/\n/evil.example",
+    "/\r/evil.example",
+    " /approvals/7",
   ])("drops the unsafe url %j but keeps the notification", (url) => {
     const parsed = parseNotification({ id: "n", severity: "info", title: "t", url });
     expect(parsed).not.toBeNull();
@@ -68,6 +72,12 @@ describe("isSafeRelativeUrl", () => {
     expect(isSafeRelativeUrl("/approvals/7?tab=1#c")).toBe(true);
     expect(isSafeRelativeUrl("//evil.example")).toBe(false);
     expect(isSafeRelativeUrl("/\\evil.example")).toBe(false);
+  });
+
+  it("rejects characters the URL parser strips, which would make /<tab>/host protocol-relative", () => {
+    expect(isSafeRelativeUrl("/\t/evil.example")).toBe(false);
+    expect(isSafeRelativeUrl("/\n/evil.example")).toBe(false);
+    expect(isSafeRelativeUrl("/approvals/7?tab=1#c")).toBe(true);
   });
 });
 
