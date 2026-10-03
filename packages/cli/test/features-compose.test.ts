@@ -39,6 +39,12 @@ describe("composeFeatures", () => {
     expect(featureMessages).toEqual([]);
   });
 
+  it("names the file when a feature module has no default export", () => {
+    expect(() =>
+      composeFeatures({ "./bad/feature.tsx": {} as { default: FeatureModule } }),
+    ).toThrow("./bad/feature.tsx must default-export a FeatureModule");
+  });
+
   it("concatenates head entries and catalogs in folder order, skipping features without them", () => {
     const { featureHead, featureMessages } = composeFeatures(
       modules({
