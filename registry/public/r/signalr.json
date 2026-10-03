@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "signalr",
+  "title": "SignalR",
+  "description": "Optional feature: real-time connections to ABP SignalR hubs. A server function hands out a short-lived token, @jcoder-stack/abp-react/realtime manages the connection, and messages on the notifications hub show up as toasts.",
+  "dependencies": [
+    "@jcoder-stack/abp-react",
+    "@microsoft/signalr",
+    "zod"
+  ],
+  "files": [
+    {
+      "path": "ui/blocks/signalr/hub-connection-info.ts",
+      "content": "import type { AuthSession } from \"@jcoder-stack/abp-react/auth\";\nimport { HUB_NAME_PATTERN, type HubConnectionInfo } from \"@jcoder-stack/abp-react/realtime\";\nimport { z } from \"zod\";\n\nexport const hubInputSchema = z.object({ hub: z.string().regex(HUB_NAME_PATTERN) });\n\n/** ABP maps hubs under this path unless the backend sets AbpSignalROptions otherwise. */\nexport const DEFAULT_HUB_PREFIX = \"/signalr-hubs\";\n\n/**\n * Derives what the browser needs to open `hub`. The URL is built here, on the server, from the\n * backend origin the BFF already trusts, so the client never names an arbitrary host.\n */\nexport function hubConnectionInfo(opts: {\n  session: AuthSession | null;\n  abpBaseUrl: string;\n  hubPrefix: string | undefined;\n  hub: string;\n}): HubConnectionInfo | null {\n  if (opts.session === null) return null;\n  const trimmed = opts.hubPrefix?.trim().replace(/^\\/+|\\/+$/g, \"\") ?? \"\";\n  const prefix = trimmed === \"\" ? DEFAULT_HUB_PREFIX : `/${trimmed}`;\n  return {\n    url: `${opts.abpBaseUrl.replace(/\\/+$/, \"\")}${prefix}/${opts.hub}`,\n    accessToken: opts.session.tokens.accessToken,\n    expiresAt: opts.session.expiresAt ?? null,\n  };\n}\n",
+      "type": "registry:file",
+      "target": "src/features/signalr/hub-connection-info.ts"
+    },
+    {
+      "path": "ui/blocks/signalr/server-fns.ts",
+      "content": "import { createServerFn } from \"@tanstack/react-start\";\nimport { authMiddleware } from \"@/auth/middleware\";\nimport { getAuthRuntime } from \"@/auth/runtime\";\nimport { hubConnectionInfo, hubInputSchema } from \"@/features/signalr/hub-connection-info\";\n\n/**\n * Hands the signed-in browser a short-lived token for one SignalR hub: the single, bounded\n * exception to \"tokens never reach the browser\" (docs/architecture.md). authMiddleware refreshes\n * an expiring session first, so the token handed out is always fresh. Anonymous visitors get null.\n */\nexport const getHubConnectionInfoFn = createServerFn({ method: \"GET\" })\n  .validator(hubInputSchema)\n  .middleware([authMiddleware])\n  .handler(({ data, context }) =>\n    hubConnectionInfo({\n      session: context.session,\n      abpBaseUrl: getAuthRuntime().env.abpBaseUrl,\n      // 不进应用的 src/env.ts：那个文件归应用所有，功能安装不改它。\n      hubPrefix: process.env.SIGNALR_HUB_PREFIX,\n      hub: data.hub,\n    }),\n  );\n",
+      "type": "registry:file",
+      "target": "src/features/signalr/server-fns.ts"
+    },
+    {
+      "path": "ui/blocks/signalr/feature.tsx",
+      "content": "import { RealtimeProvider } from \"@jcoder-stack/abp-react/realtime\";\nimport type { ReactNode } from \"react\";\nimport type { FeatureModule } from \"@/features/compose\";\nimport { getHubConnectionInfoFn } from \"@/features/signalr/server-fns\";\n\n/** Module level: RealtimeProvider reads it once and needs one stable reference. */\nconst getConnectionInfo = (hub: string) => getHubConnectionInfoFn({ data: { hub } });\n\nfunction SignalRProvider({ children }: { children: ReactNode }) {\n  return <RealtimeProvider getConnectionInfo={getConnectionInfo}>{children}</RealtimeProvider>;\n}\n\nconst signalr: FeatureModule = { Provider: SignalRProvider };\n\nexport default signalr;\n",
+      "type": "registry:file",
+      "target": "src/features/signalr/feature.tsx"
+    }
+  ],
+  "type": "registry:block"
+}
