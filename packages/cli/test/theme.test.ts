@@ -80,3 +80,12 @@ describe.each(THEMES)("主题令牌（%s）", (_name, theme) => {
 it("starter 的 styles.css 与主题模板逐字一致", () => {
   expect(STARTER).toBe(TEMPLATE);
 });
+
+// init 把模板 DESIGN.md 播进应用；仓库根与 starter 的两份是给在本仓工作的 Agent 读的镜像
+it.each(["../../../DESIGN.md", "../../../examples/starter/DESIGN.md"])(
+  "%s 与 DESIGN.md 模板逐字一致",
+  (path) => {
+    const template = readFileSync(new URL("../templates/DESIGN.md", import.meta.url), "utf8");
+    expect(readFileSync(new URL(path, import.meta.url), "utf8")).toBe(template);
+  },
+);

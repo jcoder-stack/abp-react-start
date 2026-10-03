@@ -31,7 +31,7 @@ Tokens never enter the browser — every request goes through a server-side prox
 | Validation | zod 4 | One schema shared across server function inputs, env, and forms |
 | Backend | ABP Framework | Auth via OpenIddict (Authorization Code + PKCE) or password sign-in |
 
-The theme is a complete design system, not the shadcn default palette — see [`DESIGN.md`](DESIGN.md) for the palette, type scale, elevation, and component specs.
+The theme is a complete design system, not the shadcn default palette — see [`DESIGN.md`](DESIGN.md) for the palette, type scale, and component conventions. `jc-abp init` copies it into your app so agents working there follow the same rules.
 
 ## What's inside
 
@@ -106,7 +106,7 @@ The reference app is [`examples/starter`](examples/starter), itself a product of
 | [Install blocks selectively](docs/guides/install-blocks.en.md) | Order and prerequisites when installing only some blocks |
 | [List pages & CRUD](docs/guides/abp-table.en.md) | `useAbpTable` / `useAbpSheet`, from the service descriptor to a fully wired page |
 | [The form system](docs/guides/forms.en.md) | The four-layer architecture, field components, and the four validation channels |
-| [Design spec](DESIGN.md) | Palette, typography, elevation, component specs (Chinese) |
+| [Design spec](DESIGN.md) | Palette, typography, component conventions |
 
 ## Development
 

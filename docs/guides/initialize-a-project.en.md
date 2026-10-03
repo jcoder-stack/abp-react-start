@@ -69,7 +69,7 @@ init itself **never connects to the backend** — the URL is only written into c
 In order:
 
 1. **Two preflight gates** — if the auth shell already exists, abort before touching the first file; same if npm's `allow-scripts` would fail.
-2. **Seed the baseline**: write `components.json` if missing (`new-york` / `neutral`, css entry filled in); add `cn()` if `src/lib/utils.ts` is missing; if the css entry lacks the `--background` variable, **replace it wholesale with the theme file**, backing the original up as `.bak`.
+2. **Seed the baseline**: write `components.json` if missing (`new-york` / `neutral`, css entry filled in); add `cn()` if `src/lib/utils.ts` is missing; if the css entry lacks the `--background` variable, **replace it wholesale with the theme file**, backing the original up as `.bak`; write `DESIGN.md` (the theme's design rules) to the project root if missing — point your agent instructions (`CLAUDE.md` / `AGENTS.md`) at it.
 3. **Install dependencies as needed**: only what was actually seeded this run (`clsx` / `tailwind-merge` / `tw-animate-css`), plus `@tanstack/react-router-ssr-query` for the root wiring (no block declares it).
 4. **Land the auth shell**: the five `src/auth/*` files, five API routes, `src/env.ts`, `.env.example`.
 5. **Move the home page aside**: the scaffold's `src/routes/index.tsx` is renamed to `.bak`, because the app-shell block places its own landing page there.
@@ -84,7 +84,7 @@ The css entry probe order is `src/styles/app.css` → `src/styles.css` → `src/
 | Target | Behavior |
 | --- | --- |
 | Any auth-shell target already exists | **Abort**, nothing written (`.env.example` is the exception — skipped) |
-| `components.json`, `src/lib/utils.ts`, `tsr.config.json`, `abp.api.config.ts`, `src/i18n/app-messages.json`, `.env` | Skipped if present |
+| `components.json`, `src/lib/utils.ts`, `DESIGN.md`, `tsr.config.json`, `abp.api.config.ts`, `src/i18n/app-messages.json`, `.env` | Skipped if present |
 | The css entry, `src/routes/index.tsx` | Backed up as `.bak`, then replaced / moved aside |
 | `src/routes/__root.tsx` | Backed up as `.bak`, then replaced whole (structural change, see section 4) |
 | `src/router.tsx` | Backed up as `.bak`, then patched in four places; replaced whole only if the scaffold shape isn't recognized |
@@ -311,6 +311,6 @@ your-app/
 - Add your own list / CRUD maintenance page → [`abp-table.en.md`](abp-table.en.md)
 - Writing forms and validation → [`forms.en.md`](forms.en.md)
 - Installing only some blocks, without init → [`install-blocks.en.md`](install-blocks.en.md)
-- Theme and typography → [`DESIGN.md`](../../DESIGN.md) (Chinese)
+- Theme and typography → [`DESIGN.md`](../../DESIGN.md) (also copied into your app by `init`)
 
 For the complete reference implementation, [`examples/starter`](../../examples/starter) is a product of this exact flow — [`scripts/regenerate-example.sh`](../../scripts/regenerate-example.sh) replays "scaffold → install → init → gen" and applies a manifested handwritten increment on top, making it both living documentation and the end-to-end regression for the CLI and registry.

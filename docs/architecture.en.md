@@ -156,4 +156,4 @@ The publish pipeline only reveals its problems when actually run, so `scripts/pu
 
 - [Initialize a project](guides/initialize-a-project.en.md), [Install blocks selectively](guides/install-blocks.en.md)
 - [List pages & CRUD](guides/abp-table.en.md), [The form system](guides/forms.en.md)
-- [Design spec](../DESIGN.md) (Chinese)
+- [Design spec](../DESIGN.md)

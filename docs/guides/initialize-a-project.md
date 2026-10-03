@@ -69,7 +69,7 @@ init 本身**从不连接后端**——地址只是写进配置，后端没启�
 按顺序：
 
 1. **两道前置闸**——检测到认证外壳已存在就在写第一个文件之前中止；用 npm 且 `allow-scripts` 会失败时同样中止。
-2. **播种基线**：缺 `components.json` 就写一份（`new-york` / `neutral`，并把 css 入口填进去）；缺 `src/lib/utils.ts` 就补 `cn()`；css 入口里没有 `--background` 变量时**整体替换成主题文件**，原文件备份为 `.bak`。
+2. **播种基线**：缺 `components.json` 就写一份（`new-york` / `neutral`，并把 css 入口填进去）；缺 `src/lib/utils.ts` 就补 `cn()`；css 入口里没有 `--background` 变量时**整体替换成主题文件**，原文件备份为 `.bak`；项目根缺 `DESIGN.md` 就写入主题的设计规范（英文）——在你的 Agent 指令（`CLAUDE.md` / `AGENTS.md`）里指向它。
 3. **按需装依赖**：只装这次真正播种了的那部分（`clsx` / `tailwind-merge` / `tw-animate-css`），外加根接线要用的 `@tanstack/react-router-ssr-query`（没有任何块声明它）。
 4. **落认证外壳**：`src/auth/*` 五个文件、五个 API 路由、`src/env.ts`、`.env.example`。
 5. **让位首页**：脚手架自带的 `src/routes/index.tsx` 改名为 `.bak`，因为 app-shell 块要放自己的落地页。
@@ -84,7 +84,7 @@ css 入口的探测顺序是 `src/styles/app.css` → `src/styles.css` → `src/
 | 对象 | 行为 |
 | --- | --- |
 | 认证外壳的任一目标已存在 | **中止**，一个文件都不写（`.env.example` 例外，跳过） |
-| `components.json`、`src/lib/utils.ts`、`tsr.config.json`、`abp.api.config.ts`、`src/i18n/app-messages.json`、`.env` | 已存在则跳过 |
+| `components.json`、`src/lib/utils.ts`、`DESIGN.md`、`tsr.config.json`、`abp.api.config.ts`、`src/i18n/app-messages.json`、`.env` | 已存在则跳过 |
 | css 入口、`src/routes/index.tsx` | 备份为 `.bak` 后替换/让位 |
 | `src/routes/__root.tsx` | 备份为 `.bak` 后整份替换（结构改造，见第 4 节） |
 | `src/router.tsx` | 备份为 `.bak` 后就地补四处；认不出脚手架形状时才整份替换 |
@@ -311,6 +311,6 @@ your-app/
 - 加一个自己的列表 / CRUD 维护页 → [`abp-table.md`](abp-table.md)
 - 表单的写法与校验 → [`forms.md`](forms.md)
 - 只想装某几个块、不走 init → [`install-blocks.md`](install-blocks.md)
-- 主题与排版规范 → [`DESIGN.md`](../../DESIGN.md)
+- 主题与排版规范 → [`DESIGN.md`](../../DESIGN.md)（英文；`init` 也会复制一份到你的应用根目录）
 
 想看完整的参照实现，[`examples/starter`](../../examples/starter) 就是这套流程的产物——它由 [`scripts/regenerate-example.sh`](../../scripts/regenerate-example.sh) 重放「脚手架 → 装包 → init → gen」再叠一份清单化的手写增量得到，所以它既是活文档也是 CLI 与 registry 的端到端回归。
