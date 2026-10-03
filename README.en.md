@@ -47,6 +47,7 @@ The entire runtime lives in **one** npm package, `@jcoder-stack/abp-react`, expo
 | `@jcoder-stack/abp-react/auth` | Authentication core: the sign-in strategy layer (OIDC/password) + the session layer (encrypted chunked cookies, refresh, logout); host-agnostic, backend-agnostic |
 | `@jcoder-stack/abp-react/permissions` | The permission primitive `isGranted` + a variadic checker |
 | `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad guards `requireAuth` / `requirePermission` (`@tanstack/react-router` is a peerDep — consumers not on TanStack are unaffected) |
+| `@jcoder-stack/abp-react/realtime` | SignalR connection layer and `useHubEvent` / `useHub` (used by the optional `signalr` feature; `@microsoft/signalr` is an optional peer) |
 | `@jcoder-stack/abp-react/i18n` | A two-layer merging translator (backend ABP resources override the frontend catalog), with injectable interpolate/plural |
 | `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks (user/permissions/settings/features/localization/menu) + `<PermissionGuard>`/`<FeatureGuard>` |
 

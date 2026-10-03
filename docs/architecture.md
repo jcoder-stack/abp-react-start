@@ -43,6 +43,7 @@ middleware.ts      authMiddleware（取会话、过期就刷新并回写 cookie�
         ├─────────────────────────────────────────────┤
  React  │  /react       Provider + hooks              │
         │  /router      beforeLoad 路由守卫            │
+        │  /realtime    SignalR 连接 + hooks（可选）    │
         ├─────────────────────────────────────────────┤
  领域   │  /auth        策略层 + 会话层                 │
         │  /proxy       ABP 代理网关 + 运行时工厂        │
@@ -62,10 +63,11 @@ middleware.ts      authMiddleware（取会话、过期就刷新并回写 cookie�
 | `i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库） | 可注入 interpolate / plural |
 | `router` | `requireAuth` / `requirePermission` 守卫 | `@tanstack/react-router` 是 peerDep——不用 TanStack 的消费者不受牵连 |
 | `react` | `AppConfigProvider` / `SessionProvider` + hooks + `PermissionGuard` / `FeatureGuard` | 只消费上面几层的数据契约 |
+| `realtime` | SignalR 连接层（按 hub 共享、退避重连、404 降级）+ `RealtimeProvider` / `useHubEvent` / `useHub` | 可选功能 `signalr` 才用；`@microsoft/signalr` 是 optional peer，建连时才加载。`/react` 不引用它 |
 
 `auth` 与 `proxy` 的分家是这套分层里最值钱的一刀：**换后端**只需要换 `proxy`，`auth` 的 OIDC 握手、PKCE、cookie 密封、刷新时序一行不用动。
 
-这八个域同住一个 npm 包，但**没有根导出**：聚合各子路径的 `.` 入口会让浏览器 bundle 顺着 `proxy` 连带打包服务端代码，分层随之失效。
+这九个域同住一个 npm 包，但**没有根导出**：聚合各子路径的 `.` 入口会让浏览器 bundle 顺着 `proxy` 连带打包服务端代码，分层随之失效。
 
 ## 请求怎么走
 
@@ -96,6 +98,21 @@ ABP 后端
 - **正文必须可重发**，所以只收 `string`、字节、`FormData`，不收 `ReadableStream`。上面第 ⑤ 步的 401 重放与幂等重试都要把同一个 body 再发一次，而流只能消费一次——收下它会让这两条路径静默退化成「重放一个空正文」，上游看到的是内容缺失的请求而不是错误。
 - **二进制不走 JSON 边界**。文件字节经 `abpUploadFn` 以原生 multipart 过桥，不塞进 server fn 的 JSON 载荷：seroval 对 typed array 的往返在 1MB 就会抛错，而 base64 成字符串会让 10MB 的文件变成 13.3MB 再经两端 JSON 解析。
 - **SSR 一次取数喂两张嘴**：`getAppStateFn` 一趟返回 config 与 identity，分别喂 `AppConfigProvider` 与 `SessionProvider`，避免首屏两次往返。
+
+## SignalR 的 token 例外
+
+SignalR 必须由浏览器直连后端 Hub，WebSocket 又带不了 `Authorization` 头，所以装了 `signalr` 功能的项目里，浏览器会拿到一个 access token。这是「token 不进浏览器」唯一的、有边界的例外：
+
+| 维度 | 约束 |
+| --- | --- |
+| 用途 | 只给 SignalR 的 `accessTokenFactory`；业务 API 仍全部走 BFF 代理 |
+| 下发 | server fn `getHubConnectionInfoFn`，经 `authMiddleware`，快过期的会话先刷新；Hub 地址由服务端拼，前端不能指定主机 |
+| 存放 | 只在 JS 内存；不写 localStorage / sessionStorage / cookie |
+| 生命周期 | 每次建连 / 重连重新获取；按过期时间减 60 秒在内存缓存 |
+| 威胁 | XSS 能读到它；但 XSS 本来就能经 BFF 代调任意 API，新增的是「token 被带出站」，由既有的 CSP 与输出转义承担 |
+| 传输 | 走 `?access_token=`；后端须避免在访问日志里记录 query string |
+
+没装 `signalr` 的项目不受影响。为什么不做同源 WebSocket 代理：TanStack Start 默认服务端不支持，Vercel 等 serverless 目标也跑不了长连接。
 
 ## 会话
 
