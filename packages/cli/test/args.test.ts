@@ -54,3 +54,23 @@ describe("--backend", () => {
     );
   });
 });
+
+describe("--with", () => {
+  it("splits, trims and dedupes feature names for init, keeping first-seen order", () => {
+    expect(parseCliArgs(["init", "--with", "pwa, signalr,pwa"]).flags.with).toEqual([
+      "pwa",
+      "signalr",
+    ]);
+  });
+
+  it("rejects an empty list", () => {
+    expect(() => parseCliArgs(["init", "--with", " , "])).toThrow(
+      /--with needs at least one feature/,
+    );
+  });
+
+  it("belongs to init only", () => {
+    expect(() => parseCliArgs(["add", "pwa", "--with", "x"])).toThrow(/unknown flag for add/);
+    expect(() => parseCliArgs(["gen", "--with", "x"])).toThrow(/unknown flag for gen/);
+  });
+});

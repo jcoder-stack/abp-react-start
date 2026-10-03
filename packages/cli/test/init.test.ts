@@ -11,12 +11,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { patchRootForFeatures } from "../src/feature";
+import { type FeatureDefinition, patchRootForFeatures } from "../src/feature";
 import {
   InitError,
   normalizeBackendUrl,
   patchRouterSource,
   quoteForWindowsShell,
+  runAddFeature,
   runInit,
 } from "../src/init";
 
@@ -1111,5 +1112,67 @@ describe("runInit config backend substitution", () => {
     expect(readFileSync(join(app, "abp.api.config.ts"), "utf8")).toBe(
       'export default { input: "./mine.json" };\n',
     );
+  });
+});
+
+describe("runInit features", () => {
+  const DEMO: FeatureDefinition = { name: "demo", env: [] };
+
+  it("installs requested features after the base blocks and before the route tree", async () => {
+    const { app, registryDir } = fakeWorkspace();
+    writeFileSync(join(registryDir, "public", "r", "demo.json"), "{}\n");
+    const { runner, calls } = recordingRunner();
+
+    const result = await initWithStubbedProbe({ cwd: app, runner, features: [DEMO] });
+
+    const npx = calls.filter((c) => c.cmd === "npx").map((c) => c.args.join(" "));
+    expect(npx.at(-2)).toContain(join(registryDir, "public", "r", "demo.json"));
+    expect(npx.at(-3)).toContain("admin-pages.json");
+    expect(npx.at(-1)).toContain("generate");
+    expect(result.features).toEqual([
+      { name: "demo", aggregatorSeeded: [], root: "already", envKeysAdded: [] },
+    ]);
+  });
+
+  it("reports no features when none were requested", async () => {
+    const { app } = fakeWorkspace();
+    const result = await initWithStubbedProbe({ cwd: app, runner: recordingRunner().runner });
+    expect(result.features).toEqual([]);
+  });
+});
+
+describe("runAddFeature", () => {
+  const DEMO: FeatureDefinition = { name: "demo", env: [] };
+
+  it("refuses a project init never touched, writing nothing", async () => {
+    const app = mkdtempSync(join(tmpdir(), "jc-abp-addfeat-"));
+    await expect(
+      runAddFeature({
+        cwd: app,
+        feature: DEMO,
+        runner: recordingRunner().runner,
+        allowScriptsProbe: () => false,
+      }),
+    ).rejects.toThrow(/run jc-abp init first/);
+    expect(existsSync(join(app, "src"))).toBe(false);
+  });
+
+  it("installs into an initialized project from the resolved registry", async () => {
+    const { app, registryDir } = fakeWorkspace();
+    await initWithStubbedProbe({ cwd: app, runner: recordingRunner().runner });
+    writeFileSync(join(registryDir, "public", "r", "demo.json"), "{}\n");
+    const { runner, calls } = recordingRunner();
+
+    const result = await runAddFeature({
+      cwd: app,
+      feature: DEMO,
+      runner,
+      allowScriptsProbe: () => false,
+    });
+
+    expect(result.root).toBe("already");
+    expect(calls.map((c) => c.args.join(" "))).toEqual([
+      expect.stringContaining(join(registryDir, "public", "r", "demo.json")),
+    ]);
   });
 });

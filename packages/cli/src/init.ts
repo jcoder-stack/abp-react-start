@@ -16,7 +16,12 @@ import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type AddResult, findAddConflicts, resolveRegistryDir, runAdd } from "./add";
 import { asRecord, type CommandRunner, installShadcnBlock } from "./blocks";
-import { seedFeatureAggregator } from "./feature";
+import {
+  type FeatureDefinition,
+  type FeatureInstallResult,
+  installFeature,
+  seedFeatureAggregator,
+} from "./feature";
 
 export type { CommandRunner } from "./blocks";
 
@@ -181,6 +186,8 @@ export interface InitOptions {
   runner?: CommandRunner;
   /** Overrides the npm allow-scripts probe (see AllowScriptsProbe); tests inject one to stay off the real npm. */
   allowScriptsProbe?: AllowScriptsProbe;
+  /** Optional features to install after the base blocks and root wiring (from --with). */
+  features?: FeatureDefinition[];
 }
 
 /** What runInit did. One field per step: what the auth copy-in wrote, which blocks were
@@ -206,6 +213,7 @@ export interface InitResult {
   envSeeded: boolean;
   /** 交互/--backend 给出的后端地址（规范化后）；跳过为 null。 */
   backendUrl: string | null;
+  features: FeatureInstallResult[];
 }
 
 /**
@@ -782,6 +790,19 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   }
   const rootWiring = seedRootWiring(opts.cwd, completed);
 
+  const features: FeatureInstallResult[] = [];
+  for (const feature of opts.features ?? []) {
+    try {
+      features.push(await installFeature({ cwd: opts.cwd, registryDir, feature, runner }));
+    } catch (error) {
+      throw new InitError(
+        `installing feature "${feature.name}" failed: ${errorMessage(error)}`,
+        completed,
+      );
+    }
+    completed.push(`feature ${feature.name}`);
+  }
+
   const tsrConfigPath = resolve(opts.cwd, "tsr.config.json");
   const tsrConfigSeeded = !existsSync(tsrConfigPath);
   if (tsrConfigSeeded) {
@@ -840,5 +861,38 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     designDocSeeded,
     envSeeded,
     backendUrl: opts.backend ?? null,
+    features,
   };
+}
+
+export interface AddFeatureOptions {
+  cwd: string;
+  feature: FeatureDefinition;
+  /** Registry dir override (--from); default resolution walks up for node_modules/@jcoder-stack/registry. */
+  from?: string;
+  runner?: CommandRunner;
+  allowScriptsProbe?: AllowScriptsProbe;
+}
+
+/**
+ * `jc-abp add <feature>` on an existing project. Same installFeature as `init --with`, behind the
+ * preflight init does: the project must already be initialized (the feature's block relies on
+ * components.json, the providers in __root.tsx and the auth shell), and npm must be able to run shadcn.
+ */
+export async function runAddFeature(opts: AddFeatureOptions): Promise<FeatureInstallResult> {
+  for (const required of ["components.json", ROOT_TARGET]) {
+    if (!existsSync(resolve(opts.cwd, required))) {
+      throw new Error(
+        `jc-abp add ${opts.feature.name} needs a project set up by jc-abp init (missing ${required}); ` +
+          `run jc-abp init first, or jc-abp init --with ${opts.feature.name} for a new project`,
+      );
+    }
+  }
+  assertNpmCanInstallBlocks(opts.cwd, opts.allowScriptsProbe ?? npmRejectsEnvAllowScripts, []);
+  return installFeature({
+    cwd: opts.cwd,
+    registryDir: resolveRegistryDir(opts.cwd, opts.from),
+    feature: opts.feature,
+    runner: opts.runner ?? defaultRunner,
+  });
 }

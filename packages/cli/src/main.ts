@@ -3,8 +3,14 @@ import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { runAdd } from "./add";
 import { parseCliArgs } from "./args";
+import {
+  FEATURES_WIRING_GUIDE_PATH,
+  type FeatureInstallResult,
+  findFeature,
+  resolveFeatures,
+} from "./feature";
 import { runGen } from "./gen";
-import { normalizeBackendUrl, runInit } from "./init";
+import { normalizeBackendUrl, runAddFeature, runInit } from "./init";
 import { findErrorCode, TLS_TRUST_CODES, UNREACHABLE_CODES } from "./upstream-errors";
 
 /** jc-abp usage text (v1: gen + add + init; watch is deferred). */
@@ -16,15 +22,33 @@ Usage:
       With a multi-target config ({ targets: {...} }) --input/--output cannot land on one target and are rejected.
   jc-abp add <name> [--from <registryDir>] [--dest <dir>]
       Copy a registry shell (e.g. auth) into the project (default src/<name>; never overwrites).
-  jc-abp init [--no-admin] [--backend <url>]
+      When <name> is an optional feature, install it into an initialized project instead (rerunnable).
+  jc-abp init [--no-admin] [--backend <url>] [--with <feature,...>]
       One-stop setup: auth shell + shadcn admin blocks in dependency order (--no-admin skips admin-pages
       and swaps in a minimal menu) + seed abp.api.config.ts and .env + generate the route tree.
+      --with installs optional features right after the base blocks.
       Interactive terminals get one question — the ABP backend URL (Enter skips); --backend answers it for scripts/CI.
   jc-abp help
 `;
 
 /** init 收尾打印的 __root.tsx / router.tsx 接线教程；正文是模板文本，dispatch 只负责打印，免得近百行样例代码长在函数里、还要跟 starter 的 __root.tsx 两头维护。 */
 const WIRING_GUIDE_PATH = fileURLToPath(new URL("../templates/wiring-guide.txt", import.meta.url));
+
+function printFeatureResult(result: FeatureInstallResult): void {
+  console.log(`feature ${result.name} installed`);
+  for (const file of result.aggregatorSeeded) console.log(`  seeded ${file}`);
+  if (result.root === "wired") {
+    console.log(
+      "  wired src/routes/__root.tsx for optional features (previous version: src/routes/__root.tsx.pre-features.bak)",
+    );
+  }
+  if (result.envKeysAdded.length > 0) {
+    console.log(`  env keys added to .env.example / .env: ${result.envKeysAdded.join(", ")}`);
+  }
+  if (result.root === "manual") {
+    console.log(`\n${readFileSync(FEATURES_WIRING_GUIDE_PATH, "utf8").trimEnd()}`);
+  }
+}
 
 /**
  * 交互式问一次 ABP 后端地址；回车跳过，非 TTY（CI、管道）直接跳过。
@@ -112,6 +136,8 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     if (invocation.command === "init") {
+      // 先于后端地址的校验与交互：未知功能名要在任何提问、写盘之前就失败。
+      const features = resolveFeatures(invocation.flags.with ?? []);
       let backend: string | undefined;
       if (invocation.flags.backend !== undefined) {
         const normalized = normalizeBackendUrl(invocation.flags.backend);
@@ -123,7 +149,12 @@ export async function main(argv: string[]): Promise<number> {
       } else {
         backend = await promptBackendUrl();
       }
-      const result = await runInit({ cwd: process.cwd(), admin: invocation.flags.admin, backend });
+      const result = await runInit({
+        cwd: process.cwd(),
+        admin: invocation.flags.admin,
+        backend,
+        features,
+      });
       if (result.componentsJsonSeeded) {
         console.log(
           `seeded components.json (css: ${result.componentsJsonCssPath}, baseline new-york/neutral)`,
@@ -131,6 +162,7 @@ export async function main(argv: string[]): Promise<number> {
       }
       console.log(`auth shell installed: ${result.addResult.files.length} files`);
       console.log(`shadcn blocks installed: ${result.shadcnBlocks.join(", ")}`);
+      for (const feature of result.features) printFeatureResult(feature);
       console.log(
         result.routeTreeGenerated
           ? "routeTree.gen.ts regenerated (the new routes are in the route types)."
@@ -177,6 +209,19 @@ export async function main(argv: string[]): Promise<number> {
     if (name === undefined) {
       console.error("add requires a name: jc-abp add <name>");
       return 1;
+    }
+    const feature = findFeature(name);
+    if (feature !== undefined) {
+      if (invocation.flags.dest !== undefined) {
+        console.error(
+          `--dest does not apply to features: ${name} installs into src/features/${name}`,
+        );
+        return 1;
+      }
+      printFeatureResult(
+        await runAddFeature({ cwd: process.cwd(), feature, from: invocation.flags.from }),
+      );
+      return 0;
     }
     const result = runAdd({
       name,
