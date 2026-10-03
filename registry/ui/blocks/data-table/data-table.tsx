@@ -204,7 +204,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
                     }
                     className={cn(
                       // label-caps：正字距的大写小字把表头标记为"分类"而非内容，
-                      // 是这套系统里唯一用正字距的地方（DESIGN.md Typography）。
+                      // 是这套系统里唯一用正字距的地方（DESIGN.md「排版」）。
                       "bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground",
                       alignClass(header.column.columnDef.meta?.align),
                       header.column.columnDef.meta?.className,

@@ -42,7 +42,7 @@ TanStack Start + shadcn/ui + Tailwind CSS v4 仓库规则。**始终用简体中
 - 尺寸/字号/字重/圆角一律走 `@theme` 的刻度类（`text-sm`、`font-medium`、`rounded-md`），禁止 `text-[13px]`、`tracking-[-0.02em]` 这类任意值——字距已随字号在 `@theme` 里给好。换主题时改刻度即可全站生效，任意值会漏。
 - 组件不 fork shadcn 原语：要改原语的观感（圆角、焦点环、暗色质感、导航项字重等）时写进主题层的 `[data-slot="…"]` 规则，这样 `shadcn add` 装进来的新组件自动继承。
 - 每个 `useQuery` 驱动的区块都要有 `isError` 分支（`FormErrorSummary` 或 destructive 文案）；禁止「失败停在骨架」与「失败渲染成空列表」。
-- 必填三件套：字段组件传 `required`（含 label 星号 + `aria-required`，不用原生 required）+ 表单级 zod schema（`validators.onDynamic`，消息走词条，零硬编码）+ `validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" })`。服务端错误经 `abpSubmitValidator` 返回 `{ form, fields }` 自动落位，与客户端校验同链渲染，不用 tooltip 承载错误。
+- 必填三件套：字段组件传 `required`（带 `aria-required`，不用原生 required、不画星号——表单开 `OptionalMarks` 时改为非必填字段标「选填」，见 DESIGN.md「表单」）+ 表单级 zod schema（`validators.onDynamic`，消息走词条，零硬编码）+ `validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" })`。服务端错误经 `abpSubmitValidator` 返回 `{ form, fields }` 自动落位，与客户端校验同链渲染，不用 tooltip 承载错误。
 - 错误边界：router 级 `defaultErrorComponent: RouteError` + `defaultNotFoundComponent: RouteNotFound` 让每条路由的错误/404 渲染在自己的位置（壳内出错侧栏保持在位），页面不必各自挂 `errorComponent`（要定制某页错误 UI 时在该路由显式声明即可，优先于默认）；`__root.tsx` 仍显式挂同两件（来自 `src/routes/shell-boundary.tsx`，刻意不经 Provider——出错时 Provider 子树已被替换，且内置静态兜底防错误页自炸）。区块级隔离用 `SectionBoundary` 包住页面局部。边界接硬错误，`isError` 接 react-query 软失败态。
 - 默认关闭的重组件（抽屉/面板/弹层及 combobox、tree、accordion 等重依赖）用 `React.lazy` + `Suspense`，不静态 import 进首屏；打开瞬间给 Skeleton/null fallback。
 - 鉴权态变化（登录/登出/切租户/切语言）一律 `window.location.assign` 整页跳转，不走 SPA navigate——这是作废 appState 与查询缓存的唯一可靠时机。appState 在 `__root.beforeLoad` 用 `ensureQueryData` + `staleTime` 缓存，页内导航不得重拉。
