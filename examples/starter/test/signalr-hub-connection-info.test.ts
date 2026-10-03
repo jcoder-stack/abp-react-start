@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { hubConnectionInfo, hubInputSchema } from "@/features/signalr/hub-connection-info";
+import { serveHubConnectionInfo } from "@/features/signalr/server-fns";
+
+// The server-only modules need the Start plugin's virtual entries; the function under test takes
+// everything they provide as arguments.
+vi.mock("@tanstack/react-start/server", () => ({ setResponseHeader: vi.fn() }));
+vi.mock("@/auth/middleware", () => ({ authMiddleware: {} }));
+vi.mock("@/auth/runtime", () => ({ getAuthRuntime: vi.fn() }));
 
 const session = { tokens: { accessToken: "at" }, expiresAt: 1_700_000_000_000 };
 
@@ -60,5 +67,21 @@ describe("hubInputSchema", () => {
 
   it.each(["Chat", "../admin", "a/b", "", "notifications?x=1"])("rejects %j", (hub) => {
     expect(hubInputSchema.safeParse({ hub }).success).toBe(false);
+  });
+});
+
+describe("serveHubConnectionInfo", () => {
+  it.each([
+    ["an anonymous visitor", null],
+    ["a signed-in user", session],
+  ])("forbids every cache from keeping the reply to %s", (_who, current) => {
+    const setHeader = vi.fn();
+    serveHubConnectionInfo(setHeader, {
+      session: current,
+      abpBaseUrl: "https://abp.example",
+      hubPrefix: undefined,
+      hub: "notifications",
+    });
+    expect(setHeader).toHaveBeenCalledWith("Cache-Control", "no-store");
   });
 });
