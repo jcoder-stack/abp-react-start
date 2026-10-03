@@ -1,3 +1,4 @@
+import { useSession } from "@jcoder-stack/abp-react/react";
 import { RealtimeProvider } from "@jcoder-stack/abp-react/realtime";
 import type { ReactNode } from "react";
 import type { FeatureModule } from "@/features/compose";
@@ -9,9 +10,11 @@ import { getHubConnectionInfoFn } from "@/features/signalr/server-fns";
 const getConnectionInfo = (hub: string) => getHubConnectionInfoFn({ data: { hub } });
 
 function SignalRProvider({ children }: { children: ReactNode }) {
+  const { status } = useSession();
   return (
     <RealtimeProvider getConnectionInfo={getConnectionInfo}>
-      <NotificationToaster />
+      {/* 匿名访客拿到的只会是 null，不挂就省掉每次页面加载那一趟 server fn。 */}
+      {status === "authenticated" ? <NotificationToaster /> : null}
       {children}
     </RealtimeProvider>
   );

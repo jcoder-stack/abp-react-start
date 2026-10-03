@@ -8,12 +8,17 @@ import { useRouterState } from "@tanstack/react-router";
 import { act, screen, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import signalr from "@/features/signalr/feature";
 import { NotificationToaster } from "@/features/signalr/notifications";
 import notificationsMessages from "@/features/signalr/notifications-messages.json";
-import { makeConfig, renderWithProviders } from "./test-utils";
+import { getHubConnectionInfoFn } from "@/features/signalr/server-fns";
+import { admin, anonymous, makeConfig, renderWithProviders } from "./test-utils";
 
 vi.mock("sonner", () => ({
   toast: { info: vi.fn(), success: vi.fn(), warning: vi.fn(), error: vi.fn() },
+}));
+vi.mock("@/features/signalr/server-fns", () => ({
+  getHubConnectionInfoFn: vi.fn(async () => null),
 }));
 
 type Handler = (...args: unknown[]) => void;
@@ -129,5 +134,29 @@ describe("NotificationToaster", () => {
     for (const show of [toast.info, toast.success, toast.warning, toast.error]) {
       expect(show).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe("the signalr feature", () => {
+  const { Provider } = signalr;
+  if (Provider === undefined) throw new Error("the signalr feature has no Provider");
+
+  it("asks for no notification connection on an anonymous visit", async () => {
+    renderWithProviders(<Provider>page</Provider>, {
+      identity: anonymous,
+      messages: notificationsMessages,
+    });
+    await act(async () => {});
+    expect(getHubConnectionInfoFn).not.toHaveBeenCalled();
+  });
+
+  it("connects the notifications hub for a signed-in user", async () => {
+    renderWithProviders(<Provider>page</Provider>, {
+      identity: admin,
+      messages: notificationsMessages,
+    });
+    await waitFor(() =>
+      expect(getHubConnectionInfoFn).toHaveBeenCalledWith({ data: { hub: "notifications" } }),
+    );
   });
 });
