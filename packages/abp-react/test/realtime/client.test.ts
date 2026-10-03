@@ -197,6 +197,28 @@ describe("createRealtimeClient", () => {
     expect(connections).toHaveLength(2);
     expect(getConnectionInfo).toHaveBeenCalledTimes(2);
     expect(client.getState("notifications")).toBe("disconnected");
+
+    client.on("notifications", "ReceiveNotification", vi.fn());
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(connections).toHaveLength(2);
+    expect(getConnectionInfo).toHaveBeenCalledTimes(2);
+    expect(client.getState("notifications")).toBe("disconnected");
+  });
+
+  it("keeps delivering to a second subscriber that passed the same handler after the first unsubscribes", async () => {
+    const { factory, connections } = fakeFactory();
+    const client = createRealtimeClient({
+      getConnectionInfo: signedIn,
+      connectionFactory: factory,
+      unavailable: memoryStore(),
+    });
+    const shared = vi.fn();
+    const offA = client.on("dashboard", "Changed", shared);
+    client.on("dashboard", "Changed", shared);
+    await flush();
+    offA();
+    connections[0]?.emit("Changed");
+    expect(shared).toHaveBeenCalledOnce();
   });
 
   it("retries a failing first connect on the backoff schedule until it succeeds", async () => {

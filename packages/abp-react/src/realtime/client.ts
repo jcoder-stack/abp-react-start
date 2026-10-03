@@ -39,6 +39,8 @@ interface HubEntry {
   state: HubState;
   /** True while a connect loop is running or a connection is up. */
   running: boolean;
+  /** Set once a fresh token was rejected; the hub stays down for the page instead of retrying on every navigation. */
+  rejected: boolean;
   /** Bumped by every stop; a connect loop holding an older value has been superseded. */
   generation: number;
   /** The connection our dispatchers are registered on, started or not. */
@@ -78,6 +80,7 @@ export function createRealtimeClient(opts: RealtimeClientOptions): RealtimeClien
       refs: 0,
       state: "idle",
       running: false,
+      rejected: false,
       generation: 0,
       attached: null,
       connected: null,
@@ -140,6 +143,7 @@ export function createRealtimeClient(opts: RealtimeClientOptions): RealtimeClien
     const generation = entry.generation;
     const superseded = () => generation !== entry.generation;
     if (unavailable.has(entry.name)) return settle(entry, "unavailable");
+    if (entry.rejected) return settle(entry, "disconnected");
     setState(entry, "connecting");
     let retriedUnauthorized = false;
     for (let attempt = 0; ; attempt++) {
@@ -177,6 +181,7 @@ export function createRealtimeClient(opts: RealtimeClientOptions): RealtimeClien
             entry.tokens.invalidate();
             continue;
           }
+          entry.rejected = true;
           logger.debug("hub rejected a fresh token; giving up", { hub: entry.name });
           return settle(entry, "disconnected");
         }
@@ -246,13 +251,15 @@ export function createRealtimeClient(opts: RealtimeClientOptions): RealtimeClien
       entry.attached?.on(method, dispatcher);
       handlers = set;
     }
-    handlers.add(handler);
+    // A wrapper per subscription: the same function subscribed twice must not be one Set member.
+    const subscription: Handler = (...args) => handler(...args);
+    handlers.add(subscription);
     let removed = false;
     return () => {
       if (removed) return;
       removed = true;
       const current = entry.handlers.get(method);
-      current?.delete(handler);
+      current?.delete(subscription);
       if (current?.size === 0) {
         const dispatcher = entry.dispatchers.get(method);
         entry.handlers.delete(method);
