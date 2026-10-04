@@ -108,6 +108,7 @@ The reference app is [`examples/starter`](examples/starter), itself a product of
 | [Install blocks selectively](docs/guides/install-blocks.en.md) | Order and prerequisites when installing only some blocks |
 | [List pages & CRUD](docs/guides/abp-table.en.md) | `useAbpTable` / `useAbpSheet`, from the service descriptor to a fully wired page |
 | [The form system](docs/guides/forms.en.md) | The four-layer architecture, field components, and the four validation channels |
+| [File upload and download](docs/guides/files.en.md) | Generated upload mutations, streaming downloads with progress, and the limits of each path |
 | [Design spec](DESIGN.md) | Palette, typography, component conventions |
 
 ## Development

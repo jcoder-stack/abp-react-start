@@ -31,7 +31,7 @@ server-fns.ts      getAppStateFn / getIdentityFn / abpRequestFn / abpUploadFn  �
 middleware.ts      authMiddleware (reads the session; refreshes and re-writes the cookie when expired)  ← compile-time constraint
 ```
 
-Assembly, handlers, and guards all sank into the packages; the copy-in is these four files plus five API routes. With no overrides passed, `auth.config.ts` behaves exactly like the package defaults — it exists to give you a place to change things, not a form you must fill in.
+Assembly, handlers, and guards all sank into the packages; the copy-in is these four files plus six API routes. With no overrides passed, `auth.config.ts` behaves exactly like the package defaults — it exists to give you a place to change things, not a form you must fill in.
 
 ## Package layering
 
@@ -97,7 +97,8 @@ Several deliberate choices:
 - **Policy headers have precedence**: tenant prefers the session with the cookie as fallback; culture prefers the cookie — an explicit language switch should beat the snapshot taken at sign-in.
 - **Bodies must be replayable**, so only `string`, bytes and `FormData` are accepted — never a `ReadableStream`. Step ⑤ above replays the same body after a 401 and on an idempotent retry, and a stream can only be consumed once: accepting one would silently degrade both paths into replaying an empty body, so the upstream sees a request missing its content rather than an error.
 - **Binary never crosses the JSON boundary.** File bytes travel through `abpUploadFn` as native multipart rather than inside the server function's JSON payload: seroval's typed-array round trip already throws at 1MB, and base64-as-string would turn a 10MB file into a 13.3MB string parsed on both ends.
-- **Downloads keep attachments intact.** A response carrying `Content-Disposition` is always handled as bytes by the proxy (even `text/csv` — decoding as UTF-8 would corrupt a GBK export), returns to the browser as base64, and the mutator wraps it in a `File` named after the attachment; any other response that is neither JSON nor `text/plain` comes back as a `Blob`. Base64 inflates downloads by about a third, which is fine up to tens of MB; larger files deserve a dedicated streaming route.
+- **Downloads keep attachments intact.** A response carrying `Content-Disposition` is always handled as bytes by the proxy (even `text/csv` — decoding as UTF-8 would corrupt a GBK export), returns to the browser as base64, and the mutator wraps it in a `File` named after the attachment; any other response that is neither JSON nor `text/plain` comes back as a `Blob`. Base64 inflates this path by about a third, so it suits small files only.
+- **Downloads stream.** `downloadAbpFile` requests `/api/stream/<ABP path>`; the server fetches it with the session and passes the body through chunk by chunk, with no buffering and no base64. Timeouts only cover the wait for response headers, after which only the browser's cancellation applies; the 401 refresh-and-replay happens before the headers, while no body has been sent yet, so streaming and replay do not conflict. GET only, cross-site requests refused, and every response is `private, no-store`. See [`guides/files.en.md`](guides/files.en.md).
 - **One SSR fetch feeds two mouths**: `getAppStateFn` returns config and identity in one trip, feeding `AppConfigProvider` and `SessionProvider` respectively, avoiding two first-paint round trips.
 
 ## The SignalR token exception

@@ -209,6 +209,11 @@
           "target": "src/api/abp-fetch.ts"
         },
         {
+          "path": "ui/blocks/app-shell/api/abp-download.ts",
+          "type": "registry:file",
+          "target": "src/api/abp-download.ts"
+        },
+        {
           "path": "ui/blocks/app-shell/menu.tsx",
           "type": "registry:file",
           "target": "src/menu.tsx"
