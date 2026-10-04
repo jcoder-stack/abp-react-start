@@ -56,6 +56,7 @@ function memoryCaches() {
 
 function loadWorker(fetchImpl: (req: Request) => Promise<Response>) {
   const handlers = new Map<string, Handler>();
+  const background: Promise<unknown>[] = [];
   const caches = memoryCaches();
   const self = {
     location: { origin: ORIGIN },
@@ -77,12 +78,20 @@ function loadWorker(fetchImpl: (req: Request) => Promise<Response>) {
   const routeFor = context.routeFor as (request: Request, origin: string) => string;
 
   /** Fires a FetchEvent; resolves to the response sw.js answered with, or undefined when it let the request through. */
-  async function dispatchFetch(url: string, init: { method?: string; mode?: RequestMode } = {}) {
-    const request = new Request(new URL(url, ORIGIN), { method: init.method ?? "GET" });
-    Object.defineProperty(request, "mode", { value: init.mode ?? "cors" });
+  async function dispatchFetch(url: string, init: FetchInit = {}) {
+    const request = req(url, init);
     let answered: Promise<Response> | undefined;
-    handlers.get("fetch")?.({ request, respondWith: (p: Promise<Response>) => (answered = p) });
+    handlers.get("fetch")?.({
+      request,
+      respondWith: (p: Promise<Response>) => (answered = p),
+      waitUntil: (p: Promise<unknown>) => background.push(p),
+    });
     return answered === undefined ? undefined : await answered;
+  }
+
+  /** Awaits every promise the worker handed to event.waitUntil (cache writes happen there, off the response path). */
+  async function settled() {
+    await Promise.all(background);
   }
 
   async function lifecycle(type: "install" | "activate") {
@@ -91,11 +100,16 @@ function loadWorker(fetchImpl: (req: Request) => Promise<Response>) {
     await pending;
   }
 
-  return { routeFor, dispatchFetch, lifecycle, caches, self };
+  return { routeFor, dispatchFetch, settled, lifecycle, caches, self };
 }
 
-function req(url: string, init: { method?: string; mode?: RequestMode } = {}) {
-  const request = new Request(new URL(url, ORIGIN), { method: init.method ?? "GET" });
+type FetchInit = { method?: string; mode?: RequestMode; headers?: Record<string, string> };
+
+function req(url: string, init: FetchInit = {}) {
+  const request = new Request(new URL(url, ORIGIN), {
+    method: init.method ?? "GET",
+    headers: init.headers,
+  });
   Object.defineProperty(request, "mode", { value: init.mode ?? "cors" });
   return request;
 }
@@ -121,6 +135,12 @@ describe("routeFor", () => {
   it("never intercepts non-GET or cross-origin requests", () => {
     expect(routeFor(req("/assets/a.js", { method: "POST" }), ORIGIN)).toBe("passthrough");
     expect(routeFor(new Request("https://fonts.example/a.woff2"), ORIGIN)).toBe("passthrough");
+  });
+
+  it("lets Range requests through: a 206 can't be cached and media must stream", () => {
+    const ranged = req("/assets/movie.mp4", { headers: { range: "bytes=0-" } });
+    expect(ranged.headers.get("range")).toBe("bytes=0-");
+    expect(routeFor(ranged, ORIGIN)).toBe("passthrough");
   });
 });
 
@@ -156,6 +176,7 @@ describe("fetch handling", () => {
     expect(await (await worker.dispatchFetch("/assets/app.js"))?.text()).toBe(
       "body of https://app.example/assets/app.js",
     );
+    await worker.settled();
     expect(await (await worker.dispatchFetch("/assets/app.js"))?.text()).toBe(
       "body of https://app.example/assets/app.js",
     );
@@ -164,6 +185,50 @@ describe("fetch handling", () => {
     expect((await worker.dispatchFetch("/assets/gone.js"))?.status).toBe(404);
     expect((await worker.dispatchFetch("/assets/gone.js"))?.status).toBe(404);
     expect(network).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not answer Range requests at all", async () => {
+    const worker = loadWorker(async () => new Response("x", { status: 206 }));
+    expect(
+      await worker.dispatchFetch("/assets/movie.mp4", { headers: { range: "bytes=0-" } }),
+    ).toBeUndefined();
+  });
+
+  it("hands a 206 for a non-range asset request to the page untouched and caches nothing", async () => {
+    const worker = loadWorker(async () => new Response("partial", { status: 206 }));
+    const response = await worker.dispatchFetch("/assets/clip.mp4");
+    expect(response?.status).toBe(206);
+    expect(await response?.text()).toBe("partial");
+    await worker.settled();
+    const cached = [...worker.caches.stores.values()].flatMap((store) => [...store.keys()]);
+    expect(cached).toEqual([]);
+  });
+
+  it("still returns the network body when the cache write fails", async () => {
+    const worker = loadWorker(async () => new Response("fresh body"));
+    const open = worker.caches.api.open;
+    worker.caches.api.open = async (name: string) => ({
+      ...(await open(name)),
+      put: async () => {
+        throw new TypeError("Vary: *");
+      },
+    });
+    const response = await worker.dispatchFetch("/assets/app.js");
+    expect(await response?.text()).toBe("fresh body");
+    await expect(worker.settled()).resolves.toBeUndefined();
+  });
+
+  it("keeps the asset cache at the 300 newest entries", async () => {
+    const worker = loadWorker(async (request) => new Response(`body of ${request.url}`));
+    for (let i = 0; i < 301; i++) {
+      await worker.dispatchFetch(`/assets/a-${i}.js`);
+      await worker.settled();
+    }
+    const assets = [...worker.caches.stores.entries()].find(([name]) => name.includes("assets"));
+    const urls = [...(assets?.[1].keys() ?? [])];
+    expect(urls).toHaveLength(300);
+    expect(urls).not.toContain("https://app.example/assets/a-0.js");
+    expect(urls).toContain("https://app.example/assets/a-300.js");
   });
 
   it("does not answer passthrough requests at all", async () => {

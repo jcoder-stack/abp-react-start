@@ -12,10 +12,11 @@ const MAX_ASSET_ENTRIES = 300;
  * Where a request goes. HTML and API responses carry the signed-in user's data, so they are
  * never cached: navigations go to the network (offline page on failure) and everything under
  * /api or /_serverFn — including the OIDC login/callback redirects — is not intercepted at all.
- * Only hashed /assets/* are immutable and safe to cache.
+ * Only hashed /assets/* are immutable and safe to cache. Range requests (<video>/<audio>) are
+ * left alone too: their 206 answers can't be stored and must keep streaming.
  */
 function routeFor(request, origin) {
-  if (request.method !== "GET") return "passthrough";
+  if (request.method !== "GET" || request.headers.has("range")) return "passthrough";
   const url = new URL(request.url);
   if (url.origin !== origin) return "passthrough";
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_serverFn")) {
@@ -33,15 +34,21 @@ async function trimAssets(cache) {
   }
 }
 
-async function cacheFirst(request) {
+async function cacheFirst(event) {
+  const request = event.request;
   const cache = await caches.open(ASSET_CACHE);
   const hit = await cache.match(request);
   if (hit) return hit;
   const response = await fetch(request);
-  // 部署后旧 chunk 会 404：缓存它等于把坏响应钉死。
-  if (response.ok) {
-    await cache.put(request, response.clone());
-    await trimAssets(cache);
+  // 只缓存 200：部署后旧 chunk 会 404（缓存它等于把坏响应钉死），206 与 Vary: * 则会让 put 抛错。
+  if (response.status === 200) {
+    // 写缓存放到响应路径之外：put 可能因 Vary: *、配额而失败，缓存失败绝不能让一个好响应变成网络错误。
+    event.waitUntil(
+      cache
+        .put(request, response.clone())
+        .then(() => trimAssets(cache))
+        .catch(() => {}),
+    );
   }
   return response;
 }
@@ -59,7 +66,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(OFFLINE_CACHE)
-      // 绝对 URL：Request 不接受相对路径（在 worker 外的测试环境里同样成立）；reload 绕过 HTTP 缓存取最新离线页。
+      // reload 绕过 HTTP 缓存，存进去的是最新的离线页；绝对 URL 也让它在 worker 之外（测试）可构造。
       .then((cache) => cache.add(new Request(new URL(OFFLINE_URL, self.location.origin), { cache: "reload" })))
       .then(() => self.skipWaiting()),
   );
@@ -83,5 +90,5 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const route = routeFor(event.request, self.location.origin);
   if (route === "navigate") event.respondWith(networkWithOfflineFallback(event.request));
-  else if (route === "asset") event.respondWith(cacheFirst(event.request));
+  else if (route === "asset") event.respondWith(cacheFirst(event));
 });
