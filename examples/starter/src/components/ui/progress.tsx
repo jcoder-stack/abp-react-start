@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Progress as ProgressPrimitive } from "radix-ui"
 
-import { cn } from "@/lib/utils"
+import { cn } from "cn"
 
 function Progress({
   className,
@@ -13,6 +13,7 @@ function Progress({
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
+      value={value}
       className={cn(
         "relative h-2 w-full overflow-hidden rounded-full bg-primary/20",
         className

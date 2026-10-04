@@ -28,25 +28,48 @@ An upload body has to be resendable: on a 401 the proxy refreshes the token and 
 Use `downloadAbpFile` from `src/api/abp-download.ts`, passing the URL function orval generated — if the backend renames or removes the endpoint, this fails to compile:
 
 ```tsx
+import { useLocalization } from "@jcoder-stack/abp-react/react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { downloadAbpFile } from "@/api/abp-download";
 import { getGetApiAppFileIdDownloadUrl } from "@/api/endpoints/file/file";
 import { abpErrorMessage } from "@/components/abp/crud/abp-form-errors";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
-async function onDownload(id: string) {
-  try {
-    await downloadAbpFile(getGetApiAppFileIdDownloadUrl(id), {
-      onProgress: ({ loaded, total }) => setPercent(total ? Math.round((loaded / total) * 100) : null),
-    });
-  } catch (error) {
-    toast.error(abpErrorMessage(error) ?? L("Crud:OperationFailed"));
+function DownloadButton({ id, label }: { id: string; label: string }) {
+  const L = useLocalization();
+  // null = not downloading; undefined = downloading with an unknown total
+  const [percent, setPercent] = useState<number | null | undefined>(null);
+
+  async function onDownload() {
+    setPercent(undefined);
+    try {
+      await downloadAbpFile(getGetApiAppFileIdDownloadUrl(id), {
+        onProgress: ({ loaded, total }) =>
+          setPercent(total ? Math.round((loaded / total) * 100) : undefined),
+      });
+    } catch (error) {
+      toast.error(abpErrorMessage(error) ?? L("Crud:OperationFailed"));
+    } finally {
+      setPercent(null);
+    }
   }
+
+  return (
+    <div className="space-y-2">
+      <Button onClick={onDownload} disabled={percent !== null}>
+        {label}
+      </Button>
+      {percent !== null && <Progress value={percent ?? null} aria-label={label} />}
+    </div>
+  );
 }
 ```
 
 - The filename comes from the response's `Content-Disposition` (`filename*` first, so non-ASCII names work); pass `filename` to override it.
 - A failure throws `AbpApiError`, handled the same way as the generated hooks.
-- `total` in `onProgress` may be `null`: the upstream sent no length, or the body was compressed, so only the bytes received so far are known.
+- `total` in `onProgress` may be `null`: the upstream sent no length, or the body was compressed. Pass `null` to `<Progress>` then: Radix marks it `data-state="indeterminate"` with no `aria-valuenow`, so screen readers don't announce a wrong percentage; visually it is an empty track, and an animation can be added in the theme layer under `[data-slot="progress"][data-state="indeterminate"]`.
 - To get the file without saving it (previewing an image, parsing Excel in the browser), use `fetchAbpFile`, which returns a `File` / `Blob`.
 
 The generated download function (e.g. `getApiAppFileIdDownload`) still works and also returns a named `File`, but it goes through a server function: the body crosses as base64 and is fully buffered on the server, so keep it for small files.
