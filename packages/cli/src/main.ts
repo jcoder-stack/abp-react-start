@@ -46,6 +46,7 @@ function printFeatureResult(result: FeatureInstallResult): void {
     console.log(`  env keys added to .env.example / .env: ${result.envKeysAdded.join(", ")}`);
   }
   for (const file of result.filesWritten) console.log(`  wrote ${file}`);
+  for (const warning of result.warnings) console.log(`  warning: ${warning}`);
   if (result.root === "manual") {
     console.log(`\n${readFileSync(FEATURES_WIRING_GUIDE_PATH, "utf8").trimEnd()}`);
   }

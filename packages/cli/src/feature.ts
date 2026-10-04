@@ -275,8 +275,11 @@ export interface FeatureDefinition {
    * (`from`, relative to it) into the project (`to`). An existing target is the app's own and is kept.
    */
   assets?: readonly { from: string; to: string }[];
-  /** Runs after the block is installed; returns one line per file it changed, for the summary. */
-  postInstall?: (cwd: string) => string[];
+  /**
+   * Runs after the block is installed. `written`: one line per file it changed; `warnings`: things
+   * the user must fix by hand. Both go into the summary.
+   */
+  postInstall?: (cwd: string) => { written?: string[]; warnings?: string[] };
 }
 
 const MANIFEST_FILE = "public/manifest.webmanifest";
@@ -311,6 +314,40 @@ export function applyAppTitleToManifest(cwd: string): string[] {
   return [`${MANIFEST_FILE} (name from VITE_APP_TITLE)`];
 }
 
+const PWA_MANIFEST_HREF = "/manifest.webmanifest";
+
+/** `{ … }` head entries and `<link …>` elements: either shape can declare a link in a root. */
+const LINK_DECLARATION = /\{[^{}]*\}|<link\b[^>]*>/g;
+
+function linkAttr(declaration: string, name: "rel" | "href"): string | undefined {
+  return new RegExp(`\\b${name}\\s*[:=]\\s*["']([^"']*)["']`).exec(declaration)?.[1];
+}
+
+/**
+ * Links a 0.4 root still carries that would shadow the pwa block's own: the head keeps the first
+ * manifest, and iOS ignores an SVG apple-touch-icon. Read-only; one warning per stale link.
+ */
+export function staleRootLinkWarnings(cwd: string): string[] {
+  const rootPath = resolve(cwd, ROOT_FILE);
+  if (!existsSync(rootPath)) return [];
+  const warnings: string[] = [];
+  for (const [declaration] of readFileSync(rootPath, "utf8").matchAll(LINK_DECLARATION)) {
+    const rel = linkAttr(declaration, "rel");
+    const href = linkAttr(declaration, "href");
+    if (href === undefined) continue;
+    if (rel === "manifest" && href !== PWA_MANIFEST_HREF) {
+      warnings.push(
+        `${ROOT_FILE} still links ${href} — remove that link so the PWA manifest is used`,
+      );
+    } else if (rel === "apple-touch-icon" && /\.svg([?#]|$)/i.test(href)) {
+      warnings.push(
+        `${ROOT_FILE} still links ${href} as apple-touch-icon — remove that link so iOS uses the PWA icon`,
+      );
+    }
+  }
+  return warnings;
+}
+
 /** Features `init --with` and `add <name>` know about. Each feature's PR adds its entry. */
 export const FEATURES: readonly FeatureDefinition[] = [
   { name: "signalr", env: ["# SIGNALR_HUB_PREFIX=/signalr-hubs"] },
@@ -320,7 +357,10 @@ export const FEATURES: readonly FeatureDefinition[] = [
     assets: ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"].map(
       (file) => ({ from: `assets/pwa/${file}`, to: `public/pwa/${file}` }),
     ),
-    postInstall: (cwd) => applyAppTitleToManifest(cwd),
+    postInstall: (cwd) => ({
+      written: applyAppTitleToManifest(cwd),
+      warnings: staleRootLinkWarnings(cwd),
+    }),
   },
 ];
 
@@ -402,6 +442,8 @@ export interface FeatureInstallResult {
   envKeysAdded: string[];
   /** Assets copied and files rewritten after the block install, this run. */
   filesWritten: string[];
+  /** Things postInstall found that the user must fix by hand. */
+  warnings: string[];
 }
 
 /**
@@ -450,6 +492,14 @@ export async function installFeature(opts: {
     copyFileSync(join(opts.registryDir, asset.from), target);
     filesWritten.push(asset.to);
   }
-  filesWritten.push(...(opts.feature.postInstall?.(opts.cwd) ?? []));
-  return { name: opts.feature.name, aggregatorSeeded, root, envKeysAdded, filesWritten };
+  const after = opts.feature.postInstall?.(opts.cwd);
+  filesWritten.push(...(after?.written ?? []));
+  return {
+    name: opts.feature.name,
+    aggregatorSeeded,
+    root,
+    envKeysAdded,
+    filesWritten,
+    warnings: after?.warnings ?? [],
+  };
 }
