@@ -123,7 +123,7 @@ export interface DataTableProps<TData extends RowData> {
    *  要覆盖悬停态或选中态得自带对应变体，例如
    *  `{ className: "bg-red-50 hover:bg-red-50 data-[state=selected]:bg-red-50" }`。
    *  只给 `bg-red-50` 的话，组件自带的 `hover:bg-muted/50` 和
-   *  `data-[state=selected]:bg-row-selected` 修饰符不同，tailwind-merge 不去重，
+   *  `data-[state=selected]:bg-row-selected` 修饰符不同，`cn` 不去重，
    *  悬停和选中时又特异性更高，会把你的颜色盖回去。 */
   rowProps?: (row: TData) => { className?: string };
   onRowClick?: (row: TData) => void;

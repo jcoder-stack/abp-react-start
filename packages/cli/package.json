@@ -27,8 +27,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.3.1",
+    "cn": "^0.4.0",
     "typescript": "^5.7.2"
   },
   "peerDependencies": {

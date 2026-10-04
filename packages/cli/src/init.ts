@@ -362,10 +362,10 @@ function seedThemeCss(cwd: string, cssRelPath: string | undefined, completed: st
   return true;
 }
 
-/** The npm packages that seedLibUtils's and seedThemeCss's templates import but never declare in
- *  any package.json. installSeededDependencies installs whichever subset the target app's
- *  manifest is missing. */
-const LIB_UTILS_RUNTIME_DEPS = ["clsx", "tailwind-merge"];
+/** The npm packages a src/lib/utils.ts may import (today's template: cn; older seeds: clsx +
+ *  tailwind-merge) and seedThemeCss's template imports, none declared in any package.json.
+ *  installSeededDependencies installs whichever subset the files use and the manifest is missing. */
+const LIB_UTILS_RUNTIME_DEPS = ["cn", "clsx", "tailwind-merge"];
 const THEME_CSS_RUNTIME_DEPS = ["tw-animate-css"];
 
 /** 模板自托管的字体包。只在入口 css 真的 `@import` 了它们时才装：已有自己主题的 app 不引这几支字体，
@@ -375,6 +375,14 @@ const THEME_FONT_DEPS = [
   "@fontsource-variable/noto-sans-sc",
   "@fontsource-variable/jetbrains-mono",
 ];
+
+/** 按 utils.ts 实际 import 的包来补，而不是按模板：老项目的 utils 仍是 clsx + tailwind-merge 写法，
+ *  给它装 cn 是白装，漏装 clsx 又会让它编译不过。 */
+function libUtilsDependencies(utilsText: string): string[] {
+  return LIB_UTILS_RUNTIME_DEPS.filter((pkg) =>
+    new RegExp(`from\\s+["']${pkg}["']`).test(utilsText),
+  );
+}
 
 function themeCssDependencies(cssText: string): string[] {
   return [
@@ -530,24 +538,24 @@ function readManifestDependencyNames(cwd: string): Set<string> {
 }
 
 /**
- * Installs whichever of clsx/tailwind-merge/tw-animate-css/@fontsource-variable/* the target app's package.json is still
- * missing. Gated by file existence (needsLibUtilsDeps / themeCssText: does src/lib/utils.ts / the
- * css entry actually exist; the font packages additionally only when that css imports them), not by whether seedLibUtils/seedThemeCss freshly wrote it *this* run.
+ * Installs whichever of cn (or clsx/tailwind-merge)/tw-animate-css/@fontsource-variable/* the target app's package.json is still
+ * missing. Gated by the files on disk (libUtilsText / themeCssText: what src/lib/utils.ts / the
+ * css entry actually import), not by whether seedLibUtils/seedThemeCss freshly wrote it *this* run.
  * A run that dies after seeding those files but before this step (the install itself failing, say)
  * leaves them on disk with nothing to remember that by on the next `jc-abp init`, so re-deriving
  * "does this app need the dependency" from the manifest each time is what makes retries actually
- * idempotent instead of leaving clsx/tailwind-merge/tw-animate-css/@fontsource-variable/* permanently uninstalled.
+ * idempotent instead of leaving cn/tw-animate-css/@fontsource-variable/* permanently uninstalled.
  */
 async function installSeededDependencies(
   cwd: string,
-  needsLibUtilsDeps: boolean,
+  libUtilsText: string | undefined,
   themeCssText: string | undefined,
   runner: CommandRunner,
   completed: string[],
 ): Promise<void> {
   const existing = readManifestDependencyNames(cwd);
   const packages = [
-    ...(needsLibUtilsDeps ? LIB_UTILS_RUNTIME_DEPS : []),
+    ...(libUtilsText !== undefined ? libUtilsDependencies(libUtilsText) : []),
     ...(themeCssText !== undefined ? themeCssDependencies(themeCssText) : []),
     ...ROOT_WIRING_RUNTIME_DEPS,
   ].filter((name) => !existing.has(name));
@@ -752,7 +760,9 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   const designDocSeeded = seedDesignDoc(opts.cwd, completed);
   await installSeededDependencies(
     opts.cwd,
-    existsSync(resolve(opts.cwd, LIB_UTILS_TARGET)),
+    existsSync(resolve(opts.cwd, LIB_UTILS_TARGET))
+      ? readFileSync(resolve(opts.cwd, LIB_UTILS_TARGET), "utf8")
+      : undefined,
     cssEntryPath !== undefined && existsSync(resolve(opts.cwd, cssEntryPath))
       ? readFileSync(resolve(opts.cwd, cssEntryPath), "utf8")
       : undefined,

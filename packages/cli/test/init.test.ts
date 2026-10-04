@@ -70,11 +70,14 @@ interface RunnerCall {
  * A fake registry + app dir mirroring add.test.ts's fakeWorkspace, extended with public/r/*.json for every
  * shadcn block runInit may install. The app carries a components.json already (so seedOrRequireComponentsJson
  * is a no-op), plus an already-themed css entry, a pre-existing src/lib/utils.ts, and a package.json that
- * already declares clsx/tailwind-merge/tw-animate-css/@fontsource-variable/*, so the seedLibUtils/seedThemeCss steps are no-ops
+ * already declares what that utils.ts and css import (clsx/tailwind-merge/tw-animate-css/@fontsource-variable/*), so the seedLibUtils/seedThemeCss steps are no-ops
  * here too *and* installSeededDependencies has nothing left missing, keeping this helper's many non-A3
  * callers unaffected by A3 behavior. fakeWorkspaceWithoutComponentsJson covers the cold-start (seed-or-fail,
  * and fresh utils/theme seeding) case.
  */
+const LEGACY_LIB_UTILS =
+  'import { type ClassValue, clsx } from "clsx";\nimport { twMerge } from "tailwind-merge";\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n';
+
 function fakeWorkspace(): { root: string; app: string; registryDir: string } {
   const { root, app, registryDir } = fakeWorkspaceWithoutComponentsJson();
   writeFileSync(
@@ -82,7 +85,8 @@ function fakeWorkspace(): { root: string; app: string; registryDir: string } {
     JSON.stringify({ style: "new-york", tailwind: { css: "src/app.css" } }),
   );
   mkdirSync(join(app, "src", "lib"), { recursive: true });
-  writeFileSync(join(app, "src", "lib", "utils.ts"), "export function cn() {}\n");
+  // 早于 cn 包的种子写法：用它证明老项目补装的是 clsx/tailwind-merge，而不是 cn。
+  writeFileSync(join(app, "src", "lib", "utils.ts"), LEGACY_LIB_UTILS);
   writeFileSync(
     join(app, "src", "app.css"),
     "/* already themed */\n:root { --background: white; }\n",
@@ -471,9 +475,7 @@ describe("runInit", () => {
 
     await initWithStubbedProbe({ cwd: app, runner });
 
-    expect(readFileSync(join(app, "src", "lib", "utils.ts"), "utf8")).toBe(
-      "export function cn() {}\n",
-    );
+    expect(readFileSync(join(app, "src", "lib", "utils.ts"), "utf8")).toBe(LEGACY_LIB_UTILS);
   });
 
   it("seeds DESIGN.md at the project root so agents working in the app read the same design rules", async () => {
@@ -525,7 +527,7 @@ describe("runInit", () => {
     expect(existsSync(join(app, "src", "app.css.bak"))).toBe(false);
   });
 
-  it("installs clsx/tailwind-merge/tw-animate-css via npm install when lib/utils.ts and the theme css are both freshly seeded", async () => {
+  it("installs cn/tw-animate-css via npm install when lib/utils.ts and the theme css are both freshly seeded", async () => {
     const { app } = fakeWorkspaceWithoutComponentsJson();
     writeCssEntry(app, "src/styles.css");
     const { runner, calls } = recordingRunner();
@@ -536,8 +538,7 @@ describe("runInit", () => {
       cmd: "npm",
       args: [
         "install",
-        "clsx",
-        "tailwind-merge",
+        "cn",
         "tw-animate-css",
         "@fontsource-variable/inter",
         "@fontsource-variable/noto-sans-sc",
@@ -564,8 +565,7 @@ describe("runInit", () => {
       cmd: "bun",
       args: [
         "add",
-        "clsx",
-        "tailwind-merge",
+        "cn",
         "tw-animate-css",
         "@fontsource-variable/inter",
         "@fontsource-variable/noto-sans-sc",
@@ -599,7 +599,7 @@ describe("runInit", () => {
 
     expect(calls[0]).toEqual({
       cmd: "npm",
-      args: ["install", "clsx", "tailwind-merge", "@tanstack/react-router-ssr-query"],
+      args: ["install", "cn", "@tanstack/react-router-ssr-query"],
       cwd: app,
     });
   });
@@ -610,7 +610,8 @@ describe("runInit", () => {
   // install must be re-derived from the target's package.json every run, not from "did this run seed it".
   it("installs still-missing seeded dependencies on a rerun where lib/utils.ts and the theme css already exist but package.json never caught up (init retried after a previous partial failure)", async () => {
     const { app } = fakeWorkspace();
-    // The previous run seeded the baseline theme, so its font imports are on disk too.
+    // The previous run seeded today's utils and the baseline theme, so cn and the font imports are on disk too.
+    writeFileSync(join(app, "src", "lib", "utils.ts"), 'export { cn } from "cn";\n');
     copyFileSync(APP_THEME_CSS_TEMPLATE_PATH, join(app, "src", "app.css"));
     writeFileSync(join(app, "package.json"), JSON.stringify({ name: "app" }));
     const { runner, calls } = recordingRunner();
@@ -621,8 +622,7 @@ describe("runInit", () => {
       cmd: "npm",
       args: [
         "install",
-        "clsx",
-        "tailwind-merge",
+        "cn",
         "tw-animate-css",
         "@fontsource-variable/inter",
         "@fontsource-variable/noto-sans-sc",
@@ -633,7 +633,7 @@ describe("runInit", () => {
     });
   });
 
-  it("does not install the font packages into an app whose own theme css never imports them", async () => {
+  it("does not install the font packages into an app whose own theme css never imports them, nor cn into a utils.ts still on clsx", async () => {
     const { app } = fakeWorkspace();
     writeFileSync(join(app, "package.json"), JSON.stringify({ name: "app" }));
     const { runner, calls } = recordingRunner();
