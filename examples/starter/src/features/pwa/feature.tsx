@@ -22,20 +22,22 @@ function PwaProvider({ children }: { children: ReactNode }) {
       }),
     [L],
   );
-  return children;
+  // 不放进 head.meta：路由的 head 合并按 name 去重，两条 theme-color 只会剩一条；React 19 会把
+  // 这里的 <meta> 提升进 <head>（SSR 同样）。两个 hex 镜像主题 :root / .dark 的 --background
+  // （meta 读不了 CSS 变量），由测试钉住。
+  return (
+    <>
+      <meta name="theme-color" content="#f6f9fd" media="(prefers-color-scheme: light)" />
+      <meta name="theme-color" content="#050e1e" media="(prefers-color-scheme: dark)" />
+      {children}
+    </>
+  );
 }
 
-/**
- * Installable app + offline page. The two theme-color hex values mirror --background in the
- * theme's :root and .dark (meta tags cannot read CSS variables); a test keeps them in sync.
- */
+/** Installable app + offline page. */
 const pwa: FeatureModule = {
   Provider: PwaProvider,
   head: {
-    meta: [
-      { name: "theme-color", content: "#f6f9fd", media: "(prefers-color-scheme: light)" },
-      { name: "theme-color", content: "#050e1e", media: "(prefers-color-scheme: dark)" },
-    ],
     links: [
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa/apple-touch-icon.png" },

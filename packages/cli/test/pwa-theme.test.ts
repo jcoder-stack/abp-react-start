@@ -29,10 +29,10 @@ describe("pwa colors follow the theme", () => {
   it("theme-color metas equal the light and dark --background", () => {
     const feature = read("../../../registry/ui/blocks/pwa/feature.tsx");
     expect(feature).toContain(
-      `content: "${backgroundHex(":root")}", media: "(prefers-color-scheme: light)"`,
+      `<meta name="theme-color" content="${backgroundHex(":root")}" media="(prefers-color-scheme: light)" />`,
     );
     expect(feature).toContain(
-      `content: "${backgroundHex(".dark")}", media: "(prefers-color-scheme: dark)"`,
+      `<meta name="theme-color" content="${backgroundHex(".dark")}" media="(prefers-color-scheme: dark)" />`,
     );
   });
 });

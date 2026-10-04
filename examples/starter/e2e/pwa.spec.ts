@@ -11,6 +11,29 @@ test("serves a manifest the page links to", async ({ page, request }) => {
   );
 });
 
+test("renders one theme-color meta per color scheme, already in the server-rendered head", async ({
+  page,
+  request,
+}) => {
+  const head = (await (await request.get("/")).text()).split("</head>")[0] ?? "";
+  expect(head.match(/<meta name="theme-color"[^>]*>/g)).toHaveLength(2);
+
+  await page.goto("/");
+  const metas = await page.locator('meta[name="theme-color" i]').evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      media: node.getAttribute("media"),
+      content: node.getAttribute("content"),
+    })),
+  );
+  expect(metas).toHaveLength(2);
+  expect(metas).toEqual(
+    expect.arrayContaining([
+      { media: "(prefers-color-scheme: light)", content: "#f6f9fd" },
+      { media: "(prefers-color-scheme: dark)", content: "#050e1e" },
+    ]),
+  );
+});
+
 test("registers the service worker, then shows the offline page and never caches HTML or API responses", async ({
   page,
   context,
