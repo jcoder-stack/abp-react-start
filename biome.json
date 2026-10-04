@@ -15,7 +15,8 @@
       "!examples/starter/src/api",
       "!examples/starter/src/components/ui",
       "!examples/starter/src/hooks/use-mobile.ts",
-      "!registry/ui/blocks/app-shell/api"
+      "!registry/ui/blocks/app-shell/api",
+      "!registry/ui/primitives"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

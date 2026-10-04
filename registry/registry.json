@@ -4,6 +4,20 @@
   "homepage": "https://github.com/jcoder-stack/abp-react-start",
   "items": [
     {
+      "name": "progress",
+      "type": "registry:ui",
+      "title": "Progress",
+      "description": "shadcn Progress with `value` forwarded to the Radix root, so assistive technology reads the progress (upstream only uses it for the indicator width).",
+      "dependencies": ["cn", "radix-ui"],
+      "files": [
+        {
+          "path": "ui/primitives/progress.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/progress.tsx"
+        }
+      ]
+    },
+    {
       "name": "abp-layout",
       "type": "registry:block",
       "title": "ABP Admin Layout",
@@ -129,7 +143,7 @@
         "button",
         "tooltip",
         "separator",
-        "progress",
+        "./node_modules/@jcoder-stack/registry/public/r/progress.json",
         "./node_modules/@jcoder-stack/registry/public/r/abp-layout.json",
         "./node_modules/@jcoder-stack/registry/public/r/abp-login.json"
       ],
