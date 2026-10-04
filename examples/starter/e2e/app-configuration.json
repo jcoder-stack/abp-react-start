@@ -1,0 +1,15 @@
+{
+  "currentUser": { "isAuthenticated": false, "id": null, "userName": null, "tenantId": null, "roles": [] },
+  "auth": { "grantedPolicies": {} },
+  "setting": { "values": {} },
+  "localization": {
+    "currentCulture": { "name": "en" },
+    "languages": [
+      { "cultureName": "en", "displayName": "English" },
+      { "cultureName": "zh-Hans", "displayName": "简体中文" }
+    ],
+    "values": {}
+  },
+  "currentTenant": { "id": null, "name": null, "isAvailable": true },
+  "features": { "values": {} }
+}
