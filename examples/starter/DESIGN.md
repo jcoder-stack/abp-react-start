@@ -294,6 +294,7 @@ These rules deliberately sit outside any `@layer`: primitives carry their own ut
 | `text-transform: inherit` on buttons inside table headers | Browsers default buttons to `none`, so sortable headers would disagree with other headers; the language list stays in one place |
 | `[data-slot="combobox-content"]` restores `pointer-events` | Radix modals set body to none; Base UI popups portal outside the dialog and would be unclickable |
 | `prefers-reduced-motion` | See [Motion](#motion) |
+| PWA `manifest.webmanifest` and the two `theme-color` metas hard-code the `--background` hex | Manifests and meta tags cannot read CSS variables; `packages/cli/test/pwa-theme.test.ts` fails when the theme's background changes without them |
 
 **Before adding a rule, ask**: can stock really not do this? Is it helping communicate information, or just adjusting looks? Will `asChild` replace the `data-slot`?
 
