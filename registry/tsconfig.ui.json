@@ -9,5 +9,9 @@
     "baseUrl": ".",
     "paths": { "@/*": ["../examples/starter/src/*"] }
   },
-  "include": ["ui/blocks/**/*.ts", "ui/blocks/**/*.tsx", "../examples/starter/src/routeTree.gen.ts"]
+  "include": [
+    "ui/blocks/**/*.ts",
+    "ui/blocks/**/*.tsx",
+    "ui/primitives/**/*.tsx",
+    "../examples/starter/src/routeTree.gen.ts"]
 }

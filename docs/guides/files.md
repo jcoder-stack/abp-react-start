@@ -28,25 +28,48 @@ upload.mutate({ id, data: { Category: "contract", Content: file } });
 用 `src/api/abp-download.ts` 的 `downloadAbpFile`，地址传 orval 生成的 URL 函数——后端接口改名或删除时，这里会在编译期报错：
 
 ```tsx
+import { useLocalization } from "@jcoder-stack/abp-react/react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { downloadAbpFile } from "@/api/abp-download";
 import { getGetApiAppFileIdDownloadUrl } from "@/api/endpoints/file/file";
 import { abpErrorMessage } from "@/components/abp/crud/abp-form-errors";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
-async function onDownload(id: string) {
-  try {
-    await downloadAbpFile(getGetApiAppFileIdDownloadUrl(id), {
-      onProgress: ({ loaded, total }) => setPercent(total ? Math.round((loaded / total) * 100) : null),
-    });
-  } catch (error) {
-    toast.error(abpErrorMessage(error) ?? L("Crud:OperationFailed"));
+function DownloadButton({ id, label }: { id: string; label: string }) {
+  const L = useLocalization();
+  // null = 没在下载；undefined = 在下载但不知道总长度
+  const [percent, setPercent] = useState<number | null | undefined>(null);
+
+  async function onDownload() {
+    setPercent(undefined);
+    try {
+      await downloadAbpFile(getGetApiAppFileIdDownloadUrl(id), {
+        onProgress: ({ loaded, total }) =>
+          setPercent(total ? Math.round((loaded / total) * 100) : undefined),
+      });
+    } catch (error) {
+      toast.error(abpErrorMessage(error) ?? L("Crud:OperationFailed"));
+    } finally {
+      setPercent(null);
+    }
   }
+
+  return (
+    <div className="space-y-2">
+      <Button onClick={onDownload} disabled={percent !== null}>
+        {label}
+      </Button>
+      {percent !== null && <Progress value={percent ?? null} aria-label={label} />}
+    </div>
+  );
 }
 ```
 
 - 文件名取自响应的 `Content-Disposition`（`filename*` 优先，中文名没问题）；传 `filename` 可以覆盖。
 - 失败时抛的是 `AbpApiError`，和生成的 hook 一样处理。
-- `onProgress` 的 `total` 可能是 `null`：上游没给长度，或者正文被压缩过，这时只能显示已下载多少。
+- `onProgress` 的 `total` 可能是 `null`：上游没给长度，或者正文被压缩过。这时给 `<Progress>` 传 `null`：Radix 把它标成 `data-state="indeterminate"`、不带 `aria-valuenow`，读屏器不会念出错误的百分比；视觉上是一条空轨道，要动画可以在主题层按 `[data-slot="progress"][data-state="indeterminate"]` 加。
 - 只要拿到文件、不落盘（预览图片、在浏览器里解析 Excel），用 `fetchAbpFile`，它返回 `File` / `Blob`。
 
 生成的下载函数（如 `getApiAppFileIdDownload`）也能用，返回的同样是带文件名的 `File`，但它走 server fn，正文经 base64 过桥、在服务端整份缓冲，只适合小文件。
