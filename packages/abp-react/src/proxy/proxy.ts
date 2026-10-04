@@ -33,6 +33,20 @@ export interface AbpProxyResponse {
   setCookies: string[];
 }
 
+/** `stream` 的请求：只收无正文的读请求——流式响应已交出去就没法再重放，重放只能发生在响应头之前。 */
+export type AbpProxyStreamRequest = Omit<AbpProxyRequest, "body" | "method"> & {
+  method?: "GET" | "HEAD";
+};
+
+/** `stream` 的响应：正文是上游的原始字节流，未缓冲、未解码，读取期间不受单次超时约束。 */
+export interface AbpProxyStreamResponse {
+  status: number;
+  /** 同 `AbpProxyResponse.headers`。 */
+  headers: Headers;
+  body: ReadableStream<Uint8Array> | null;
+  setCookies: string[];
+}
+
 /** 会话接入点：proxy 只认 AuthSession 与一个刷新回调，不认识刷新的实现。 */
 export interface AbpProxyAuth {
   session: AuthSession | null;
@@ -41,6 +55,11 @@ export interface AbpProxyAuth {
 
 export interface AbpProxy {
   send(req: AbpProxyRequest, auth: AbpProxyAuth): Promise<AbpProxyResponse>;
+  /**
+   * 与 `send` 同一套 Bearer、401 刷新重放、幂等重试与白名单，但不缓冲正文：响应头一到就交出上游字节流。
+   * 超时（`timeoutMs` / `totalTimeoutMs`）只约束到响应头为止，之后只听 `req.signal`——大文件按带宽传多久都行。
+   */
+  stream(req: AbpProxyStreamRequest, auth: AbpProxyAuth): Promise<AbpProxyStreamResponse>;
 }
 
 /** 代理请求最终失败但过程中已产生会话 cookie（如 401→刷新成功→重放失败）；调用方必须把 setCookies 落到响应上再转抛，否则轮换型 IdP 下用户被静默登出。 */
@@ -162,6 +181,34 @@ function resolveTargetUrl(path: string, baseUrl: string): string {
   return target.toString();
 }
 
+/**
+ * 单次尝试的取消信号。缓冲模式下超时覆盖整个往返（含读正文）；`detachDeadlines` 模式下超时只覆盖到
+ * 响应头，`release()` 之后剩下的只有调用方信号（`signals[0]`）——流式正文的读取时长取决于文件大小与带宽，
+ * 套上单次超时会在第 N 秒把一个正常进行中的下载掐断。
+ */
+function signalFor(
+  [caller, ...deadlines]: (AbortSignal | undefined)[],
+  detachDeadlines: boolean,
+): { signal: AbortSignal; release: () => void } {
+  const active = deadlines.filter((signal) => signal !== undefined);
+  const callerSignals = caller === undefined ? [] : [caller];
+  if (!detachDeadlines) {
+    return { signal: AbortSignal.any([...callerSignals, ...active]), release: () => {} };
+  }
+  const phase = new AbortController();
+  const relay = () => phase.abort(active.find((signal) => signal.aborted)?.reason);
+  for (const signal of active) {
+    if (signal.aborted) relay();
+    else signal.addEventListener("abort", relay, { once: true });
+  }
+  return {
+    signal: AbortSignal.any([...callerSignals, phase.signal]),
+    release: () => {
+      for (const signal of active) signal.removeEventListener("abort", relay);
+    },
+  };
+}
+
 /** ABP 代理网关：贴 Bearer、401→刷新→重放一次、幂等重试、超时。状态码透传，永不因状态码 throw；响应头按白名单过滤后交出。 */
 export function createAbpProxy(opts: {
   baseUrl: string;
@@ -179,115 +226,142 @@ export function createAbpProxy(opts: {
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const retries = opts.retry?.retries ?? 2;
   const maxBodyBytes = opts.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
+  /** 发请求直到拿到一个不再重放/重试的响应；`detachDeadlines` 为真时超时在响应头到达后解除。 */
+  async function exchange(
+    req: AbpProxyRequest,
+    auth: AbpProxyAuth,
+    detachDeadlines: boolean,
+  ): Promise<{ res: Response; setCookies: string[] }> {
+    // 两道入口守卫都在任何网络动作之前：流会静默废掉重放，超限会吃穿内存，
+    // 让它们先发出去再失败，代价是一次白跑的上传。
+    if (isStreamLike(req.body)) {
+      throw new Error(
+        "abp proxy: a ReadableStream body cannot be replayed after a 401 refresh or an idempotent retry; buffer it into bytes first",
+      );
+    }
+    const bodyBytes = measurableBodyBytes(req.body);
+    if (bodyBytes !== null && bodyBytes > maxBodyBytes) {
+      throw new Error(`abp proxy: request body too large (${bodyBytes} > ${maxBodyBytes} bytes)`);
+    }
+    const method = (req.method ?? "GET").toUpperCase();
+    const maxRetries = IDEMPOTENT.has(method) ? retries : 0;
+    const url = resolveTargetUrl(req.path, opts.baseUrl);
+    // 调用方 abort 与总预算耗尽都意味着「别再试了」：重试只对上游抖动有意义，
+    // 客户端已经走人或预算用光时继续重试纯属白烧上游配额。
+    const budget =
+      opts.totalTimeoutMs === undefined ? undefined : AbortSignal.timeout(opts.totalTimeoutMs);
+    const stops = [req.signal, budget].filter((signal) => signal !== undefined);
+    const stopped = () => stops.some((signal) => signal.aborted);
+    const stopReason = () => stops.find((signal) => signal.aborted)?.reason;
+    let session = auth.session;
+    let setCookies: string[] = [];
+    let refreshedOnce = false;
+    let attempt = 0;
+    // 退避等待；等待期间预算耗尽或调用方 abort 则返回 false，调用点据此放弃重试。
+    const backoff = async (): Promise<boolean> => {
+      await sleep(2 ** attempt * 100);
+      attempt++;
+      return !stopped();
+    };
+    for (;;) {
+      let res: Response;
+      const attemptSignal = signalFor(
+        [req.signal, budget, AbortSignal.timeout(timeoutMs)],
+        detachDeadlines,
+      );
+      try {
+        res = await fetchFn(url, {
+          method,
+          headers: {
+            ...sanitizeHeaders(req.headers, req.body),
+            ...(session === null ? {} : { Authorization: `Bearer ${session.tokens.accessToken}` }),
+          },
+          // AbpProxyBody 的四种形状运行时都是合法的 fetch 正文。TS 5.7 起 Uint8Array 带上了
+          // ArrayBufferLike 泛型参数，而 BodyInit 只认 ArrayBuffer 背衬的那支；把泛型参数写进
+          // 公开类型能消掉这次转换，但会反过来拒掉调用方最常写的裸 `Uint8Array` 标注。
+          body: req.body as BodyInit | undefined,
+          signal: attemptSignal.signal,
+        });
+      } catch (error) {
+        // 证书不受信是确定性失败，重试只会重演同一次握手；不可达可能是后端正在重启，重试照旧。
+        const tlsCode = tlsTrustFailureCode(error);
+        if (tlsCode === null && attempt < maxRetries && !stopped()) {
+          opts.logger?.debug("proxy retry after network error", { attempt, path: req.path });
+          if (await backoff()) continue;
+        }
+        // 裸的 `fetch failed` 不指向任何可执行的下一步，而这两类恰恰是本地起步时最常撞的墙。
+        const unreachableCode = tlsCode === null ? upstreamUnreachableCode(error) : null;
+        const explanation =
+          tlsCode !== null
+            ? tlsTrustFailureMessage(tlsCode, url)
+            : unreachableCode !== null
+              ? upstreamUnreachableMessage(unreachableCode, url)
+              : null;
+        const failure = explanation === null ? error : new Error(explanation, { cause: error });
+        if (setCookies.length > 0) {
+          throw new AbpProxyError("abp proxy request failed after refresh", setCookies, {
+            cause: failure,
+          });
+        }
+        throw failure;
+      } finally {
+        attemptSignal.release();
+      }
+      if (res.status === 401 && !refreshedOnce && session?.tokens.refreshToken !== undefined) {
+        refreshedOnce = true;
+        const refreshed = await auth.refresh();
+        if (refreshed !== null) {
+          session = refreshed.session;
+          setCookies = refreshed.setCookies;
+          opts.logger?.debug("proxy replaying after refresh", { path: req.path });
+          await discardBody(res);
+          continue;
+        }
+      }
+      if (isRetryableStatus(res.status) && attempt < maxRetries && !stopped()) {
+        opts.logger?.debug("proxy retry", { attempt, status: res.status, path: req.path });
+        await discardBody(res);
+        if (await backoff()) continue;
+        // body 已释放，无可交还的响应，按中止处理，与 fetch 自身超时的表现一致。
+        if (setCookies.length > 0) {
+          throw new AbpProxyError("abp proxy request aborted after refresh", setCookies, {
+            cause: stopReason(),
+          });
+        }
+        throw stopReason();
+      }
+      return { res, setCookies };
+    }
+  }
+
   return {
     async send(req, auth) {
-      // 两道入口守卫都在任何网络动作之前：流会静默废掉重放，超限会吃穿内存，
-      // 让它们先发出去再失败，代价是一次白跑的上传。
-      if (isStreamLike(req.body)) {
-        throw new Error(
-          "abp proxy: a ReadableStream body cannot be replayed after a 401 refresh or an idempotent retry; buffer it into bytes first",
-        );
-      }
-      const bodyBytes = measurableBodyBytes(req.body);
-      if (bodyBytes !== null && bodyBytes > maxBodyBytes) {
-        throw new Error(`abp proxy: request body too large (${bodyBytes} > ${maxBodyBytes} bytes)`);
-      }
-      const method = (req.method ?? "GET").toUpperCase();
-      const maxRetries = IDEMPOTENT.has(method) ? retries : 0;
-      const url = resolveTargetUrl(req.path, opts.baseUrl);
-      // 调用方 abort 与总预算耗尽都意味着「别再试了」：重试只对上游抖动有意义，
-      // 客户端已经走人或预算用光时继续重试纯属白烧上游配额。
-      const budget =
-        opts.totalTimeoutMs === undefined ? undefined : AbortSignal.timeout(opts.totalTimeoutMs);
-      const stops = [req.signal, budget].filter((signal) => signal !== undefined);
-      const stopped = () => stops.some((signal) => signal.aborted);
-      const stopReason = () => stops.find((signal) => signal.aborted)?.reason;
-      let session = auth.session;
-      let setCookies: string[] = [];
-      let refreshedOnce = false;
-      let attempt = 0;
-      // 退避等待；等待期间预算耗尽或调用方 abort 则返回 false，调用点据此放弃重试。
-      const backoff = async (): Promise<boolean> => {
-        await sleep(2 ** attempt * 100);
-        attempt++;
-        return !stopped();
+      const { res, setCookies } = await exchange(req, auth, false);
+      const contentType = res.headers.get("content-type") ?? "";
+      // 带 Content-Disposition 的是文件：哪怕 text/csv 也按字节透传——按 UTF-8 解码会把
+      // GBK 等非 UTF-8 编码的导出文件不可逆地弄坏，而代理无从得知文件真实编码。
+      const isText =
+        !res.headers.has("content-disposition") &&
+        (/^text\/|[+/]json|[+/]xml|urlencoded/i.test(contentType) || contentType === "");
+      return {
+        status: res.status,
+        headers: exposeHeaders(res.headers),
+        body: isText ? utf8KeepingBom.decode(await res.arrayBuffer()) : await res.arrayBuffer(),
+        setCookies,
       };
-      for (;;) {
-        let res: Response;
-        try {
-          res = await fetchFn(url, {
-            method,
-            headers: {
-              ...sanitizeHeaders(req.headers, req.body),
-              ...(session === null
-                ? {}
-                : { Authorization: `Bearer ${session.tokens.accessToken}` }),
-            },
-            // AbpProxyBody 的四种形状运行时都是合法的 fetch 正文。TS 5.7 起 Uint8Array 带上了
-            // ArrayBufferLike 泛型参数，而 BodyInit 只认 ArrayBuffer 背衬的那支；把泛型参数写进
-            // 公开类型能消掉这次转换，但会反过来拒掉调用方最常写的裸 `Uint8Array` 标注。
-            body: req.body as BodyInit | undefined,
-            signal: AbortSignal.any([...stops, AbortSignal.timeout(timeoutMs)]),
-          });
-        } catch (error) {
-          // 证书不受信是确定性失败，重试只会重演同一次握手；不可达可能是后端正在重启，重试照旧。
-          const tlsCode = tlsTrustFailureCode(error);
-          if (tlsCode === null && attempt < maxRetries && !stopped()) {
-            opts.logger?.debug("proxy retry after network error", { attempt, path: req.path });
-            if (await backoff()) continue;
-          }
-          // 裸的 `fetch failed` 不指向任何可执行的下一步，而这两类恰恰是本地起步时最常撞的墙。
-          const unreachableCode = tlsCode === null ? upstreamUnreachableCode(error) : null;
-          const explanation =
-            tlsCode !== null
-              ? tlsTrustFailureMessage(tlsCode, url)
-              : unreachableCode !== null
-                ? upstreamUnreachableMessage(unreachableCode, url)
-                : null;
-          const failure = explanation === null ? error : new Error(explanation, { cause: error });
-          if (setCookies.length > 0) {
-            throw new AbpProxyError("abp proxy request failed after refresh", setCookies, {
-              cause: failure,
-            });
-          }
-          throw failure;
-        }
-        if (res.status === 401 && !refreshedOnce && session?.tokens.refreshToken !== undefined) {
-          refreshedOnce = true;
-          const refreshed = await auth.refresh();
-          if (refreshed !== null) {
-            session = refreshed.session;
-            setCookies = refreshed.setCookies;
-            opts.logger?.debug("proxy replaying after refresh", { path: req.path });
-            await discardBody(res);
-            continue;
-          }
-        }
-        if (isRetryableStatus(res.status) && attempt < maxRetries && !stopped()) {
-          opts.logger?.debug("proxy retry", { attempt, status: res.status, path: req.path });
-          await discardBody(res);
-          if (await backoff()) continue;
-          // body 已释放，无可交还的响应，按中止处理，与 fetch 自身超时的表现一致。
-          if (setCookies.length > 0) {
-            throw new AbpProxyError("abp proxy request aborted after refresh", setCookies, {
-              cause: stopReason(),
-            });
-          }
-          throw stopReason();
-        }
-        const contentType = res.headers.get("content-type") ?? "";
-        // 带 Content-Disposition 的是文件：哪怕 text/csv 也按字节透传——按 UTF-8 解码会把
-        // GBK 等非 UTF-8 编码的导出文件不可逆地弄坏，而代理无从得知文件真实编码。
-        const isText =
-          !res.headers.has("content-disposition") &&
-          (/^text\/|[+/]json|[+/]xml|urlencoded/i.test(contentType) || contentType === "");
-        return {
-          status: res.status,
-          headers: exposeHeaders(res.headers),
-          body: isText ? utf8KeepingBom.decode(await res.arrayBuffer()) : await res.arrayBuffer(),
-          setCookies,
-        };
-      }
+    },
+    async stream(req, auth) {
+      const { res, setCookies } = await exchange(req, auth, true);
+      const headers = exposeHeaders(res.headers);
+      // fetch 已把 gzip/br 正文解压，上游的 content-length 却仍是压缩后的字节数；原样转交会让
+      // 浏览器在长度对不上时判这次下载失败。
+      if (res.headers.has("content-encoding")) headers.delete("content-length");
+      return {
+        status: res.status,
+        headers,
+        body: res.body,
+        setCookies,
+      };
     },
   };
 }
