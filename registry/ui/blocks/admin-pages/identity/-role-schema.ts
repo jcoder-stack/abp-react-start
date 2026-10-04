@@ -1,6 +1,6 @@
 import type { Localize } from "@jcoder-stack/abp-react/react";
 import { z } from "zod";
-import { postApiIdentityRolesBody, postApiIdentityRolesBodyNameMax } from "@/api/schemas/role/role";
+import { PostApiIdentityRolesBody, postApiIdentityRolesBodyNameMax } from "@/api/schemas/role/role";
 
 // roles.tsx 的 name 校验规则单独落到这个 `-` 前缀文件（route 文件生成器按前缀跳过，不会被
 // 误当路由）：roles.tsx 经 `@/auth`（含 @tanstack/react-start 的 server fn）链路，在没有
@@ -12,7 +12,7 @@ import { postApiIdentityRolesBody, postApiIdentityRolesBodyNameMax } from "@/api
  * 400）；必填与 trim 是 UI 语义、生成侧没有（ABP [Required] 未映射成 minLength），词条消息在
  * 此覆盖。 */
 export function buildRoleSchema(L: Localize) {
-  return postApiIdentityRolesBody.extend({
+  return PostApiIdentityRolesBody.extend({
     name: z
       .string()
       .trim()

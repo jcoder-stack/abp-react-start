@@ -15,6 +15,7 @@ import { describeSpecFetchError, runGen } from "../src/gen";
 
 const MINI = join(__dirname, "fixtures", "mini-abp-swagger.json");
 const DEMO = join(__dirname, "fixtures", "demo-abp-swagger.json");
+const UPLOAD = join(__dirname, "fixtures", "upload-abp-swagger.json");
 
 function listFiles(dir: string): string[] {
   return existsSync(dir) ? readdirSync(dir, { recursive: true }).map(String) : [];
@@ -165,6 +166,68 @@ describe("runGen", () => {
     const postInit = fetchFn.mock.calls[1]?.[1] as RequestInit;
     expect(postInit.method).toBe("POST");
     expect(postInit.body).toBe(JSON.stringify({ userName: "alice" }));
+  });
+
+  it("round-trips ABP file uploads (FormData, zod accepts Blob) and downloads (named File)", {
+    timeout: 60_000,
+  }, async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-upload-"));
+    await runGen({ cwd, overrides: { input: UPLOAD, output: "src/api" } });
+    const out = join(cwd, "src/api");
+
+    const mutatorMod = (await import(pathToFileURL(join(out, "mutator.ts")).href)) as {
+      configureAbpMutator: (config: { baseUrl?: string; fetchFn?: typeof fetch }) => void;
+    };
+    const fileMod = (await import(pathToFileURL(join(out, "endpoints/file/file.ts")).href)) as {
+      postApiAppFileUploadMany: (body: { files?: Blob[] }) => Promise<unknown>;
+      getApiAppFileIdDownload: (id: string) => Promise<Blob>;
+      postApiAppDocumentIdAttachment: (
+        id: string,
+        body: { Category?: string; Remark?: string | null; Content?: Blob },
+      ) => Promise<unknown>;
+    };
+    const schemaMod = (await import(pathToFileURL(join(out, "schemas/file/file.ts")).href)) as {
+      PostApiAppFileUploadBody: { safeParse: (value: unknown) => { success: boolean } };
+    };
+
+    const fetchFn = vi.fn(
+      async (_url: string | URL | Request, _init?: RequestInit) =>
+        new Response(JSON.stringify({ id: "1" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    mutatorMod.configureAbpMutator({ fetchFn });
+
+    const resume = new File(["pdf"], "resume.pdf", { type: "application/pdf" });
+    await fileMod.postApiAppDocumentIdAttachment("42", { Category: "contract", Content: resume });
+    const single = fetchFn.mock.calls[0]?.[1]?.body;
+    expect(single).toBeInstanceOf(FormData);
+    expect((single as FormData).get("Category")).toBe("contract");
+    expect(((single as FormData).get("Content") as File).name).toBe("resume.pdf");
+    expect((single as FormData).has("Remark")).toBe(false);
+
+    await fileMod.postApiAppFileUploadMany({ files: [new Blob(["a"]), new Blob(["b"])] });
+    const many = fetchFn.mock.calls[1]?.[1]?.body as FormData;
+    expect(many.getAll("files")).toHaveLength(2);
+
+    fetchFn.mockResolvedValueOnce(
+      new Response(new Uint8Array([0xff, 0x00]), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": 'attachment; filename="resume.pdf"',
+        },
+      }),
+    );
+    const downloaded = await fileMod.getApiAppFileIdDownload("42");
+    expect((downloaded as File).name).toBe("resume.pdf");
+    expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(new Uint8Array([0xff, 0x00]));
+
+    // orval@7 生成 `zod.instanceof(File)`，而 TS 类型给的是 Blob：拿 Blob 喂表单校验会被拒。
+    expect(schemaMod.PostApiAppFileUploadBody.safeParse({ file: new Blob(["x"]) }).success).toBe(
+      true,
+    );
   });
 });
 

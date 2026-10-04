@@ -39,7 +39,7 @@ export default defineApiConfig({
 
 For multiple backends use the `{ targets: { identity: {...}, business: {...} } }` shape; flags cannot land on one target there, so passing `--input`/`--output` is an error — edit the config file, or point `--config` at a single-target one.
 
-The CLI as a whole requires Node ≥ 18, but a `.ts` config needs a runtime that executes TypeScript directly (Bun, or Node ≥ 22.18 strip-types) — `init`/`add` work fine on Node 18; only `gen` reading a `.ts` config does not, and on older Node you can switch to `abp.api.config.json` (`gen` tells you the same when it happens).
+The CLI requires Node ≥ 22.18: orval v8, which `gen` is built on, needs it, and every command loads it. The same version runs the `.ts` config directly via strip-types; under a runtime that cannot execute TypeScript, switch to `abp.api.config.json` (`gen` tells you the same when it happens).
 
 ### `jc-abp add <name> [--from <registryDir>] [--dest <dir>]`
 

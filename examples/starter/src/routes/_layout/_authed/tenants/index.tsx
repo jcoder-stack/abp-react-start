@@ -13,7 +13,7 @@ import type {
   VoloAbpTenantManagementTenantUpdateDto,
 } from "@/api/models";
 import {
-  postApiMultiTenancyTenantsBody,
+  PostApiMultiTenancyTenantsBody,
   postApiMultiTenancyTenantsBodyAdminEmailAddressMax,
   postApiMultiTenancyTenantsBodyAdminPasswordMax,
   postApiMultiTenancyTenantsBodyNameMax,
@@ -83,7 +83,7 @@ function TenantsPage() {
     // 因为 TenantUpdateDto 本就不带这两个字段），max 从生成常量取，消息在此覆盖。
     schema: (mode) => {
       const isCreate = mode === "create";
-      return postApiMultiTenancyTenantsBody.extend({
+      return PostApiMultiTenancyTenantsBody.extend({
         name: z
           .string()
           .trim()
