@@ -28,7 +28,7 @@ export interface AbpProxyResponse {
   status: number;
   /** 只含内容协商类白名单（见 `EXPOSED_RESPONSE_HEADERS`）；上游 Set-Cookie / WWW-Authenticate / Server 已被剔除，可整份转交浏览器。 */
   headers: Headers;
-  /** 文本类 content-type 给 string，其余给 ArrayBuffer。二进制经 text() 解码会不可逆损坏。 */
+  /** 文本类 content-type 给 string，其余及带 Content-Disposition 的文件给 ArrayBuffer。二进制经 text() 解码会不可逆损坏。 */
   body: string | ArrayBuffer;
   setCookies: string[];
 }
@@ -276,8 +276,11 @@ export function createAbpProxy(opts: {
           throw stopReason();
         }
         const contentType = res.headers.get("content-type") ?? "";
+        // 带 Content-Disposition 的是文件：哪怕 text/csv 也按字节透传——按 UTF-8 解码会把
+        // GBK 等非 UTF-8 编码的导出文件不可逆地弄坏，而代理无从得知文件真实编码。
         const isText =
-          /^text\/|[+/]json|[+/]xml|urlencoded/i.test(contentType) || contentType === "";
+          !res.headers.has("content-disposition") &&
+          (/^text\/|[+/]json|[+/]xml|urlencoded/i.test(contentType) || contentType === "");
         return {
           status: res.status,
           headers: exposeHeaders(res.headers),

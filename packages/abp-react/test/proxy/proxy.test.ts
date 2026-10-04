@@ -222,6 +222,25 @@ describe("createAbpProxy", () => {
     expect(res.body).toBe("﻿a,b");
   });
 
+  it("returns a text-typed attachment as bytes so a non-UTF-8 export survives", async () => {
+    const gbk = new Uint8Array([0xd0, 0xd5, 0xc3, 0xfb]); // GBK "姓名"
+    const csv = fakeFetch(
+      new Response(gbk, {
+        status: 200,
+        headers: {
+          "content-type": "text/csv",
+          "content-disposition": 'attachment; filename="staff.csv"',
+        },
+      }),
+    );
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn: csv.fetchFn });
+    const res = await proxy.send({ path: "/x" }, noRefresh);
+    expect(res.body).toBeInstanceOf(ArrayBuffer);
+    if (!(res.body instanceof ArrayBuffer)) throw new Error("unreachable");
+    expect(new Uint8Array(res.body)).toEqual(gbk);
+    expect(res.headers.get("content-disposition")).toBe('attachment; filename="staff.csv"');
+  });
+
   it("cancels the discarded response body when replaying after a refresh", async () => {
     const stale = streamingResponse(401);
     const { fetchFn } = fakeFetch(stale.response, new Response("ok", { status: 200 }));

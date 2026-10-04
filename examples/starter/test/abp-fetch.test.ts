@@ -32,6 +32,20 @@ describe("abpFetch", () => {
     const data = await res.json();
     expect(data).toEqual({ a: 1 });
   });
+
+  it("restores a base64 file body byte-for-byte and keeps its Content-Disposition", async () => {
+    vi.mocked(abpRequestFn).mockResolvedValue({
+      status: 200,
+      contentType: "application/pdf",
+      contentDisposition: 'attachment; filename="resume.pdf"',
+      bodyBase64: btoa(String.fromCharCode(0x25, 0x50, 0xff, 0x00)),
+    });
+    const res = await abpFetch("/api/app/file/1/download", { method: "GET" });
+    expect(res.headers.get("content-disposition")).toBe('attachment; filename="resume.pdf"');
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(
+      new Uint8Array([0x25, 0x50, 0xff, 0x00]),
+    );
+  });
 });
 
 describe("abpFetch non-text bodies", () => {
