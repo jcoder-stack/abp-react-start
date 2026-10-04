@@ -47,6 +47,7 @@ token 全程不进浏览器——所有请求经服务端代理，会话是一�
 | `@jcoder-stack/abp-react/auth` | 授权认证核心：登录策略层（OIDC/password）+ 会话层（加密分块 cookie、刷新、登出）；宿主无关、后端无关 |
 | `@jcoder-stack/abp-react/permissions` | 权限判定原语 `isGranted` + 变参 checker |
 | `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad 路由守卫 `requireAuth` / `requirePermission`（`@tanstack/react-router` 作 peerDep，不用 TanStack 的消费者不受牵连） |
+| `@jcoder-stack/abp-react/realtime` | SignalR 连接层与 `useHubEvent` / `useHub`（可选功能 `signalr` 使用；`@microsoft/signalr` 作 optional peer） |
 | `@jcoder-stack/abp-react/i18n` | 两层合并 translator（后端 ABP 资源覆盖前端词库），可注入 interpolate/plural |
 | `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks（用户/权限/设置/特性/本地化/菜单）+ `<PermissionGuard>`/`<FeatureGuard>` |
 

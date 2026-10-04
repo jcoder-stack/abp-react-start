@@ -774,6 +774,45 @@
           "target": "src/routes/_layout/_authed/profile/index.tsx"
         }
       ]
+    },
+    {
+      "name": "signalr",
+      "type": "registry:block",
+      "title": "SignalR",
+      "description": "Optional feature: real-time connections to ABP SignalR hubs. A server function hands out a short-lived token, @jcoder-stack/abp-react/realtime manages the connection, and messages on the notifications hub show up as toasts.",
+      "dependencies": ["@jcoder-stack/abp-react", "@microsoft/signalr", "sonner", "zod"],
+      "files": [
+        {
+          "path": "ui/blocks/signalr/hub-connection-info.ts",
+          "type": "registry:file",
+          "target": "src/features/signalr/hub-connection-info.ts"
+        },
+        {
+          "path": "ui/blocks/signalr/server-fns.ts",
+          "type": "registry:file",
+          "target": "src/features/signalr/server-fns.ts"
+        },
+        {
+          "path": "ui/blocks/signalr/feature.tsx",
+          "type": "registry:file",
+          "target": "src/features/signalr/feature.tsx"
+        },
+        {
+          "path": "ui/blocks/signalr/notification.ts",
+          "type": "registry:file",
+          "target": "src/features/signalr/notification.ts"
+        },
+        {
+          "path": "ui/blocks/signalr/notifications.tsx",
+          "type": "registry:file",
+          "target": "src/features/signalr/notifications.tsx"
+        },
+        {
+          "path": "ui/blocks/signalr/notifications-messages.json",
+          "type": "registry:file",
+          "target": "src/features/signalr/notifications-messages.json"
+        }
+      ]
     }
   ]
 }

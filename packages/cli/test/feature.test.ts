@@ -305,6 +305,21 @@ describe("installFeature", () => {
     expect(existsSync(join(app, "src/features/demo/feature.tsx"))).toBe(true);
   });
 
+  it("refuses a feature the registry does not ship, before writing anything", async () => {
+    const { app, registryDir } = project({ envExample: "" });
+    const before = read(app, "src/routes/__root.tsx");
+    await expect(
+      installFeature({
+        cwd: app,
+        registryDir,
+        feature: { name: "ghost", env: [] },
+        runner: shadcn(app),
+      }),
+    ).rejects.toThrow(/feature "ghost" is not in the registry.*upgrade @jcoder-stack\/registry/s);
+    expect(existsSync(join(app, "src", "features"))).toBe(false);
+    expect(read(app, "src/routes/__root.tsx")).toBe(before);
+  });
+
   it("fails loudly when shadcn exits 0 without writing the feature", async () => {
     const { app, registryDir } = project();
     await expect(
@@ -315,6 +330,10 @@ describe("installFeature", () => {
 
 describe("resolveFeatures", () => {
   const table = [DEMO, { name: "other", env: [] }];
+
+  it("knows the signalr feature shipped with the CLI", () => {
+    expect(resolveFeatures(["signalr"]).map((f) => f.name)).toEqual(["signalr"]);
+  });
 
   it("resolves known names in the order given", () => {
     expect(resolveFeatures(["other", "demo"], table).map((f) => f.name)).toEqual(["other", "demo"]);

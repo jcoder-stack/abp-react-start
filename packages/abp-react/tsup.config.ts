@@ -14,6 +14,7 @@ export default defineConfig({
     proxy: "src/proxy/index.ts",
     react: "src/react/index.ts",
     router: "src/router/index.ts",
+    realtime: "src/realtime/index.ts",
   },
   format: ["esm"],
   dts: { compilerOptions: { composite: false, incremental: false } },

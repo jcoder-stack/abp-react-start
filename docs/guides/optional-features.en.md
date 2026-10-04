@@ -4,6 +4,12 @@
 
 Some capabilities are not for every project: PWA, SignalR real-time notifications. They ship as **optional features**: zero cost when absent, one command to add them to a new or an existing project.
 
+## Available features
+
+| Name | What it does | Guide |
+| --- | --- | --- |
+| `signalr` | Connects to ABP SignalR hubs: real-time notification toasts, `useHubEvent` / `useHub` for custom hubs | [realtime.en.md](realtime.en.md) |
+
 ## Installing
 
 New project, together with init:

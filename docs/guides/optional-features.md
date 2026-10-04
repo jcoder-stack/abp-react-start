@@ -4,6 +4,12 @@
 
 有些能力不是每个项目都要：PWA、SignalR 实时通知。它们做成**可选功能**——不装就零开销，要装时新项目、已有项目各有一条命令。
 
+## 有哪些功能
+
+| 名字 | 做什么 | 指南 |
+| --- | --- | --- |
+| `signalr` | 连 ABP SignalR Hub：实时通知 toast、自定义 Hub 的 `useHubEvent` / `useHub` | [realtime.md](realtime.md) |
+
 ## 安装
 
 新项目，init 时一起装：

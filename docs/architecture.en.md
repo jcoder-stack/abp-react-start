@@ -43,6 +43,7 @@ Dependencies flow in one direction only; lower layers don't know the upper ones 
         ├─────────────────────────────────────────────┤
  React  │  /react       providers + hooks             │
         │  /router      beforeLoad route guards       │
+        │  /realtime    SignalR + hooks (optional)    │
         ├─────────────────────────────────────────────┤
  Domain │  /auth        strategy layer + session layer│
         │  /proxy       ABP proxy gateway + runtime   │
@@ -62,10 +63,11 @@ Dependencies flow in one direction only; lower layers don't know the upper ones 
 | `i18n` | The two-layer merging translator (backend ABP resources override the frontend catalog) | Injectable interpolate / plural |
 | `router` | The `requireAuth` / `requirePermission` guards | `@tanstack/react-router` is a peerDep — consumers not on TanStack are unaffected |
 | `react` | `AppConfigProvider` / `SessionProvider` + hooks + `PermissionGuard` / `FeatureGuard` | Consumes only the data contracts of the layers above |
+| `realtime` | SignalR connection layer (shared per hub, backoff reconnect, 404 degrade) + `RealtimeProvider` / `useHubEvent` / `useHub` | Used only by the optional `signalr` feature; `@microsoft/signalr` is an optional peer loaded on first connect. `/react` does not import it |
 
 The `auth`/`proxy` split is the single most valuable cut in this layering: **switching backends** means replacing `proxy` only — `auth`'s OIDC handshake, PKCE, cookie sealing, and refresh timing don't change by a line.
 
-The eight domains share one npm package, but there is **no root export**: a `.` entry aggregating the subpaths would let the browser bundle follow `proxy` into server-side code, and the layering would be void.
+The nine domains share one npm package, but there is **no root export**: a `.` entry aggregating the subpaths would let the browser bundle follow `proxy` into server-side code, and the layering would be void.
 
 ## How a request travels
 
@@ -96,6 +98,21 @@ Several deliberate choices:
 - **Bodies must be replayable**, so only `string`, bytes and `FormData` are accepted — never a `ReadableStream`. Step ⑤ above replays the same body after a 401 and on an idempotent retry, and a stream can only be consumed once: accepting one would silently degrade both paths into replaying an empty body, so the upstream sees a request missing its content rather than an error.
 - **Binary never crosses the JSON boundary.** File bytes travel through `abpUploadFn` as native multipart rather than inside the server function's JSON payload: seroval's typed-array round trip already throws at 1MB, and base64-as-string would turn a 10MB file into a 13.3MB string parsed on both ends.
 - **One SSR fetch feeds two mouths**: `getAppStateFn` returns config and identity in one trip, feeding `AppConfigProvider` and `SessionProvider` respectively, avoiding two first-paint round trips.
+
+## The SignalR token exception
+
+SignalR requires the browser to connect to the backend hub directly, and a WebSocket cannot carry an `Authorization` header, so in a project with the `signalr` feature installed the browser does receive an access token. This is the one bounded exception to "tokens never enter the browser":
+
+| Dimension | Constraint |
+| --- | --- |
+| Purpose | Only for SignalR's `accessTokenFactory`; business APIs still all go through the BFF proxy |
+| Issuance | The server fn `getHubConnectionInfoFn`, behind `authMiddleware`; a session about to expire is refreshed first. The hub URL is assembled on the server, so the frontend cannot choose the host |
+| Storage | JS memory only; never localStorage / sessionStorage / cookies |
+| Lifetime | The transport asks for the token on every negotiate and reconnect; it is served from memory until 60 s before expiry, and not cached when the expiry is unknown |
+| Threat | XSS can read it; but XSS can already call any API through the BFF, so what is new is "the token leaves the browser", which the existing CSP and output escaping carry |
+| Transport | Sent as `?access_token=`; the backend must avoid logging the query string in access logs |
+
+Projects without `signalr` are unaffected. Why there is no same-origin WebSocket proxy: TanStack Start's server does not support it by default, and serverless targets such as Vercel cannot hold long-lived connections.
 
 ## Sessions
 

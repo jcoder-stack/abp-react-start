@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type CommandRunner, installShadcnBlock } from "./blocks";
 
@@ -273,7 +273,9 @@ export interface FeatureDefinition {
 }
 
 /** Features `init --with` and `add <name>` know about. Each feature's PR adds its entry. */
-export const FEATURES: readonly FeatureDefinition[] = [];
+export const FEATURES: readonly FeatureDefinition[] = [
+  { name: "signalr", env: ["# SIGNALR_HUB_PREFIX=/signalr-hubs"] },
+];
 
 export function findFeature(
   name: string,
@@ -364,6 +366,15 @@ export async function installFeature(opts: {
   feature: FeatureDefinition;
   runner: CommandRunner;
 }): Promise<FeatureInstallResult> {
+  // CLI 与 registry 版本错配（CLI 认识这个功能、registry 还没有它）要在改任何文件前拦下，
+  // 否则聚合点和根文件已经动了才报「找不到块」。
+  const blockJson = join(opts.registryDir, "public", "r", `${opts.feature.name}.json`);
+  if (!existsSync(blockJson)) {
+    throw new Error(
+      `feature "${opts.feature.name}" is not in the registry at ${opts.registryDir} (expected ${blockJson}); ` +
+        "upgrade @jcoder-stack/registry to the same version as @jcoder-stack/cli",
+    );
+  }
   const aggregatorSeeded = seedFeatureAggregator(opts.cwd);
   const root = wireRootForFeatures(opts.cwd);
   await installShadcnBlock(opts.cwd, opts.registryDir, opts.feature.name, opts.runner);

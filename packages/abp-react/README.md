@@ -14,6 +14,7 @@ Every domain is exported through a **subpath**; there is no root export: an aggr
 | `@jcoder-stack/abp-react/i18n` | A two-layer merging translator (backend ABP resources override the frontend catalog), with injectable interpolate/plural |
 | `@jcoder-stack/abp-react/react` | `AppConfigProvider` / `SessionProvider` + hooks (user/permissions/settings/features/localization/menu) + `<PermissionGuard>`/`<FeatureGuard>` |
 | `@jcoder-stack/abp-react/router` | TanStack Router beforeLoad guards `requireAuth` / `requirePermission` |
+| `@jcoder-stack/abp-react/realtime` | SignalR connection layer and `useHubEvent` / `useHub` (used by the optional `signalr` feature; `@microsoft/signalr` is an optional peer) |
 
 ## Install
 
@@ -25,7 +26,7 @@ Most projects use it together with `@jcoder-stack/cli` — `jc-abp init` writes 
 
 ## peerDependencies
 
-`react`, `@tanstack/react-router`, and `zod` are all declared as **optional** peers: a pure BFF consumer only uses `/proxy` and `/auth` and should not be forced to install React and the router; a pure frontend consumer only uses `/react` and `/i18n` and should not be forced to install zod. Install whichever ones the subpaths you actually use require — package managers stay silent about the missing rest.
+`react`, `@tanstack/react-router`, and `zod` are all declared as **optional** peers: a pure BFF consumer only uses `/proxy` and `/auth` and should not be forced to install React and the router; a pure frontend consumer only uses `/react` and `/i18n` and should not be forced to install zod. Install whichever ones the subpaths you actually use require — package managers stay silent about the missing rest. `@microsoft/signalr` is an optional peer too, needed only by `/realtime`.
 
 ## Usage
 

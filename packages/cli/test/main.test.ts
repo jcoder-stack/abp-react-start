@@ -71,6 +71,30 @@ describe("main", () => {
     error.mockRestore();
   });
 
+  it("rejects --dest for a feature", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await main(["add", "signalr", "--dest", "x"])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain("--dest does not apply to features");
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it("refuses to add a feature to a directory jc-abp init never set up, writing nothing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "jc-abp-addfeat-"));
+    const cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await main(["add", "signalr"])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain("run jc-abp init first");
+      expect(readdirSync(dir)).toEqual([]);
+    } finally {
+      cwd.mockRestore();
+      error.mockRestore();
+    }
+  });
+
   it("prints usage and returns 0 for help", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     expect(await main([])).toBe(0);
