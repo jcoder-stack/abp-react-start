@@ -1,0 +1,14 @@
+{
+  "en": {
+    "": {
+      "Pwa:NewVersion": "A new version is available",
+      "Pwa:Reload": "Reload"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Pwa:NewVersion": "有新版本可用",
+      "Pwa:Reload": "刷新"
+    }
+  }
+}

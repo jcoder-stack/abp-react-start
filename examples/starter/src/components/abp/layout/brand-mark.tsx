@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
  * brand-accent（与主色同色相、只差明度）。浅色是深蓝砖白框浅蓝键，暗色自动翻过来，组件不需要
  * 知道当前主题。全站除状态色外只有一个色相，标识也不另带第二种色相。尺寸由外部 className 给（`size-*`），viewBox 保证不失真。
  * 改动图形后必须在 16 / 24 / 32 / 48px 四档各看一眼——16px 是 favicon、24px 是侧栏图标轨。
+ * 换品牌时同步替换 PWA 图标（public/pwa/*.png，见 docs/guides/pwa.md）。
  */
 export function BrandMark({ className }: { className?: string }) {
   return (

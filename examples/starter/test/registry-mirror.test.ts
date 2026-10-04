@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -13,8 +13,10 @@ interface Registry {
   items: { name: string; files?: RegistryFile[] }[];
 }
 
-/** 块源码在 starter 里的落点。`target` 有两种形状：`src/…` 相对项目根，其余相对 `src/`。 */
+/** 块源码在 starter 里的落点。`target` 有三种形状：`~/…` 落项目根（如 PWA 的 `public/*`），
+ *  `src/…` 相对项目根，其余相对 `src/`。 */
 function starterPath(target: string): string {
+  if (target.startsWith("~/")) return join(STARTER, target.slice(2));
   return target.startsWith("src/") ? join(STARTER, target) : join(STARTER, "src", target);
 }
 
@@ -43,12 +45,19 @@ const pairs = registry.items.flatMap((item) =>
     starterFile: starterPath(f.target),
     target: f.target,
     // target 归一成相对项目根，才能与 HANDWRITTEN_PATHS 的写法对齐
-    rel: f.target.startsWith("src/") ? f.target : `src/${f.target}`,
+    rel: f.target.startsWith("~/")
+      ? f.target.slice(2)
+      : f.target.startsWith("src/")
+        ? f.target
+        : `src/${f.target}`,
   })),
 );
 
+// `~/` 目标是块自己装进项目根的文件（`public/sw.js` 之类），不是手写增量；`public` 整个目录
+// 在 HANDWRITTEN_PATHS 里，不排除它们 PWA 的 `public/*` 副本就永远不会被比对。
 const compared = pairs.filter(
-  (p) => !handwritten.some((h) => p.rel === h || p.rel.startsWith(`${h}/`)),
+  (p) =>
+    p.target.startsWith("~/") || !handwritten.some((h) => p.rel === h || p.rel.startsWith(`${h}/`)),
 );
 
 describe("registry 块与 starter 镜像", () => {
@@ -63,5 +72,18 @@ describe("registry 块与 starter 镜像", () => {
     const fromRegistry = readFileSync(pair.registryFile, "utf8");
     const fromStarter = readFileSync(pair.starterFile, "utf8");
     expect(fromStarter).toBe(fromRegistry);
+  });
+
+  it("PWA 图标：registry/assets/pwa 与 starter/public/pwa 文件集合一致、逐字节相同", () => {
+    const fromRegistry = join(REPO_ROOT, "registry/assets/pwa");
+    const fromStarter = join(STARTER, "public/pwa");
+    const names = readdirSync(fromRegistry).sort();
+    expect(names.length).toBeGreaterThan(0);
+    expect(readdirSync(fromStarter).sort()).toEqual(names);
+    for (const name of names) {
+      const a = readFileSync(join(fromRegistry, name));
+      const b = readFileSync(join(fromStarter, name));
+      expect(a.equals(b), name).toBe(true);
+    }
   });
 });

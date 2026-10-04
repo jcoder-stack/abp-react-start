@@ -8,6 +8,7 @@ Some capabilities are not for every project: PWA, SignalR real-time notification
 
 | Name | What it does | Guide |
 | --- | --- | --- |
+| `pwa` | Installable app, an offline page when the network is down, a reload prompt after a deploy | [pwa.en.md](pwa.en.md) |
 | `signalr` | Connects to ABP SignalR hubs: real-time notification toasts, `useHubEvent` / `useHub` for custom hubs | [realtime.en.md](realtime.en.md) |
 
 ## Installing

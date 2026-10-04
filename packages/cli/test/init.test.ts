@@ -1130,7 +1130,14 @@ describe("runInit features", () => {
     expect(npx.at(-2)).toContain("generate");
     expect(npx.at(-3)).toContain("admin-pages.json");
     expect(result.features).toEqual([
-      { name: "demo", aggregatorSeeded: [], root: "already", envKeysAdded: [] },
+      {
+        name: "demo",
+        aggregatorSeeded: [],
+        root: "already",
+        envKeysAdded: [],
+        filesWritten: [],
+        warnings: [],
+      },
     ]);
   });
 

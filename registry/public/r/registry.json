@@ -813,6 +813,50 @@
           "target": "src/features/signalr/notifications-messages.json"
         }
       ]
+    },
+    {
+      "name": "pwa",
+      "type": "registry:block",
+      "title": "PWA",
+      "description": "Optional feature: installable app (manifest, icons, theme-color) with a minimal, safe offline mode. The service worker caches hashed assets only, never HTML or API responses, shows an offline page when a navigation fails, and the app prompts for a reload after a deploy.",
+      "dependencies": ["@jcoder-stack/abp-react", "sonner"],
+      "files": [
+        {
+          "path": "ui/blocks/pwa/feature.tsx",
+          "type": "registry:file",
+          "target": "src/features/pwa/feature.tsx"
+        },
+        {
+          "path": "ui/blocks/pwa/register.ts",
+          "type": "registry:file",
+          "target": "src/features/pwa/register.ts"
+        },
+        {
+          "path": "ui/blocks/pwa/new-version.ts",
+          "type": "registry:file",
+          "target": "src/features/pwa/new-version.ts"
+        },
+        {
+          "path": "ui/blocks/pwa/pwa-messages.json",
+          "type": "registry:file",
+          "target": "src/features/pwa/pwa-messages.json"
+        },
+        {
+          "path": "ui/blocks/pwa/public/sw.js",
+          "type": "registry:file",
+          "target": "~/public/sw.js"
+        },
+        {
+          "path": "ui/blocks/pwa/public/offline.html",
+          "type": "registry:file",
+          "target": "~/public/offline.html"
+        },
+        {
+          "path": "ui/blocks/pwa/public/manifest.webmanifest",
+          "type": "registry:file",
+          "target": "~/public/manifest.webmanifest"
+        }
+      ]
     }
   ]
 }
