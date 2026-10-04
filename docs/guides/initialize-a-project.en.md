@@ -12,7 +12,7 @@ The README's [Quick start](../../README.en.md#quick-start) is the condensed vers
 
 | Need | Why | How to confirm |
 | --- | --- | --- |
-| Node (a modern version) | The CLI uses `node:util`'s `parseArgs` and recursive `readdirSync` | `node -v` |
+| Node ≥ 22.18 | orval v8, which the CLI depends on, requires it; it also runs the `.ts` config directly via strip-types | `node -v` |
 | bun or npm | Installing dependencies; `init` autodetects which | `bun -v` / `npm -v` |
 | `npx` available | `init` calls shadcn and router-cli through it | `npx -v` |
 | An ABP backend | Generating the API client reads its swagger | Opening `<your backend>/swagger/v1/swagger.json` in a browser yields JSON |

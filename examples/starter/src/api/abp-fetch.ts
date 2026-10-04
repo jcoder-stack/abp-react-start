@@ -7,6 +7,7 @@ const NULL_BODY_STATUSES = new Set([204, 205, 304]);
 interface AbpResult {
   status: number;
   contentType: string | null;
+  contentDisposition?: string | null;
   body?: string;
   bodyBase64?: string;
 }
@@ -31,10 +32,11 @@ function toResponse(res: AbpResult): Response {
     : res.bodyBase64 === undefined
       ? (res.body ?? null)
       : Uint8Array.from(atob(res.bodyBase64), (char) => char.charCodeAt(0));
-  return new Response(responseBody, {
-    status: res.status,
-    headers: res.contentType ? { "Content-Type": res.contentType } : {},
-  });
+  const headers = new Headers();
+  if (res.contentType) headers.set("Content-Type", res.contentType);
+  // 文件名只在这个头里；丢了它，下载落盘就只能是一个无名 Blob。
+  if (res.contentDisposition) headers.set("Content-Disposition", res.contentDisposition);
+  return new Response(responseBody, { status: res.status, headers });
 }
 
 /** fetch 形状的封装：生成的 API 客户端 → abpRequestFn / abpUploadFn（服务端代理边界）。 */

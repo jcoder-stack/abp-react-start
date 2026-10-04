@@ -122,7 +122,7 @@ export async function runGen(opts: {
     const spec = await localizeSpec(resolveInput(opts.cwd, config.input));
     try {
       const orvalConfig = createOrvalConfig({ input: spec.target, outputDir, zod: config.zod });
-      // orval@7's programmatic generate() only accepts a single project's Options (or a config file
+      // orval's programmatic generate() only accepts a single project's Options (or a config file
       // path) as its first argument, not the multi-project map createOrvalConfig produces, so each
       // project ("api", optionally "apiZod") is resolved and generated with its own call.
       const projects = await (typeof orvalConfig === "function" ? orvalConfig() : orvalConfig);

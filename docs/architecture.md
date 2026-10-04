@@ -97,6 +97,7 @@ ABP 后端
 - **策略头有优先级**：租户走会话优先、cookie 兜底；文化走 cookie 优先——用户显式切语言应该胜过登录时的快照。
 - **正文必须可重发**，所以只收 `string`、字节、`FormData`，不收 `ReadableStream`。上面第 ⑤ 步的 401 重放与幂等重试都要把同一个 body 再发一次，而流只能消费一次——收下它会让这两条路径静默退化成「重放一个空正文」，上游看到的是内容缺失的请求而不是错误。
 - **二进制不走 JSON 边界**。文件字节经 `abpUploadFn` 以原生 multipart 过桥，不塞进 server fn 的 JSON 载荷：seroval 对 typed array 的往返在 1MB 就会抛错，而 base64 成字符串会让 10MB 的文件变成 13.3MB 再经两端 JSON 解析。
+- **下载按附件保真**。带 `Content-Disposition` 的响应在代理里一律按字节处理（哪怕是 `text/csv`——按 UTF-8 解码会弄坏 GBK 导出），经 base64 回到浏览器，mutator 再包成带文件名的 `File`；其余非 JSON、非 `text/plain` 响应给 `Blob`。下载方向的 base64 会把体积放大约 1/3，几十 MB 以内无碍，更大的文件应给专门的流式路由。
 - **SSR 一次取数喂两张嘴**：`getAppStateFn` 一趟返回 config 与 identity，分别喂 `AppConfigProvider` 与 `SessionProvider`，避免首屏两次往返。
 
 ## SignalR 的 token 例外

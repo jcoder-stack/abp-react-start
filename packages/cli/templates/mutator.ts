@@ -48,10 +48,35 @@ export async function abpMutator<T>(url: string, options?: RequestInit): Promise
   if (res.status === 204) {
     return undefined as T;
   }
+  const disposition = res.headers.get("content-disposition");
+  if (disposition !== null) {
+    return toFile(await res.blob(), disposition) as T;
+  }
   const contentType = res.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     return (await res.json()) as T;
   }
   // ABP 有裸字符串/无 content-type 的端点（如 timezone 当前值），走 text 分支比 json 更稳。
-  return (await res.text()) as T;
+  if (contentType === "" || contentType.startsWith("text/plain")) {
+    return (await res.text()) as T;
+  }
+  // orval 把 `format: binary` 的响应类型标成 Blob；按文本解码会不可逆地弄坏字节。
+  return (await res.blob()) as T;
+}
+
+/** 有文件名就包成 File（仍是 Blob，生成函数的 `Promise<Blob>` 不变），调用方可直接拿 `.name` 落盘。
+ *  `filename*`（RFC 5987，ASP.NET Core 给非 ASCII 文件名用它）优先于 `filename`。 */
+function toFile(blob: Blob, disposition: string): Blob {
+  const extended = /filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i.exec(disposition);
+  const plain = /filename\s*=\s*("([^"]*)"|[^;]+)/i.exec(disposition);
+  let name: string | undefined;
+  if (extended?.[2]) {
+    try {
+      name = decodeURIComponent(extended[2].trim());
+    } catch {
+      // 编码坏掉的 filename* 退回 filename
+    }
+  }
+  name ??= (plain?.[2] ?? plain?.[1])?.trim();
+  return name ? new File([blob], name, { type: blob.type }) : blob;
 }

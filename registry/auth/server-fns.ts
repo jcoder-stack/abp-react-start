@@ -107,6 +107,7 @@ async function forwardToAbp(
   return {
     status: res.status,
     contentType: res.headers.get("content-type"),
+    contentDisposition: res.headers.get("content-disposition"),
     body: typeof res.body === "string" ? res.body : undefined,
     bodyBase64: typeof res.body === "string" ? undefined : toBase64(res.body),
   };

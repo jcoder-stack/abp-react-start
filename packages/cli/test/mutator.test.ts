@@ -77,6 +77,53 @@ describe("abpMutator", () => {
     expect(result).toBe("Unspecified");
   });
 
+  it("returns a byte-identical Blob for a binary download instead of decoding it as text", async () => {
+    const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0xff, 0x00]);
+    configureAbpMutator({
+      fetchFn: vi.fn(
+        async () =>
+          new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf" } }),
+      ),
+    });
+    const result = await abpMutator<Blob>("/api/app/file/1/download", { method: "GET" });
+    expect(result).toBeInstanceOf(Blob);
+    expect(new Uint8Array(await result.arrayBuffer())).toEqual(bytes);
+  });
+
+  it("returns an attachment as a File named after the RFC 5987 filename*", async () => {
+    configureAbpMutator({
+      fetchFn: vi.fn(
+        async () =>
+          new Response("a,b", {
+            status: 200,
+            headers: {
+              "Content-Type": "text/csv",
+              "Content-Disposition":
+                "attachment; filename=staff.csv; filename*=UTF-8''%E5%91%98%E5%B7%A5.csv",
+            },
+          }),
+      ),
+    });
+    const result = await abpMutator<Blob>("/api/app/staff/export", { method: "GET" });
+    expect(result).toBeInstanceOf(File);
+    expect((result as File).name).toBe("员工.csv");
+    expect(await result.text()).toBe("a,b");
+  });
+
+  it("falls back to the quoted plain filename when filename* is absent", async () => {
+    configureAbpMutator({
+      fetchFn: vi.fn(
+        async () =>
+          new Response(new Uint8Array([1]), {
+            status: 200,
+            headers: { "Content-Disposition": 'attachment; filename="report 2026.xlsx"' },
+          }),
+      ),
+    });
+    const result = await abpMutator<Blob>("/x", { method: "GET" });
+    expect((result as File).name).toBe("report 2026.xlsx");
+  });
+
   it("resetAbpMutator clears the configuration (e.g. the baseUrl prefix)", async () => {
     const fetchFn = vi.fn(async () => json({ ok: true }));
     configureAbpMutator({ baseUrl: "https://api", fetchFn });

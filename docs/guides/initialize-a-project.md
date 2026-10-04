@@ -12,7 +12,7 @@ README 的[快速开始](../../README.md#快速开始)是这份文档的浓缩�
 
 | 需要 | 为什么 | 怎么确认 |
 | --- | --- | --- |
-| Node（现代版本） | CLI 用到 `node:util` 的 `parseArgs` 与递归 `readdirSync` | `node -v` |
+| Node ≥ 22.18 | CLI 依赖的 orval v8 要求它；`.ts` 配置也靠它的 strip-types 直接执行 | `node -v` |
 | bun 或 npm | 装依赖；`init` 会自动探测用哪个 | `bun -v` / `npm -v` |
 | `npx` 可用 | `init` 经它调用 shadcn 与 router-cli | `npx -v` |
 | 一个 ABP 后端 | 生成 API 客户端要读它的 swagger | 浏览器打开 `<你的后端>/swagger/v1/swagger.json` 能出 JSON |
