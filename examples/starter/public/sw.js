@@ -34,6 +34,10 @@ async function trimAssets(cache) {
   }
 }
 
+function isHtml(response) {
+  return (response.headers.get("content-type") ?? "").startsWith("text/html");
+}
+
 async function cacheFirst(event) {
   const request = event.request;
   const cache = await caches.open(ASSET_CACHE);
@@ -41,7 +45,8 @@ async function cacheFirst(event) {
   if (hit) return hit;
   const response = await fetch(request);
   // 只缓存 200：部署后旧 chunk 会 404（缓存它等于把坏响应钉死），206 与 Vary: * 则会让 put 抛错。
-  if (response.status === 200) {
+  // HTML 也不缓存：带 SPA 兜底的 CDN 会对缺失的 chunk 回 200 的 index.html，存下就钉死在这个 hash 上。
+  if (response.status === 200 && !isHtml(response)) {
     // 写缓存放到响应路径之外：put 可能因 Vary: *、配额而失败，缓存失败绝不能让一个好响应变成网络错误。
     event.waitUntil(
       cache
@@ -62,12 +67,24 @@ async function networkWithOfflineFallback(request) {
   }
 }
 
+/** Fetches the offline page for the cache; rejects (failing the install) when it is not ok. */
+async function fetchOfflinePage() {
+  // reload 绕过 HTTP 缓存，存进去的是最新的离线页；绝对 URL 也让它在 worker 之外（测试）可构造。
+  const response = await fetch(new Request(new URL(OFFLINE_URL, self.location.origin), { cache: "reload" }));
+  if (!response.ok) throw new TypeError(`${OFFLINE_URL} answered ${response.status}`);
+  // 有的托管把 /offline.html 重定向到 /offline；导航拒收 redirected 的响应，得重新包一层去掉这个标记。
+  if (!response.redirected) return response;
+  return new Response(await response.blob(), {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(OFFLINE_CACHE)
-      // reload 绕过 HTTP 缓存，存进去的是最新的离线页；绝对 URL 也让它在 worker 之外（测试）可构造。
-      .then((cache) => cache.add(new Request(new URL(OFFLINE_URL, self.location.origin), { cache: "reload" })))
+    Promise.all([caches.open(OFFLINE_CACHE), fetchOfflinePage()])
+      .then(([cache, page]) => cache.put(OFFLINE_URL, page))
       .then(() => self.skipWaiting()),
   );
 });

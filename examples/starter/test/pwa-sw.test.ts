@@ -19,17 +19,17 @@ function memoryCaches() {
     }
     const cache = store;
     return {
-      match: async (req: Request | string) =>
-        cache.get(typeof req === "string" ? new URL(req, ORIGIN).href : req.url)?.clone(),
+      match: async (req: Request | string) => {
+        const stored = cache.get(typeof req === "string" ? new URL(req, ORIGIN).href : req.url);
+        const copy = stored?.clone();
+        // 真实的 Cache 连同重定向标记一起存；clone() 会丢掉测试里手动标上的 redirected。
+        if (copy !== undefined && stored?.redirected === true) {
+          Object.defineProperty(copy, "redirected", { value: true });
+        }
+        return copy;
+      },
       put: async (req: Request | string, res: Response) => {
         cache.set(typeof req === "string" ? new URL(req, ORIGIN).href : req.url, res);
-      },
-      add: async (req: Request | string) => {
-        const url = typeof req === "string" ? new URL(req, ORIGIN).href : req.url;
-        cache.set(
-          url,
-          new Response(`offline page for ${url}`, { headers: { "content-type": "text/html" } }),
-        );
       },
       keys: async () => [...cache.keys()].map((url) => new Request(url)),
       delete: async (req: Request | string) =>
@@ -105,6 +105,18 @@ function loadWorker(fetchImpl: (req: Request) => Promise<Response>) {
 
 type FetchInit = { method?: string; mode?: RequestMode; headers?: Record<string, string> };
 
+/** A network that only answers the install-time offline page fetch; every other request fails. */
+function offlineOnlyNetwork(opts: { redirected?: boolean } = {}) {
+  return async (request: Request) => {
+    if (new URL(request.url).pathname !== "/offline.html") throw new TypeError("Failed to fetch");
+    const response = new Response(`offline page for ${request.url}`, {
+      headers: { "content-type": "text/html" },
+    });
+    if (opts.redirected === true) Object.defineProperty(response, "redirected", { value: true });
+    return response;
+  };
+}
+
 function req(url: string, init: FetchInit = {}) {
   const request = new Request(new URL(url, ORIGIN), {
     method: init.method ?? "GET",
@@ -146,15 +158,22 @@ describe("routeFor", () => {
 
 describe("fetch handling", () => {
   it("serves the precached offline page when a navigation fails, and never caches HTML", async () => {
-    const worker = loadWorker(async () => {
-      throw new TypeError("Failed to fetch");
-    });
+    const worker = loadWorker(offlineOnlyNetwork());
     await worker.lifecycle("install");
     const response = await worker.dispatchFetch("/admin", { mode: "navigate" });
     expect(await response?.text()).toContain("offline page for https://app.example/offline.html");
 
     const cached = [...worker.caches.stores.values()].flatMap((store) => [...store.keys()]);
     expect(cached).toEqual(["https://app.example/offline.html"]);
+  });
+
+  it("strips the redirect from an offline page the host redirected (e.g. /offline.html → /offline)", async () => {
+    const worker = loadWorker(offlineOnlyNetwork({ redirected: true }));
+    await worker.lifecycle("install");
+    const response = await worker.dispatchFetch("/admin", { mode: "navigate" });
+    // 导航不接受 redirected 的响应，原样存下去离线页就永远出不来。
+    expect(response?.redirected).toBe(false);
+    expect(await response?.text()).toContain("offline page for https://app.example/offline.html");
   });
 
   it("answers a successful navigation from the network untouched", async () => {
@@ -185,6 +204,23 @@ describe("fetch handling", () => {
     expect((await worker.dispatchFetch("/assets/gone.js"))?.status).toBe(404);
     expect((await worker.dispatchFetch("/assets/gone.js"))?.status).toBe(404);
     expect(network).toHaveBeenCalledTimes(3);
+  });
+
+  it("hands HTML served under an asset URL to the page but never caches it", async () => {
+    // CDN 的 SPA 兜底：缺失的 chunk 拿到 200 的 index.html。
+    const network = vi.fn(
+      async () =>
+        new Response("<!doctype html>", {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+    );
+    const worker = loadWorker(network);
+
+    expect(await (await worker.dispatchFetch("/assets/gone.js"))?.text()).toBe("<!doctype html>");
+    await worker.settled();
+    expect(await (await worker.dispatchFetch("/assets/gone.js"))?.text()).toBe("<!doctype html>");
+    expect(network).toHaveBeenCalledTimes(2);
   });
 
   it("does not answer Range requests at all", async () => {
@@ -245,6 +281,12 @@ describe("lifecycle", () => {
     await worker.lifecycle("activate");
     expect(worker.self.skipWaiting).toHaveBeenCalled();
     expect(worker.self.clients.claim).toHaveBeenCalled();
+  });
+
+  it("fails the install when the offline page cannot be fetched", async () => {
+    const worker = loadWorker(async () => new Response("missing", { status: 404 }));
+    await expect(worker.lifecycle("install")).rejects.toThrow();
+    expect(worker.self.skipWaiting).not.toHaveBeenCalled();
   });
 
   it("drops only its own outdated caches on activate", async () => {
