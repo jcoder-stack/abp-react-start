@@ -93,8 +93,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // SVG favicon 优先（任意尺寸不失真），.ico 给不支持的浏览器兜底
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "apple-touch-icon", href: "/app-icon.svg" },
-      { rel: "manifest", href: "/manifest.json" },
       ...featureHead.links,
     ],
   }),
