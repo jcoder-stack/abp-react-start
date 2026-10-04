@@ -71,7 +71,7 @@ In order:
 
 1. **Two preflight gates** — if the auth shell already exists, abort before touching the first file; same if npm's `allow-scripts` would fail.
 2. **Seed the baseline**: write `components.json` if missing (`new-york` / `neutral`, css entry filled in); add `cn()` if `src/lib/utils.ts` is missing; if the css entry lacks the `--background` variable, **replace it wholesale with the theme file**, backing the original up as `.bak`; write `DESIGN.md` (the theme's design rules) to the project root if missing — point your agent instructions (`CLAUDE.md` / `AGENTS.md`) at it.
-3. **Install dependencies as needed**: only what was actually seeded this run (`clsx` / `tailwind-merge` / `tw-animate-css`), plus `@tanstack/react-router-ssr-query` for the root wiring (no block declares it).
+3. **Install dependencies as needed**: only what was actually seeded this run (`cn` / `tw-animate-css`), plus `@tanstack/react-router-ssr-query` for the root wiring (no block declares it).
 4. **Land the auth shell**: the five `src/auth/*` files, five API routes, `src/env.ts`, `.env.example`.
 5. **Move the home page aside**: the scaffold's `src/routes/index.tsx` is renamed to `.bak`, because the app-shell block places its own landing page there.
 6. **Install the shadcn blocks in dependency order**: `abp-layout` → `abp-login` → `app-shell` → `data-table` → `combobox` → `date-picker` → `form` → `abp-table` → `tree` → `abp-permission-sheet`, plus `admin-pages` by default. After each block, the declared artifacts are verified on disk — shadcn can silently abort a write batch and still exit 0.
