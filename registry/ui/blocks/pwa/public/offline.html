@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>You're offline</title>
+    <style>
+      /* 系统色随 color-scheme 自动明暗，这一页脱离应用主题与打包，不能引用 CSS 变量或带 hash 的样式表。 */
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: Canvas;
+        color: CanvasText;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 28rem;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      p {
+        color: GrayText;
+      }
+      button {
+        font: inherit;
+        padding: 0.5rem 1rem;
+        border: 1px solid GrayText;
+        border-radius: 0.5rem;
+        background: ButtonFace;
+        color: ButtonText;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 data-i18n="title">You're offline</h1>
+      <p data-i18n="body">Check your connection, then try again.</p>
+      <button type="button" data-i18n="retry" onclick="location.reload()">Try again</button>
+    </main>
+    <script>
+      (() => {
+        if (!/^zh/i.test(navigator.language)) return;
+        const text = { title: "网络已断开", body: "请检查网络连接，恢复后重试。", retry: "重试" };
+        document.documentElement.lang = "zh-Hans";
+        document.title = text.title;
+        for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = text[el.dataset.i18n];
+      })();
+    </script>
+  </body>
+</html>
