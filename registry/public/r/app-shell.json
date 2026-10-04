@@ -15,6 +15,7 @@
     "button",
     "tooltip",
     "separator",
+    "progress",
     "./node_modules/@jcoder-stack/registry/public/r/abp-layout.json",
     "./node_modules/@jcoder-stack/registry/public/r/abp-login.json"
   ],
