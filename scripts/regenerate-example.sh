@@ -86,6 +86,7 @@ HANDWRITTEN_PATHS=(
   "src/menu.tsx"
   "src/i18n"
   "test"
+  "e2e"
 )
 
 # monorepo 适配补丁：真实开发者这里是
