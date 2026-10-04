@@ -8,6 +8,7 @@
 
 | 名字 | 做什么 | 指南 |
 | --- | --- | --- |
+| `pwa` | 可安装为应用、断网显示离线页、部署后提示刷新 | [pwa.md](pwa.md) |
 | `signalr` | 连 ABP SignalR Hub：实时通知 toast、自定义 Hub 的 `useHubEvent` / `useHub` | [realtime.md](realtime.md) |
 
 ## 安装

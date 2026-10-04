@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type CommandRunner, installShadcnBlock } from "./blocks";
+import { asRecord, type CommandRunner, installShadcnBlock } from "./blocks";
 
 const FEATURES_IMPORT =
   'import { FeatureProviders, featureHead, featureMessages } from "@/features";';
@@ -270,11 +270,98 @@ export interface FeatureDefinition {
   name: string;
   /** `KEY=value` or commented `# KEY=value` lines appended to .env.example (and .env when present). */
   env: readonly string[];
+  /**
+   * Binary files shadcn's JSON registry cannot carry, copied from the registry package
+   * (`from`, relative to it) into the project (`to`). An existing target is the app's own and is kept.
+   */
+  assets?: readonly { from: string; to: string }[];
+  /**
+   * Runs after the block is installed. `written`: one line per file it changed; `warnings`: things
+   * the user must fix by hand. Both go into the summary.
+   */
+  postInstall?: (cwd: string) => { written?: string[]; warnings?: string[] };
+}
+
+const MANIFEST_FILE = "public/manifest.webmanifest";
+
+/** Reads one key from the app's .env; quotes around the value are stripped. Undefined when unset or empty. */
+function readEnvValue(cwd: string, key: string): string | undefined {
+  const path = resolve(cwd, ".env");
+  if (!existsSync(path)) return undefined;
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const match = new RegExp(`^${key}=(.*)$`).exec(line.trim());
+    if (match === null) continue;
+    const value = (match[1] ?? "").trim().replace(/^(["'])(.*)\1$/, "$2");
+    return value === "" ? undefined : value;
+  }
+  return undefined;
+}
+
+/**
+ * Names the installed app after VITE_APP_TITLE. shadcn rewrites the manifest with the template
+ * name on every install, so this runs after each one; without a title the template name stays.
+ */
+export function applyAppTitleToManifest(cwd: string): string[] {
+  const title = readEnvValue(cwd, "VITE_APP_TITLE");
+  const path = resolve(cwd, MANIFEST_FILE);
+  if (title === undefined || !existsSync(path)) return [];
+  const manifest = asRecord(JSON.parse(readFileSync(path, "utf8")));
+  if (manifest === undefined) return [];
+  writeFileSync(
+    path,
+    `${JSON.stringify({ ...manifest, name: title, short_name: title }, null, 2)}\n`,
+  );
+  return [`${MANIFEST_FILE} (name from VITE_APP_TITLE)`];
+}
+
+const PWA_MANIFEST_HREF = "/manifest.webmanifest";
+
+/** `{ … }` head entries and `<link …>` elements: either shape can declare a link in a root. */
+const LINK_DECLARATION = /\{[^{}]*\}|<link\b[^>]*>/g;
+
+function linkAttr(declaration: string, name: "rel" | "href"): string | undefined {
+  return new RegExp(`\\b${name}\\s*[:=]\\s*["']([^"']*)["']`).exec(declaration)?.[1];
+}
+
+/**
+ * Links a 0.4 root still carries that would shadow the pwa block's own: the head keeps the first
+ * manifest, and iOS ignores an SVG apple-touch-icon. Read-only; one warning per stale link.
+ */
+export function staleRootLinkWarnings(cwd: string): string[] {
+  const rootPath = resolve(cwd, ROOT_FILE);
+  if (!existsSync(rootPath)) return [];
+  const warnings: string[] = [];
+  for (const [declaration] of readFileSync(rootPath, "utf8").matchAll(LINK_DECLARATION)) {
+    const rel = linkAttr(declaration, "rel");
+    const href = linkAttr(declaration, "href");
+    if (href === undefined) continue;
+    if (rel === "manifest" && href !== PWA_MANIFEST_HREF) {
+      warnings.push(
+        `${ROOT_FILE} still links ${href} — remove that link so the PWA manifest is used`,
+      );
+    } else if (rel === "apple-touch-icon" && /\.svg([?#]|$)/i.test(href)) {
+      warnings.push(
+        `${ROOT_FILE} still links ${href} as apple-touch-icon — remove that link so iOS uses the PWA icon`,
+      );
+    }
+  }
+  return warnings;
 }
 
 /** Features `init --with` and `add <name>` know about. Each feature's PR adds its entry. */
 export const FEATURES: readonly FeatureDefinition[] = [
   { name: "signalr", env: ["# SIGNALR_HUB_PREFIX=/signalr-hubs"] },
+  {
+    name: "pwa",
+    env: [],
+    assets: ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"].map(
+      (file) => ({ from: `assets/pwa/${file}`, to: `public/pwa/${file}` }),
+    ),
+    postInstall: (cwd) => ({
+      written: applyAppTitleToManifest(cwd),
+      warnings: staleRootLinkWarnings(cwd),
+    }),
+  },
 ];
 
 export function findFeature(
@@ -353,6 +440,10 @@ export interface FeatureInstallResult {
   root: RootWiring;
   /** Env keys appended to .env.example and/or .env this run. */
   envKeysAdded: string[];
+  /** Assets copied and files rewritten after the block install, this run. */
+  filesWritten: string[];
+  /** Things postInstall found that the user must fix by hand. */
+  warnings: string[];
 }
 
 /**
@@ -375,6 +466,15 @@ export async function installFeature(opts: {
         "upgrade @jcoder-stack/registry to the same version as @jcoder-stack/cli",
     );
   }
+  const missingAssets = (opts.feature.assets ?? [])
+    .map((asset) => join(opts.registryDir, asset.from))
+    .filter((path) => !existsSync(path));
+  if (missingAssets.length > 0) {
+    throw new Error(
+      `feature "${opts.feature.name}" needs files the registry does not have (${missingAssets.join(", ")}); ` +
+        "upgrade @jcoder-stack/registry to the same version as @jcoder-stack/cli",
+    );
+  }
   const aggregatorSeeded = seedFeatureAggregator(opts.cwd);
   const root = wireRootForFeatures(opts.cwd);
   await installShadcnBlock(opts.cwd, opts.registryDir, opts.feature.name, opts.runner);
@@ -384,5 +484,22 @@ export async function installFeature(opts: {
       ...appendEnvLines(resolve(opts.cwd, ".env"), opts.feature.env),
     ]),
   ];
-  return { name: opts.feature.name, aggregatorSeeded, root, envKeysAdded };
+  const filesWritten: string[] = [];
+  for (const asset of opts.feature.assets ?? []) {
+    const target = resolve(opts.cwd, asset.to);
+    if (existsSync(target)) continue;
+    mkdirSync(dirname(target), { recursive: true });
+    copyFileSync(join(opts.registryDir, asset.from), target);
+    filesWritten.push(asset.to);
+  }
+  const after = opts.feature.postInstall?.(opts.cwd);
+  filesWritten.push(...(after?.written ?? []));
+  return {
+    name: opts.feature.name,
+    aggregatorSeeded,
+    root,
+    envKeysAdded,
+    filesWritten,
+    warnings: after?.warnings ?? [],
+  };
 }

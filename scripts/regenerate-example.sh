@@ -86,6 +86,7 @@ HANDWRITTEN_PATHS=(
   "src/menu.tsx"
   "src/i18n"
   "test"
+  "e2e"
 )
 
 # monorepo 适配补丁：真实开发者这里是
@@ -271,8 +272,8 @@ step "2/5 把 @jcoder-stack 包接成 workspace 依赖并安装"
 patch_package_json
 (cd "$REPO_ROOT" && bun install)
 
-step "3/5 jc-abp init（auth 外壳 + 全部 shadcn 块 + components.json/lib-utils/主题 css 播种 + 可选功能 signalr）"
-(cd "$TARGET_DIR" && node "$REPO_ROOT/packages/cli/bin/jc-abp.js" init --with signalr)
+step "3/5 jc-abp init（auth 外壳 + 全部 shadcn 块 + components.json/lib-utils/主题 css 播种 + 可选功能 signalr、pwa）"
+(cd "$TARGET_DIR" && node "$REPO_ROOT/packages/cli/bin/jc-abp.js" init --with signalr,pwa)
 
 step "4/5 jc-abp gen（对着真实后端 swagger 生成 react-query 客户端）"
 (cd "$TARGET_DIR" && NODE_TLS_REJECT_UNAUTHORIZED=0 \

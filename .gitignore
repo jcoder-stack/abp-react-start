@@ -14,3 +14,7 @@ dist
 .superpowers/
 .playwright-mcp/
 docs/superpowers/
+
+# Playwright 产物
+playwright-report/
+test-results/

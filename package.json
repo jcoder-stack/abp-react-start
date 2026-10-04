@@ -15,10 +15,12 @@
     "build:registry": "bun run --filter ./registry build:registry",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:theme": "vitest run packages/cli/test/theme.test.ts"
+    "check:theme": "vitest run packages/cli/test/theme.test.ts",
+    "e2e": "playwright test -c examples/starter/e2e/playwright.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "@playwright/test": "^1.63.0",
     "@tanstack/react-query": "^5.0.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",

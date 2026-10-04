@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +6,7 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import type { CommandRunner } from "../src/blocks";
 import {
+  applyAppTitleToManifest,
   type FeatureDefinition,
   installFeature,
   patchRootForFeatures,
@@ -236,6 +237,8 @@ describe("installFeature", () => {
       aggregatorSeeded: ["src/features/index.ts", "src/features/compose.ts"],
       root: "wired",
       envKeysAdded: ["DEMO_URL", "DEMO_MODE"],
+      filesWritten: [],
+      warnings: [],
     });
     expect(read(app, "src/routes/__root.tsx")).toContain("<FeatureProviders>");
     expect(read(app, "src/routes/__root.tsx.pre-features.bak")).toBe(before);
@@ -261,6 +264,8 @@ describe("installFeature", () => {
       aggregatorSeeded: [],
       root: "already",
       envKeysAdded: [],
+      filesWritten: [],
+      warnings: [],
     });
     expect(read(app, "src/routes/__root.tsx")).toBe(root);
     expect(read(app, ".env.example")).toBe(example);
@@ -344,5 +349,149 @@ describe("resolveFeatures", () => {
       "unknown feature: x, y (available: demo, other)",
     );
     expect(() => resolveFeatures(["x"], [])).toThrow("unknown feature: x (available: none)");
+  });
+});
+
+describe("installFeature with assets and postInstall", () => {
+  const PWA_LIKE: FeatureDefinition = {
+    name: "demo",
+    env: [],
+    assets: [
+      { from: "assets/pwa/icon-192.png", to: "public/pwa/icon-192.png" },
+      { from: "assets/pwa/icon-512.png", to: "public/pwa/icon-512.png" },
+    ],
+    postInstall: (cwd) => ({ written: applyAppTitleToManifest(cwd) }),
+  };
+
+  function withAssets(opts: { env?: string } = {}) {
+    const paths = project({ envExample: "", env: opts.env });
+    mkdirSync(join(paths.registryDir, "assets", "pwa"), { recursive: true });
+    writeFileSync(join(paths.registryDir, "assets", "pwa", "icon-192.png"), "ICON192");
+    writeFileSync(join(paths.registryDir, "assets", "pwa", "icon-512.png"), "ICON512");
+    return paths;
+  }
+
+  /** shadcn stand-in that also writes the manifest the real pwa block ships. */
+  function shadcnWithManifest(app: string): CommandRunner {
+    const base = shadcn(app);
+    return async (...args) => {
+      await base(...args);
+      mkdirSync(join(app, "public"), { recursive: true });
+      writeFileSync(
+        join(app, "public", "manifest.webmanifest"),
+        `${JSON.stringify({ name: "ABP React Start", short_name: "ABP React Start", display: "standalone" }, null, 2)}\n`,
+      );
+    };
+  }
+
+  it("copies the icons and names the app after VITE_APP_TITLE", async () => {
+    const { app, registryDir } = withAssets({ env: 'VITE_APP_TITLE="Acme Ops"\n' });
+    const result = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: PWA_LIKE,
+      runner: shadcnWithManifest(app),
+    });
+
+    expect(read(app, "public/pwa/icon-192.png")).toBe("ICON192");
+    const manifest = JSON.parse(read(app, "public/manifest.webmanifest"));
+    expect(manifest).toMatchObject({
+      name: "Acme Ops",
+      short_name: "Acme Ops",
+      display: "standalone",
+    });
+    expect(result.filesWritten).toEqual([
+      "public/pwa/icon-192.png",
+      "public/pwa/icon-512.png",
+      "public/manifest.webmanifest (name from VITE_APP_TITLE)",
+    ]);
+  });
+
+  it("keeps an app's own icons on a rerun", async () => {
+    const { app, registryDir } = withAssets();
+    await installFeature({
+      cwd: app,
+      registryDir,
+      feature: PWA_LIKE,
+      runner: shadcnWithManifest(app),
+    });
+    writeFileSync(join(app, "public", "pwa", "icon-192.png"), "MY-BRAND");
+
+    const again = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: PWA_LIKE,
+      runner: shadcnWithManifest(app),
+    });
+
+    expect(read(app, "public/pwa/icon-192.png")).toBe("MY-BRAND");
+    expect(again.filesWritten).toEqual([]);
+  });
+
+  it("leaves the template name when the app sets no title", async () => {
+    const { app, registryDir } = withAssets();
+    await installFeature({
+      cwd: app,
+      registryDir,
+      feature: PWA_LIKE,
+      runner: shadcnWithManifest(app),
+    });
+    expect(JSON.parse(read(app, "public/manifest.webmanifest")).name).toBe("ABP React Start");
+  });
+
+  it("passes postInstall warnings through", async () => {
+    const { app, registryDir } = withAssets();
+    const result = await installFeature({
+      cwd: app,
+      registryDir,
+      feature: { ...PWA_LIKE, postInstall: () => ({ warnings: ["check this"] }) },
+      runner: shadcnWithManifest(app),
+    });
+    expect(result.warnings).toEqual(["check this"]);
+  });
+
+  it("refuses before writing anything when the registry lacks an asset", async () => {
+    const { app, registryDir } = withAssets();
+    rmSync(join(registryDir, "assets", "pwa", "icon-512.png"));
+    const before = read(app, "src/routes/__root.tsx");
+    await expect(
+      installFeature({
+        cwd: app,
+        registryDir,
+        feature: PWA_LIKE,
+        runner: shadcnWithManifest(app),
+      }),
+    ).rejects.toThrow(/assets\/pwa\/icon-512\.png.*upgrade @jcoder-stack\/registry/s);
+    expect(existsSync(join(app, "src", "features"))).toBe(false);
+    expect(read(app, "src/routes/__root.tsx")).toBe(before);
+  });
+});
+
+describe("pwa postInstall", () => {
+  const pwaPostInstall = (cwd: string) => resolveFeatures(["pwa"])[0]?.postInstall?.(cwd);
+
+  it("warns when a 0.4 starter root still links the old manifest and the SVG touch icon", () => {
+    const { app } = project({ root: fixture("root-starter-v0.4.tsx.txt") });
+    expect(pwaPostInstall(app)?.warnings).toEqual([
+      "src/routes/__root.tsx still links /app-icon.svg as apple-touch-icon — remove that link so iOS uses the PWA icon",
+      "src/routes/__root.tsx still links /manifest.json — remove that link so the PWA manifest is used",
+    ]);
+  });
+
+  it("stays quiet for a root without those links", () => {
+    const { app } = project({ root: fixture("root-v0.4.tsx.txt") });
+    expect(pwaPostInstall(app)?.warnings).toEqual([]);
+  });
+});
+
+describe("resolveFeatures knows pwa", () => {
+  it("ships pwa with all four icons", () => {
+    const [pwa] = resolveFeatures(["pwa"]);
+    expect(pwa?.assets?.map((a) => a.to)).toEqual([
+      "public/pwa/icon-192.png",
+      "public/pwa/icon-512.png",
+      "public/pwa/icon-maskable-512.png",
+      "public/pwa/apple-touch-icon.png",
+    ]);
   });
 });
