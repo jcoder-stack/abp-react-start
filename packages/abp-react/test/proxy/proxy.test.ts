@@ -442,3 +442,114 @@ describe("createAbpProxy non-text bodies", () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+/** 响应头立即到，正文在 `delayMs` 后才吐出；与真 fetch 一样，请求信号中止时正文读取报错。 */
+function slowBodyFetch(delayMs: number, bytes: Uint8Array) {
+  return vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const signal = init?.signal;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const timer = setTimeout(() => {
+          controller.enqueue(bytes);
+          controller.close();
+        }, delayMs);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          controller.error(signal.reason);
+        });
+      },
+    });
+    return new Response(body, {
+      status: 200,
+      headers: { "content-type": "application/pdf", "set-cookie": "abp=1" },
+    });
+  }) as unknown as typeof fetch;
+}
+
+describe("createAbpProxy.stream", () => {
+  it("hands back the upstream bytes unbuffered with whitelisted headers", async () => {
+    const bytes = new Uint8Array([0x25, 0x50, 0xff, 0x00]);
+    const proxy = createAbpProxy({
+      baseUrl: "https://abp.example",
+      fetchFn: slowBodyFetch(0, bytes),
+    });
+    const res = await proxy.stream({ path: "/api/app/file/1" }, noRefresh);
+    expect(res.body).toBeInstanceOf(ReadableStream);
+    expect(new Uint8Array(await new Response(res.body).arrayBuffer())).toEqual(bytes);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+    expect(res.headers.has("set-cookie")).toBe(false);
+  });
+
+  it("lets a body outlive the per-attempt timeout, which the buffered send does not", async () => {
+    const bytes = new Uint8Array([1, 2, 3]);
+    const proxy = createAbpProxy({
+      baseUrl: "https://abp.example",
+      fetchFn: slowBodyFetch(120, bytes),
+      timeoutMs: 40,
+      retry: { retries: 0 },
+    });
+    const res = await proxy.stream({ path: "/x" }, noRefresh);
+    expect(new Uint8Array(await new Response(res.body).arrayBuffer())).toEqual(bytes);
+    await expect(proxy.send({ path: "/x" }, noRefresh)).rejects.toThrow();
+  });
+
+  it("still times out while waiting for the response headers", async () => {
+    const fetchFn = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    ) as unknown as typeof fetch;
+    const proxy = createAbpProxy({
+      baseUrl: "https://abp.example",
+      fetchFn,
+      timeoutMs: 20,
+      retry: { retries: 0 },
+    });
+    await expect(proxy.stream({ path: "/x" }, noRefresh)).rejects.toMatchObject({
+      name: "TimeoutError",
+    });
+  });
+
+  it("stops the body when the caller aborts mid-download", async () => {
+    const proxy = createAbpProxy({
+      baseUrl: "https://abp.example",
+      fetchFn: slowBodyFetch(200, new Uint8Array([1])),
+    });
+    const caller = new AbortController();
+    const res = await proxy.stream({ path: "/x", signal: caller.signal }, noRefresh);
+    const reading = new Response(res.body).arrayBuffer();
+    caller.abort(new Error("browser left"));
+    await expect(reading).rejects.toThrow("browser left");
+  });
+
+  it("drops a content-length that describes the compressed body fetch already inflated", async () => {
+    const { fetchFn } = fakeFetch(
+      new Response("inflated", {
+        status: 200,
+        headers: { "content-encoding": "gzip", "content-length": "3" },
+      }),
+      new Response("plain", { status: 200, headers: { "content-length": "5" } }),
+    );
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    expect((await proxy.stream({ path: "/x" }, noRefresh)).headers.has("content-length")).toBe(
+      false,
+    );
+    expect((await proxy.stream({ path: "/x" }, noRefresh)).headers.get("content-length")).toBe("5");
+  });
+
+  it("refreshes and replays on 401 before handing the stream over", async () => {
+    const { fetchFn, calls } = fakeFetch(
+      new Response(null, { status: 401 }),
+      new Response("file", { status: 200 }),
+    );
+    const proxy = createAbpProxy({ baseUrl: "https://abp.example", fetchFn });
+    const res = await proxy.stream(
+      { path: "/x" },
+      { session, refresh: async () => ({ session: fresh, setCookies: ["sid=new"] }) },
+    );
+    expect(await new Response(res.body).text()).toBe("file");
+    expect(res.setCookies).toEqual(["sid=new"]);
+    expect(new Headers(calls[1]?.init?.headers).get("Authorization")).toBe("Bearer at-2");
+  });
+});

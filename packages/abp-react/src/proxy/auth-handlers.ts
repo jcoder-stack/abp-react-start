@@ -23,7 +23,7 @@ function originOf(value: string | null): string | null {
  * 判定请求来自本站，用于给会改状态的 GET handler 挡 CSRF。
  * `Sec-Fetch-Site` 优先（`none` 是地址栏/书签直接导航）；老浏览器无此头时退回 Origin、再退回 Referer。
  */
-function isSameSiteRequest(request: Request): boolean {
+export function isSameSiteRequest(request: Request): boolean {
   const fetchSite = request.headers.get("sec-fetch-site");
   if (fetchSite !== null) return fetchSite === "same-origin" || fetchSite === "none";
   const selfOrigin = new URL(request.url).origin;
@@ -35,7 +35,8 @@ function isSameSiteRequest(request: Request): boolean {
   return true;
 }
 
-const CROSS_SITE_RESPONSE = () => new Response("cross-site request rejected", { status: 403 });
+export const CROSS_SITE_RESPONSE = () =>
+  new Response("cross-site request rejected", { status: 403 });
 
 /** GET /api/auth/login：begin 策略握手，密封进短命 cookie，302 去 IdP。 */
 export async function handleLogin(request: Request, rt: AuthRuntime): Promise<Response> {

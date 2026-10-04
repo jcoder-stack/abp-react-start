@@ -6,7 +6,14 @@ import {
   parseCultureCookie,
 } from "../auth";
 import type { Logger } from "../logger";
-import type { AbpProxy, AbpProxyRequest, AbpProxyResponse } from "./proxy";
+import type {
+  AbpProxy,
+  AbpProxyAuth,
+  AbpProxyRequest,
+  AbpProxyResponse,
+  AbpProxyStreamRequest,
+  AbpProxyStreamResponse,
+} from "./proxy";
 
 /** 租户切换 cookie / 头名，与 ABP 后端约定共享。 */
 export const TENANT_COOKIE = "__tenant";
@@ -36,6 +43,34 @@ export function buildPolicyHeaders(
 /** 服务端派生的策略头名单；调用方对这些键的取值一律丢弃，不论本次是否派生出值。 */
 const POLICY_HEADERS = new Set(["__tenant", "accept-language"]);
 
+/**
+ * 调用方头剔掉策略头后再盖上服务端派生值。按固定名单剔除、而非按「policy 里实际有值的键」：
+ * 匿名且无租户 cookie 时 policy 为空，后者会把伪造的 __tenant 原样放行（它在 proxy 的转发白名单内）。
+ * 大小写不敏感：对象合并按键区分大小写，小写键可绕过覆盖。
+ */
+function withPolicyHeaders(
+  headers: Record<string, string> | undefined,
+  session: AuthSession | null,
+  cookieHeader: string | null,
+): Record<string, string> {
+  const callerHeaders = Object.fromEntries(
+    Object.entries(headers ?? {}).filter(([key]) => !POLICY_HEADERS.has(key.toLowerCase())),
+  );
+  return { ...callerHeaders, ...buildPolicyHeaders(session, cookieHeader) };
+}
+
+function sessionAuth(
+  rt: AbpCallRuntime,
+  session: AuthSession | null,
+  cookieHeader: string | null,
+): AbpProxyAuth {
+  return {
+    session,
+    refresh: () =>
+      session === null ? Promise.resolve(null) : rt.auth.session.refresh(session, cookieHeader),
+  };
+}
+
 /** 经代理调 ABP：策略头 + 会话 + 401 刷新回调。策略头压过调用方 headers（防伪造租户/文化）；Set-Cookie 由调用方落响应。 */
 export function callAbpWithSession(
   rt: AbpCallRuntime,
@@ -43,19 +78,21 @@ export function callAbpWithSession(
   cookieHeader: string | null,
   req: AbpProxyRequest,
 ): Promise<AbpProxyResponse> {
-  const policy = buildPolicyHeaders(session, cookieHeader);
-  // 按固定名单剔除、而非按「policy 里实际有值的键」：匿名且无租户 cookie 时 policy 为空，
-  // 后者会把伪造的 __tenant 原样放行（它在 proxy 的转发白名单内）。大小写不敏感：
-  // 对象合并按键区分大小写，小写键可绕过覆盖。
-  const callerHeaders = Object.fromEntries(
-    Object.entries(req.headers ?? {}).filter(([key]) => !POLICY_HEADERS.has(key.toLowerCase())),
-  );
   return rt.proxy.send(
-    { ...req, headers: { ...callerHeaders, ...policy } },
-    {
-      session,
-      refresh: () =>
-        session === null ? Promise.resolve(null) : rt.auth.session.refresh(session, cookieHeader),
-    },
+    { ...req, headers: withPolicyHeaders(req.headers, session, cookieHeader) },
+    sessionAuth(rt, session, cookieHeader),
+  );
+}
+
+/** `callAbpWithSession` 的流式版：同样的策略头与刷新回调，正文以上游字节流交回（见 `AbpProxy.stream`）。 */
+export function streamAbpWithSession(
+  rt: AbpCallRuntime,
+  session: AuthSession | null,
+  cookieHeader: string | null,
+  req: AbpProxyStreamRequest,
+): Promise<AbpProxyStreamResponse> {
+  return rt.proxy.stream(
+    { ...req, headers: withPolicyHeaders(req.headers, session, cookieHeader) },
+    sessionAuth(rt, session, cookieHeader),
   );
 }

@@ -20,6 +20,7 @@ import { Route as LayoutAuthedHomeRouteImport } from './routes/_layout/_authed/h
 import { Route as ApiAuthCallbackRouteImport } from './routes/api.auth.callback'
 import { Route as ApiAuthLoginRouteImport } from './routes/api.auth.login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api.auth.logout'
+import { Route as ApiStreamSplatRouteImport } from './routes/api.stream.$'
 import { Route as LayoutAuthedBooksIndexRouteImport } from './routes/_layout/_authed/books/index'
 import { Route as LayoutAuthedBooksNewRouteImport } from './routes/_layout/_authed/books/new'
 import { Route as LayoutAuthedIdentityRolesRouteImport } from './routes/_layout/_authed/identity/roles'
@@ -81,6 +82,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStreamSplatRoute = ApiStreamSplatRouteImport.update({
+  id: '/api/stream/$',
+  path: '/api/stream/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LayoutAuthedBooksIndexRoute = LayoutAuthedBooksIndexRouteImport.update({
   id: '/books/',
   path: '/books/',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/stream/$': typeof ApiStreamSplatRoute
   '/books/new': typeof LayoutAuthedBooksNewRoute
   '/identity/roles': typeof LayoutAuthedIdentityRolesRoute
   '/identity/users': typeof LayoutAuthedIdentityUsersRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/stream/$': typeof ApiStreamSplatRoute
   '/books/new': typeof LayoutAuthedBooksNewRoute
   '/identity/roles': typeof LayoutAuthedIdentityRolesRoute
   '/identity/users': typeof LayoutAuthedIdentityUsersRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/stream/$': typeof ApiStreamSplatRoute
   '/_layout/_authed/books/new': typeof LayoutAuthedBooksNewRoute
   '/_layout/_authed/identity/roles': typeof LayoutAuthedIdentityRolesRoute
   '/_layout/_authed/identity/users': typeof LayoutAuthedIdentityUsersRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/api/auth/callback'
     | '/api/auth/login'
     | '/api/auth/logout'
+    | '/api/stream/$'
     | '/books/new'
     | '/identity/roles'
     | '/identity/users'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/api/auth/callback'
     | '/api/auth/login'
     | '/api/auth/logout'
+    | '/api/stream/$'
     | '/books/new'
     | '/identity/roles'
     | '/identity/users'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/api/auth/callback'
     | '/api/auth/login'
     | '/api/auth/logout'
+    | '/api/stream/$'
     | '/_layout/_authed/books/new'
     | '/_layout/_authed/identity/roles'
     | '/_layout/_authed/identity/users'
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiStreamSplatRoute: typeof ApiStreamSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -326,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/logout'
       fullPath: '/api/auth/logout'
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stream/$': {
+      id: '/api/stream/$'
+      path: '/api/stream/$'
+      fullPath: '/api/stream/$'
+      preLoaderRoute: typeof ApiStreamSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_layout/_authed/books/': {
@@ -428,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiStreamSplatRoute: ApiStreamSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
