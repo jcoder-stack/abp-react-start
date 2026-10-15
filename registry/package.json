@@ -33,7 +33,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jcoder-stack/abp-react-start.git",
+    "url": "git+https://github.com/jcoder-stack/abp-react-start.git",
     "directory": "registry"
   },
   "engines": {

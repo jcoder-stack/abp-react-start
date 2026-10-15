@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jcoder-stack/abp-react-start.git",
+    "url": "git+https://github.com/jcoder-stack/abp-react-start.git",
     "directory": "packages/abp-react"
   },
   "sideEffects": false,
@@ -52,7 +52,9 @@
     "dist"
   ],
   "publishConfig": {
-    "access": "public",
+    "access": "public"
+  },
+  "publishOverrides": {
     "exports": {
       "./core": {
         "types": "./dist/core.d.ts",

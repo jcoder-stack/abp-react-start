@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jcoder-stack/abp-react-start.git",
+    "url": "git+https://github.com/jcoder-stack/abp-react-start.git",
     "directory": "packages/cli"
   },
   "sideEffects": false,
@@ -14,7 +14,7 @@
     "node": ">=22.18"
   },
   "bin": {
-    "jc-abp": "./bin/jc-abp.js"
+    "jc-abp": "bin/jc-abp.js"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -39,7 +39,9 @@
     "templates"
   ],
   "publishConfig": {
-    "access": "public",
+    "access": "public"
+  },
+  "publishOverrides": {
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {

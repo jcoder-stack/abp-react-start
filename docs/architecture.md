@@ -163,7 +163,7 @@ UI 全部经 shadcn registry 分发源码，没有组件库依赖。由此带来
 
 包的 `main`/`exports` 在仓库内指向 `src`：workspace 里直接吃 TS 源码，改包不用先 build。发布出去的 tarball 显然不能这样，于是 `prepack` 在打包前临时改写 `package.json`、`postpack` 还原。`npm pack` / `npm publish` 与 `bun pm pack` 都会触发（除非显式 `--ignore-scripts`）。
 
-`scripts/apply-publish-config.mjs` 把 `publishConfig` 里的 `main`/`types`/`exports` 覆盖字段提到顶层，完成 `src` → `dist` 重定向（npm 原生只认 `publishConfig` 里少数几个键，其余得自己搬）。`@jcoder-stack/abp-react` 与 `@jcoder-stack/cli` 需要它，`@jcoder-stack/registry` 分发的是源码文件、没有 dist，所以对它是空操作。
+`scripts/apply-publish-config.mjs` 把自定义字段 `publishOverrides` 里的 `main`/`types`/`exports` 覆盖值提到顶层并删掉该字段，完成 `src` → `dist` 重定向（不放进 `publishConfig`：npm 把其中每个键当 npm config 读，`main`/`types`/`exports` 会触发「Unknown publishConfig config」警告，且 npm 12 起未知配置已陆续升级为报错；`publishConfig` 只留 `access` 这类真正的 npm 配置）。`@jcoder-stack/abp-react` 与 `@jcoder-stack/cli` 需要它，`@jcoder-stack/registry` 分发的是源码文件、没有 dist，所以对它是空操作。
 
 **包间依赖不走这条路**：提交态的 `package.json` 里直接写真实版本区间（`@jcoder-stack/registry` 依赖 `@jcoder-stack/abp-react@^0.1.0`），不用 `workspace:*` 再由 prepack 改写。bun 靠版本匹配照样把仓库内的包链过去，开发体验不变。
 

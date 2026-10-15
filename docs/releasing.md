@@ -11,11 +11,17 @@
 | workflow | 跑什么 | 为什么只在这里 |
 | --- | --- | --- |
 | `ci.yml` | lint、typecheck、test、build，外加 **registry 产物漂移检查** | 漂移检查只在这里有：块源码改了却忘了 `build:registry`，仓库自己的代码是完整的，lint/typecheck/test 全部看不见，只有装出来的项目才会拿到旧文件 |
-| `publish-smoke.yml` | `scripts/publish-smoke.sh`：真跑 `npm pack` 与 `prepublishOnly` | 发布链路（`prepublishOnly` 的可执行文件解析、`prepack` 的 `publishConfig` 改写、tarball 内容）只有真打一次包才会暴露问题 |
+| `publish-smoke.yml` | `scripts/publish-smoke.sh`：真跑 `npm pack` 与 `prepublishOnly` | 发布链路（`prepublishOnly` 的可执行文件解析、`prepack` 的 `publishOverrides` 改写、tarball 内容）只有真打一次包才会暴露问题 |
 
 想在别的时候要一份干净机器上的复核（换 Node/bun 版本、怀疑 lockfile），在 Actions 页面手动触发。
 
 `npm publish` **是手动的**，仓库里没有发布 workflow。
+
+### 打标签前先在干净环境复现一遍
+
+CI 只在推标签时跑，所以「本地全绿、CI 挂」只会在发版那一刻才暴露，而标签那时已经推出去了（见下文的标签保护）。本机环境会掩盖依赖解析问题：`~/node_modules` 之类仓库外散落的依赖、全局安装的包，都能让一个本该解析失败的 import 在本地碰巧成功。0.4.3 的 cli `gen` 测试就是这样——生成的 schema 引 `zod`，临时目录往上没有 `node_modules`，bun 的 isolated 安装又不把 `zod` 放进仓库根的 `node_modules`，本地靠 `~/node_modules` 里的一份过了，干净的 CI runner 上直接挂。
+
+打标签前，在一个仓库外没有散落依赖的环境里（全新 clone 到临时目录、容器，或先在 Actions 页面对 `main` 手动触发 `ci.yml`）跑一遍 `bun install --frozen-lockfile && bun run lint && bun run typecheck && bun run test`。
 
 ## 版本号要改哪几处
 
@@ -61,6 +67,12 @@ git push && git push --tags
 
 推标签自动触发两个 workflow。**等它们变绿再发布**——这是它们存在的全部意义。
 
+**`v*` 标签有仓库保护规则，推出去后不能强推移动**（`git push -f` 改标签指向会被拒）。0.4.3 就是这样：标签停在 release 提交 `65951bb`，事后补的测试修复只能落在 `main` 上，标签与 `main` 差一个提交。所以：
+
+- 标签推出去之前确认该过的都过了（见上文「打标签前先在干净环境复现一遍」）。
+- 发版后需要修补（只动测试/CI、不影响发布产物）时，不要挪标签：在 Actions 页面对 `main` 用 `workflow_dispatch` 重跑 `ci.yml` / `publish-smoke.yml` 拿绿灯即可。
+- 确实必须让标签指向新提交时，到 GitHub 仓库设置（Rules / Tag protection）里临时放开 `v*` 规则，挪完立刻恢复。已经发到 npm 的版本不受标签影响，也不能重发——产物有问题就发下一个 patch。
+
 然后按依赖顺序发（`registry` 依赖 `abp-react`，反了会出现一段时间的悬空依赖）：
 
 ```bash
@@ -68,6 +80,14 @@ git push && git push --tags
 (cd packages/cli       && npm publish)
 (cd registry           && npm publish)
 ```
+
+**`npm publish` 成功后，新版本要 1 到数分钟才在 registry 上可见。** 这段时间里 `npm view` 查不到、依赖它的包也解析不到，再发一次同版本会得到 `409 Cannot publish over previously staged version` 或 `You cannot publish over the previously published versions`——**这不是失败，不要重试**，上一次已经成功了。用 registry 的 `time` 字段确认：
+
+```bash
+curl -s https://registry.npmjs.org/@jcoder-stack/abp-react | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).time["X.Y.Z"]))'
+```
+
+打出时间戳即已发布。**发 `registry` 之前先这样确认 `abp-react` 的新版已可见**——`registry` 依赖 `^X.Y.Z`，赶在可见之前发，紧跟着装的人会解析失败。
 
 四个历史标签全部从 `main` 切，没有过 release 分支。单人仓库不值得为 rc 期间的并行开发付 cherry-pick 的成本。
 

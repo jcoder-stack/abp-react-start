@@ -11,11 +11,17 @@ Both workflows under `.github/workflows/` are `on: push: tags: ["v*"]` plus `wor
 | Workflow | What it runs | Why only here |
 | --- | --- | --- |
 | `ci.yml` | lint, typecheck, test, build, plus the **registry artifact drift check** | The drift check exists nowhere else: edit a block's source, forget `build:registry`, and the repo's own code stays complete — lint/typecheck/test see nothing. Only an installed project gets the stale files |
-| `publish-smoke.yml` | `scripts/publish-smoke.sh`: a real `npm pack` and `prepublishOnly` | The publish path (`prepublishOnly`'s binary resolution, `prepack`'s `publishConfig` rewrite, tarball contents) only surfaces its problems when a package is actually packed |
+| `publish-smoke.yml` | `scripts/publish-smoke.sh`: a real `npm pack` and `prepublishOnly` | The publish path (`prepublishOnly`'s binary resolution, `prepack`'s `publishOverrides` rewrite, tarball contents) only surfaces its problems when a package is actually packed |
 
 For a clean-machine check at any other time (different Node/bun version, a suspect lockfile), trigger either one manually from the Actions page.
 
 `npm publish` **is manual** — there is no publish workflow in this repo.
+
+### Reproduce in a clean environment before tagging
+
+CI only runs when a tag is pushed, so "green locally, red in CI" surfaces only at release time — after the tag is already out (see tag protection below). A local machine masks dependency-resolution problems: stray dependencies outside the repo such as `~/node_modules`, or globally installed packages, can make an import that should fail resolve by accident. The 0.4.3 cli `gen` test was exactly this: the generated schema imports `zod`, there is no `node_modules` above the temp dir, and bun's isolated install keeps `zod` out of the repo-root `node_modules`; locally it resolved through a copy in `~/node_modules`, on a clean CI runner it failed.
+
+Before tagging, run `bun install --frozen-lockfile && bun run lint && bun run typecheck && bun run test` somewhere with no stray dependencies above the repo (a fresh clone in a temp dir, a container, or a manual `ci.yml` run against `main` from the Actions page).
 
 ## Which version fields to edit
 
@@ -61,6 +67,12 @@ git push && git push --tags
 
 Pushing the tag triggers both workflows. **Wait for them to go green before publishing** — that is their entire purpose.
 
+**`v*` tags are protected by a repository rule: once pushed they cannot be force-moved** (`git push -f` to repoint a tag is rejected). That is what happened with 0.4.3: the tag stayed on the release commit `65951bb`, the follow-up test fix could only land on `main`, and the tag sits one commit behind `main`. So:
+
+- Make sure everything that should pass does pass before pushing the tag (see "Reproduce in a clean environment before tagging" above).
+- When a post-release fix touches only tests/CI and not the published artifacts, don't move the tag: re-run `ci.yml` / `publish-smoke.yml` against `main` via `workflow_dispatch` on the Actions page to get a green run.
+- When the tag really must point at a new commit, temporarily relax the `v*` rule in the GitHub repository settings (Rules / Tag protection), move it, and restore the rule right away. Versions already on npm are unaffected by the tag and cannot be republished — if the artifact is wrong, cut the next patch.
+
 Then publish in dependency order (`registry` depends on `abp-react`; reversed, there is a window where the dependency dangles):
 
 ```bash
@@ -68,6 +80,14 @@ Then publish in dependency order (`registry` depends on `abp-react`; reversed, t
 (cd packages/cli       && npm publish)
 (cd registry           && npm publish)
 ```
+
+**After a successful `npm publish`, the new version can take one to several minutes to become visible on the registry.** In that window `npm view` doesn't see it, packages depending on it can't resolve it, and publishing the same version again returns `409 Cannot publish over previously staged version` or `You cannot publish over the previously published versions` — **that is not a failure, don't retry**; the first publish already succeeded. Confirm through the registry's `time` field:
+
+```bash
+curl -s https://registry.npmjs.org/@jcoder-stack/abp-react | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).time["X.Y.Z"]))'
+```
+
+A timestamp means it is published. **Confirm the new `abp-react` is visible this way before publishing `registry`** — `registry` depends on `^X.Y.Z`, and publishing it before that is visible means anyone installing right after fails to resolve.
 
 All four historical tags were cut from `main`; there has never been a release branch. For a single-maintainer repo, parallel development during an rc doesn't justify the cherry-pick overhead.
 
