@@ -68,7 +68,7 @@
     },
     "packages/abp-react": {
       "name": "@jcoder-stack/abp-react",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "devDependencies": {
         "@microsoft/signalr": "^10.0.11",
         "@tanstack/react-router": "^1.0.0",
@@ -89,7 +89,7 @@
     },
     "packages/cli": {
       "name": "@jcoder-stack/cli",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "bin": {
         "jc-abp": "./bin/jc-abp.js",
       },
@@ -110,7 +110,7 @@
     },
     "registry": {
       "name": "@jcoder-stack/registry",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "dependencies": {
         "@jcoder-stack/abp-react": "^0.4.2",
         "@tanstack/react-router": "^1.0.0",
