@@ -84,6 +84,10 @@ for tarball in "${tarballs[@]}"; do
     printf '%s' "$manifest" | grep '"workspace:' >&2
     status=1
   fi
+  if printf '%s' "$manifest" | grep -q '"publishOverrides"'; then
+    echo "ERROR: $(basename "$tarball") 里残留 publishOverrides——prepack 没有把覆盖值应用到顶层。" >&2
+    status=1
+  fi
 done
 
 if [ "$status" -ne 0 ]; then
