@@ -1,4 +1,4 @@
-import type { AuthSession } from "../auth";
+import { type AuthSession, applySetCookies } from "../auth";
 import { streamAbpWithSession } from "./abp-call";
 import { CROSS_SITE_RESPONSE, isSameSiteRequest } from "./auth-handlers";
 import type { AuthRuntime } from "./auth-runtime";
@@ -66,7 +66,9 @@ export async function handleAbpStream(
       const value = request.headers.get(name);
       if (value !== null) headers[name] = value;
     }
-    const res = await streamAbpWithSession(rt, session, cookieHeader, {
+    // 401 时代理会再刷新一次；它得看到首次刷新刚写下的分块，才清得掉块数骤减后的残块。
+    const effectiveCookieHeader = applySetCookies(cookieHeader, setCookies);
+    const res = await streamAbpWithSession(rt, session, effectiveCookieHeader, {
       path: `${path}${url.search}`,
       headers,
       signal: request.signal,

@@ -1,6 +1,7 @@
 export { type Codec, type CodecSchema, createCodec } from "./codec";
 export { createCookieSessionStore } from "./cookie-store";
 export {
+  applySetCookies,
   COOKIE_CHUNK_SIZE,
   type CookieOptions,
   chunkCookieValue,

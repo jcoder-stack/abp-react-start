@@ -1,4 +1,11 @@
 import { describe, expect, it } from "vitest";
+import {
+  type Auth,
+  type AuthSession,
+  COOKIE_CHUNK_SIZE,
+  chunkCookieValue,
+  parseCookieHeader,
+} from "../../src/auth";
 import { createAbpAuthRuntime } from "../../src/proxy/auth-runtime";
 import { handleAbpStream } from "../../src/proxy/stream-handler";
 
@@ -32,6 +39,17 @@ const request = (path: string, headers: Record<string, string> = {}) =>
   new Request(`https://app.example${path}`, {
     headers: { "sec-fetch-site": "same-origin", ...headers },
   });
+
+/** 按顺序把 Set-Cookie 落进 jar，模拟浏览器收下响应：`Max-Age=0` 即删除。 */
+function applyToJar(jar: Map<string, string>, setCookies: string[]) {
+  for (const cookie of setCookies) {
+    const [pair = "", ...attrs] = cookie.split(/;\s*/);
+    const eq = pair.indexOf("=");
+    const name = pair.slice(0, eq);
+    if (attrs.some((attr) => attr.toLowerCase() === "max-age=0")) jar.delete(name);
+    else jar.set(name, pair.slice(eq + 1));
+  }
+}
 
 describe("handleAbpStream", () => {
   it("streams the ABP file back with the session's bearer, tenant and filename", async () => {
@@ -103,5 +121,50 @@ describe("handleAbpStream", () => {
     expect(res.status).toBe(502);
     const body = (await res.json()) as { error: { message: string } };
     expect(body.error.message).not.toContain("abp.example");
+  });
+
+  it("leaves no stale chunks when a 401 forces a second, shorter refresh", async () => {
+    const SESSION = "sess";
+    const refreshed = ["a".repeat(COOKIE_CHUNK_SIZE * 4), "b".repeat(COOKIE_CHUNK_SIZE * 2)];
+    let refreshes = 0;
+    const session: AuthSession = {
+      tokens: { accessToken: "at-old", refreshToken: "rt" },
+      expiresAt: 0,
+    } as AuthSession;
+    const auth = {
+      session: {
+        current: async () => session,
+        isExpired: () => refreshes === 0,
+        refresh: async (_: AuthSession, cookieHeader: string | null) => {
+          const value = refreshed[refreshes++] ?? "";
+          return {
+            session: { ...session, tokens: { accessToken: `at-${refreshes}`, refreshToken: "rt" } },
+            setCookies: chunkCookieValue(SESSION, value, {}, parseCookieHeader(cookieHeader)),
+          };
+        },
+      },
+    } as unknown as Auth;
+    let abpCalls = 0;
+    const { fetchFn } = abpFetch(() =>
+      abpCalls++ === 0 ? new Response(null, { status: 401 }) : new Response("ok"),
+    );
+    const rt = { ...createAbpAuthRuntime(ENV, { fetchFn }), auth };
+    const jar = new Map([
+      [`${SESSION}.0`, "old0"],
+      [`${SESSION}.1`, "old1"],
+    ]);
+
+    const res = await handleAbpStream(
+      request("/api/stream/api/app/file/1", {
+        cookie: [...jar].map(([name, value]) => `${name}=${value}`).join("; "),
+      }),
+      rt,
+    );
+
+    expect(res.status).toBe(200);
+    expect(refreshes).toBe(2);
+    applyToJar(jar, res.headers.getSetCookie());
+    expect([...jar.keys()].sort()).toEqual([`${SESSION}.0`, `${SESSION}.1`]);
+    expect([...jar.values()].join("")).toBe(refreshed[1]);
   });
 });
