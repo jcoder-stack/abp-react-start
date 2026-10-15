@@ -52,6 +52,34 @@ export function parseCookieHeader(header: string | null | undefined): Record<str
   return out;
 }
 
+/**
+ * 把一批 Set-Cookie 按序叠加到 Cookie 请求头上，得出浏览器收下这些响应头后会带回来的 Cookie 头。
+ * `Max-Age<=0` 视为删除；值保持编码原样。同一请求内二次写会话（如过期刷新后又遇 401 再刷新）时，
+ * 把结果交给第二次的 `existing`，它才清得掉第一次刚写下的更高序号分块。全部删光时返回 null。
+ */
+export function applySetCookies(
+  cookieHeader: string | null | undefined,
+  setCookies: readonly string[],
+): string | null {
+  if (setCookies.length === 0) return cookieHeader ?? null;
+  const jar = new Map<string, string>();
+  for (const part of (cookieHeader ?? "").split(/;\s*/)) {
+    const eq = part.indexOf("=");
+    if (eq > 0) jar.set(part.slice(0, eq).trim(), part.slice(eq + 1));
+  }
+  for (const cookie of setCookies) {
+    const [pair = "", ...attrs] = cookie.split(/;\s*/);
+    const eq = pair.indexOf("=");
+    if (eq <= 0) continue;
+    const name = pair.slice(0, eq).trim();
+    const maxAge = attrs.find((attr) => /^max-age=/i.test(attr));
+    if (maxAge !== undefined && Number(maxAge.slice("max-age=".length)) <= 0) jar.delete(name);
+    else jar.set(name, pair.slice(eq + 1));
+  }
+  if (jar.size === 0) return null;
+  return [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
+}
+
 /** 单块 cookie 值序列化（`encodeURIComponent`）后的最大字节数；连同名字与属性保持在浏览器 4096 限制之下。 */
 export const COOKIE_CHUNK_SIZE = 3600;
 
