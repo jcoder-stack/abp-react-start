@@ -12,7 +12,7 @@ import {
   TENANT_COOKIE,
 } from "@jcoder-stack/abp-react/proxy";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/server";
+import { appendResponseHeader, getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { authMiddleware } from "./middleware";
 import { getAuthRuntime } from "./runtime";
@@ -24,7 +24,7 @@ export const getAppStateFn = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const rt = getAuthRuntime();
     const state = await loadAppState(rt, context.session, context.cookieHeader);
-    if (state.setCookies.length > 0) setResponseHeader("Set-Cookie", state.setCookies);
+    if (state.setCookies.length > 0) appendResponseHeader("Set-Cookie", state.setCookies);
     return { config: state.config, identity: state.identity };
   });
 
@@ -34,7 +34,7 @@ export const getIdentityFn = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const rt = getAuthRuntime();
     const state = await loadAppState(rt, context.session, context.cookieHeader);
-    if (state.setCookies.length > 0) setResponseHeader("Set-Cookie", state.setCookies);
+    if (state.setCookies.length > 0) appendResponseHeader("Set-Cookie", state.setCookies);
     return state.identity;
   });
 
@@ -62,7 +62,7 @@ export const loginWithPasswordFn = createServerFn({ method: "POST" })
         culture: parseCultureCookie(cookies[CULTURE_COOKIE]),
         cookieHeader,
       });
-      setResponseHeader("Set-Cookie", setCookies);
+      appendResponseHeader("Set-Cookie", setCookies);
       return { ok: true as const };
     } catch (error) {
       const code: AuthErrorCode = error instanceof AuthError ? error.code : "exchange_failed";
@@ -74,7 +74,7 @@ export const loginWithPasswordFn = createServerFn({ method: "POST" })
 /** 本地登出（password 模式）；OIDC 全局登出走 /api/auth/logout 路由。 */
 export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {
   const rt = getAuthRuntime();
-  setResponseHeader(
+  appendResponseHeader(
     "Set-Cookie",
     await rt.auth.session.destroy(getRequestHeader("cookie") ?? null),
   );
@@ -100,10 +100,10 @@ async function forwardToAbp(
   } catch (error) {
     // 失败也要把过程中刷新出的会话 cookie 落到响应，否则轮换型 IdP 下用户被静默登出。
     if (error instanceof AbpProxyError && error.setCookies.length > 0)
-      setResponseHeader("Set-Cookie", error.setCookies);
+      appendResponseHeader("Set-Cookie", error.setCookies);
     throw error;
   }
-  if (res.setCookies.length > 0) setResponseHeader("Set-Cookie", res.setCookies);
+  if (res.setCookies.length > 0) appendResponseHeader("Set-Cookie", res.setCookies);
   return {
     status: res.status,
     contentType: res.headers.get("content-type"),
