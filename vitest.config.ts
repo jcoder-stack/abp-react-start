@@ -1,7 +1,18 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  resolve: { alias: { "@": new URL("./examples/starter/src", import.meta.url).pathname } },
+  resolve: {
+    alias: [
+      { find: "@", replacement: new URL("./examples/starter/src", import.meta.url).pathname },
+      // Start 的 server 运行时只在启动 handler 时才懒加载插件生成的虚拟入口；给它们一个空桩，
+      // 测试就能加载真实的 @tanstack/react-start/server，在请求上下文里验证响应头语义。
+      {
+        find: /^#tanstack-(router-entry|start-entry|start-plugin-adapters|start-server-fn-resolver)$/,
+        replacement: new URL("./examples/starter/test/stubs/start-virtual-entry.ts", import.meta.url)
+          .pathname,
+      },
+    ],
+  },
   test: {
     include: [
       "packages/**/test/**/*.test.{ts,tsx}",
