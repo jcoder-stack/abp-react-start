@@ -4,9 +4,11 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -172,6 +174,14 @@ describe("runGen", () => {
     timeout: 60_000,
   }, async () => {
     const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-upload-"));
+    // 生成的 schema 会 import 'zod'，而临时目录往上没有 node_modules；不链进来就只能靠机器上
+    // 碰巧散落的一份（如 ~/node_modules）解析，干净的 CI 上必挂。
+    mkdirSync(join(cwd, "node_modules"));
+    symlinkSync(
+      dirname(createRequire(import.meta.url).resolve("zod/package.json")),
+      join(cwd, "node_modules", "zod"),
+      "dir",
+    );
     await runGen({ cwd, overrides: { input: UPLOAD, output: "src/api" } });
     const out = join(cwd, "src/api");
 
