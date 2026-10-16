@@ -110,6 +110,7 @@ The reference app is [`examples/starter`](examples/starter), itself a product of
 | [The form system](docs/guides/forms.en.md) | The four-layer architecture, field components, and the four validation channels |
 | [File upload and download](docs/guides/files.en.md) | Generated upload mutations, streaming downloads with progress, and the limits of each path |
 | [Rich text editor](docs/guides/rich-text-editor.en.md) | The opt-in Tiptap editor block: HTML storage, image upload, the @mention extension point, the server-side sanitizer allowlist |
+| [Row expanding](docs/guides/data-table-expanding.en.md) | The opt-in tree table / collapsible detail block, and how to extend `DataTable` without editing its source |
 | [Design spec](DESIGN.md) | Palette, typography, component conventions |
 
 ## Development

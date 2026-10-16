@@ -1,0 +1,43 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "data-table-expanding",
+  "title": "Data Table Row Expanding",
+  "description": "Opt-in row expanding for the data-table block: tree tables via getSubRows and collapsible detail rows via renderSubRow, with expander column, indented tree cell, expand-all button and expansion reset on page/sort/query change.",
+  "dependencies": [
+    "@tanstack/react-table@9.2.4",
+    "@jcoder-stack/abp-react",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "button",
+    "tooltip",
+    "./node_modules/@jcoder-stack/registry/public/r/data-table.json"
+  ],
+  "files": [
+    {
+      "path": "ui/blocks/data-table-expanding/expanding-features.ts",
+      "content": "import { createExpandedRowModel, rowExpandingFeature } from \"@tanstack/react-table\";\n\n/** 行展开所需的特性映射，传给 `useDataTable({ features })`；`useExpandingDataTable` 已代传。\n *  row model 工厂必须与特性同处一个映射：`tableFeatures()` 按槽位校验前置特性。\n *  模块级常量，满足 `features` 引用稳定的契约。 */\nexport const expandingFeatures = {\n  rowExpandingFeature,\n  expandedRowModel: createExpandedRowModel(),\n};\n\nexport type ExpandingFeatures = typeof expandingFeatures;\n",
+      "type": "registry:component",
+      "target": "components/data-table-expanding/expanding-features.ts"
+    },
+    {
+      "path": "ui/blocks/data-table-expanding/use-expanding-data-table.ts",
+      "content": "import type { RowData } from \"@tanstack/react-table\";\nimport { useEffect, useRef } from \"react\";\nimport {\n  type DataTableInstance,\n  type UseDataTableOptions,\n  useDataTable,\n} from \"@/components/data-table/use-data-table\";\nimport { type ExpandingFeatures, expandingFeatures } from \"./expanding-features\";\n\nexport type UseExpandingDataTableOptions<TData extends RowData> = Omit<\n  UseDataTableOptions<TData, ExpandingFeatures>,\n  \"features\"\n>;\n\n/** 带行展开的 `useDataTable`。树表传 `tableOptions.getSubRows`，折叠详情传\n *  `tableOptions.getRowCanExpand: () => true` 并配 `DataTable` 的 `renderSubRow`。\n *\n *  翻页、改每页条数、排序、换查询语境时收起全部：换了一批在场行，旧的展开态（尤其是\n *  「全部展开」的 `true`）不该带进新的一页。规则与核心对勾选态的清空一致。\n *  还要追加别的特性时不用本 hook，直接 `useDataTable({ features: { ...expandingFeatures, ... } })`。 */\nexport function useExpandingDataTable<TData extends RowData>(\n  opts: UseExpandingDataTableOptions<TData>,\n): DataTableInstance<TData, ExpandingFeatures> {\n  const dt = useDataTable<TData, ExpandingFeatures>({ ...opts, features: expandingFeatures });\n\n  const { pageIndex, pageSize } = dt.state.pagination;\n  const scopeKey = `${pageIndex}:${pageSize}:${dt.state.scopeEpoch}:${dt.state.sorting.map((s) => `${s.id}:${s.desc}`).join(\",\")}`;\n  const lastScope = useRef(scopeKey);\n  const { resetExpanded } = dt.table;\n  useEffect(() => {\n    // 用「上次作用域」而非「是不是首帧」：挂载时经 tableOptions.initialState 给的展开态要留住。\n    if (lastScope.current === scopeKey) return;\n    lastScope.current = scopeKey;\n    resetExpanded();\n  }, [scopeKey, resetExpanded]);\n\n  return dt;\n}\n",
+      "type": "registry:component",
+      "target": "components/data-table-expanding/use-expanding-data-table.ts"
+    },
+    {
+      "path": "ui/blocks/data-table-expanding/row-expander.tsx",
+      "content": "import { useLocalization } from \"@jcoder-stack/abp-react/react\";\nimport { type CellContext, flexRender, type RowData } from \"@tanstack/react-table\";\nimport { ChevronRight, ChevronsDownUp, ChevronsUpDown } from \"lucide-react\";\nimport type { ReactNode } from \"react\";\nimport type {\n  TableColumnDef,\n  TableFeaturesWith,\n  TableRowInstance,\n} from \"@/components/data-table/table-core\";\nimport type { DataTableInstance } from \"@/components/data-table/use-data-table\";\nimport { Button } from \"@/components/ui/button\";\nimport { Tooltip, TooltipContent, TooltipTrigger } from \"@/components/ui/tooltip\";\nimport { cn } from \"@/lib/utils\";\nimport type { ExpandingFeatures } from \"./expanding-features\";\n\ntype ExpandingRow<TData extends RowData> = TableRowInstance<TData, ExpandingFeatures>;\n\n/** 单行的展开/收起钮。不可展开的行渲染等宽占位，同层兄弟节点的内容才能左对齐。\n *\n *  click 与 keydown 都 stopPropagation：行上挂着 `onRowClick` 时，点按钮或在按钮上按\n *  Enter/Space 会冒泡成「打开详情」，跟行操作菜单是同一个处理。 */\nexport function RowExpandButton<TData extends RowData>(props: { row: ExpandingRow<TData> }) {\n  const L = useLocalization();\n  const { row } = props;\n  if (!row.getCanExpand())\n    return <span aria-hidden=\"true\" className=\"inline-block size-7 shrink-0\" />;\n  const expanded = row.getIsExpanded();\n  return (\n    <Button\n      type=\"button\"\n      variant=\"ghost\"\n      size=\"icon\"\n      className=\"size-7 shrink-0 text-muted-foreground\"\n      aria-expanded={expanded}\n      aria-label={L(expanded ? \"Table:CollapseRow\" : \"Table:ExpandRow\")}\n      onClick={(e) => {\n        e.stopPropagation();\n        row.toggleExpanded();\n      }}\n      onKeyDown={(e) => e.stopPropagation()}\n    >\n      <ChevronRight className={cn(\"transition-transform\", expanded && \"rotate-90\")} />\n    </Button>\n  );\n}\n\n/** 树表的首列内容：按 `row.depth` 缩进 + 展开钮 + 原内容。缩进走主题的 `--spacing` 刻度，\n *  深度是运行时数据，没法写成静态类。 */\nexport function TreeCell<TData extends RowData>(props: {\n  row: ExpandingRow<TData>;\n  children?: ReactNode;\n}) {\n  return (\n    <div\n      className=\"flex items-center gap-1\"\n      style={{ paddingInlineStart: `calc(var(--spacing) * ${props.row.depth * 6})` }}\n    >\n      <RowExpandButton row={props.row} />\n      <div className=\"min-w-0 flex-1\">{props.children}</div>\n    </div>\n  );\n}\n\ntype ExpandingCellContext<TData extends RowData> = CellContext<\n  TableFeaturesWith<ExpandingFeatures>,\n  TData,\n  unknown\n>;\n\n/** 把一列包成树表首列：保留原 `cell`（缺省显示单元格值），外面套 `TreeCell`。 */\nexport function treeColumn<TData extends RowData>(\n  def: TableColumnDef<TData, ExpandingFeatures>,\n): TableColumnDef<TData, ExpandingFeatures> {\n  const inner = def.cell;\n  return {\n    ...def,\n    cell: (ctx: ExpandingCellContext<TData>) => (\n      <TreeCell row={ctx.row}>\n        {inner === undefined ? (ctx.renderValue() as ReactNode) : flexRender(inner, ctx)}\n      </TreeCell>\n    ),\n  } as TableColumnDef<TData, ExpandingFeatures>;\n}\n\nfunction ExpandColumnHeader() {\n  const L = useLocalization();\n  return <span className=\"sr-only\">{L(\"Table:ExpandRow\")}</span>;\n}\n\n/** 折叠详情用的窄列：每行一个展开钮，不参与排序与列显隐。放在列数组最前。 */\nexport function expandColumn<TData extends RowData>(): TableColumnDef<TData, ExpandingFeatures> {\n  return {\n    id: \"expand\",\n    enableSorting: false,\n    enableHiding: false,\n    meta: { className: \"w-10\" },\n    header: () => <ExpandColumnHeader />,\n    cell: ({ row }) => <RowExpandButton row={row} />,\n  };\n}\n\n/** 工具栏的「全部展开/全部收起」，放进 `DataTableToolbar` 的 children。没有可展开行时不渲染。 */\nexport function DataTableExpandAllButton<TData extends RowData>(props: {\n  table: DataTableInstance<TData, ExpandingFeatures>;\n}) {\n  const L = useLocalization();\n  const table = props.table.table;\n  if (!table.getCanSomeRowsExpand()) return null;\n  const allExpanded = table.getIsAllRowsExpanded();\n  const label = L(allExpanded ? \"Table:CollapseAll\" : \"Table:ExpandAll\");\n  return (\n    <Tooltip>\n      <TooltipTrigger asChild>\n        <Button\n          type=\"button\"\n          variant=\"ghost\"\n          size=\"icon\"\n          className=\"size-8 text-muted-foreground\"\n          aria-label={label}\n          onClick={() => table.toggleAllRowsExpanded(!allExpanded)}\n        >\n          {allExpanded ? <ChevronsDownUp /> : <ChevronsUpDown />}\n        </Button>\n      </TooltipTrigger>\n      <TooltipContent>{label}</TooltipContent>\n    </Tooltip>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "components/data-table-expanding/row-expander.tsx"
+    },
+    {
+      "path": "ui/blocks/data-table-expanding/data-table-expanding-messages.json",
+      "content": "{\n  \"en\": {\n    \"\": {\n      \"Table:ExpandRow\": \"Expand row\",\n      \"Table:CollapseRow\": \"Collapse row\",\n      \"Table:ExpandAll\": \"Expand all\",\n      \"Table:CollapseAll\": \"Collapse all\"\n    }\n  },\n  \"zh-Hans\": {\n    \"\": {\n      \"Table:ExpandRow\": \"展开行\",\n      \"Table:CollapseRow\": \"收起行\",\n      \"Table:ExpandAll\": \"全部展开\",\n      \"Table:CollapseAll\": \"全部收起\"\n    }\n  }\n}\n",
+      "type": "registry:file",
+      "target": "components/data-table-expanding/data-table-expanding-messages.json"
+    }
+  ],
+  "type": "registry:block"
+}

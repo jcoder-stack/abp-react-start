@@ -1196,6 +1196,44 @@
           "target": "components/rich-text-editor/rich-text-editor-messages.json"
         }
       ]
+    },
+    {
+      "name": "data-table-expanding",
+      "type": "registry:block",
+      "title": "Data Table Row Expanding",
+      "description": "Opt-in row expanding for the data-table block: tree tables via getSubRows and collapsible detail rows via renderSubRow, with expander column, indented tree cell, expand-all button and expansion reset on page/sort/query change.",
+      "registryDependencies": [
+        "button",
+        "tooltip",
+        "./node_modules/@jcoder-stack/registry/public/r/data-table.json"
+      ],
+      "dependencies": [
+        "@tanstack/react-table@9.2.4",
+        "@jcoder-stack/abp-react",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "ui/blocks/data-table-expanding/expanding-features.ts",
+          "type": "registry:component",
+          "target": "components/data-table-expanding/expanding-features.ts"
+        },
+        {
+          "path": "ui/blocks/data-table-expanding/use-expanding-data-table.ts",
+          "type": "registry:component",
+          "target": "components/data-table-expanding/use-expanding-data-table.ts"
+        },
+        {
+          "path": "ui/blocks/data-table-expanding/row-expander.tsx",
+          "type": "registry:component",
+          "target": "components/data-table-expanding/row-expander.tsx"
+        },
+        {
+          "path": "ui/blocks/data-table-expanding/data-table-expanding-messages.json",
+          "type": "registry:file",
+          "target": "components/data-table-expanding/data-table-expanding-messages.json"
+        }
+      ]
     }
   ]
 }

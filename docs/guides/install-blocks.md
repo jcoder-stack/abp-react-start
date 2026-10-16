@@ -47,6 +47,7 @@ shadcn 把**裸名字**当作官方 registry 的条目，`abp-crud` 会被解析
 | `abp-permission-sheet` | `tree`、`form` | 对 ABP Permission Management 模块跑过 `jc-abp gen` |
 | `admin-pages` | `app-shell` 及上表除 `abp-layout`/`abp-login` 外的全部 | 对 Identity / TenantManagement / SettingManagement / Account 四个内置模块跑过 `jc-abp gen` |
 | `rich-text-editor` | — | 不随 `init` 安装，按需单独装；词条要合并进 `__root.tsx`，见 [`rich-text-editor.md`](rich-text-editor.md) |
+| `data-table-expanding` | `data-table` | 不随 `init` 安装，按需单独装；词条要合并进 `__root.tsx`，见 [`data-table-expanding.md`](data-table-expanding.md) |
 
 「前置的非 registry 产物」这一列是最容易踩的：这些 import 的目标**不随 registry 分发**，缺了就是编译失败而不是运行时报错。
 
