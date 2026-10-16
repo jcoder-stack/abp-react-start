@@ -38,20 +38,26 @@ const registry: Registry = JSON.parse(
   readFileSync(join(REPO_ROOT, "registry/registry.json"), "utf8"),
 );
 
-const pairs = registry.items.flatMap((item) =>
-  (item.files ?? []).map((f) => ({
-    block: item.name,
-    registryFile: join(REPO_ROOT, "registry", f.path),
-    starterFile: starterPath(f.target),
-    target: f.target,
-    // target 归一成相对项目根，才能与 HANDWRITTEN_PATHS 的写法对齐
-    rel: f.target.startsWith("~/")
-      ? f.target.slice(2)
-      : f.target.startsWith("src/")
-        ? f.target
-        : `src/${f.target}`,
-  })),
-);
+/** 不随 `jc-abp init` 安装的按需块，starter 里本来就没有它们。这类块的测试直接 import
+ *  registry 源码（见 `registry/test/`），只有一份代码，不存在两侧分叉，所以不参与镜像比对。 */
+const OPT_IN_BLOCKS = new Set(["rich-text-editor"]);
+
+const pairs = registry.items
+  .filter((item) => !OPT_IN_BLOCKS.has(item.name))
+  .flatMap((item) =>
+    (item.files ?? []).map((f) => ({
+      block: item.name,
+      registryFile: join(REPO_ROOT, "registry", f.path),
+      starterFile: starterPath(f.target),
+      target: f.target,
+      // target 归一成相对项目根，才能与 HANDWRITTEN_PATHS 的写法对齐
+      rel: f.target.startsWith("~/")
+        ? f.target.slice(2)
+        : f.target.startsWith("src/")
+          ? f.target
+          : `src/${f.target}`,
+    })),
+  );
 
 // `~/` 目标是块自己装进项目根的文件（`public/sw.js` 之类），不是手写增量；`public` 整个目录
 // 在 HANDWRITTEN_PATHS 里，不排除它们 PWA 的 `public/*` 副本就永远不会被比对。
