@@ -64,10 +64,6 @@ function Harness(props: { data?: Row[] }) {
 // features 的契约是引用必须稳定，模块级常量是它唯一正当的写法。
 const extraFeatures = { columnOrderingFeature };
 
-/** `TableInstance` 按基础特性定型，`opts.features` 追加进来的 API 不在它的类型里。
- *  这正是本用例要覆盖的处境：类型上看不见，但那片状态必须真的被宿主订阅。 */
-type ColumnOrderingApi = { setColumnOrder: (order: string[]) => void };
-
 function OrderingHarness() {
   const state = useDataTableState();
   const dt = useDataTable({
@@ -81,12 +77,7 @@ function OrderingHarness() {
   return (
     <>
       <span data-testid="slices">{Object.keys(dt.table.state).sort().join(",")}</span>
-      <button
-        type="button"
-        onClick={() =>
-          (dt.table as unknown as ColumnOrderingApi).setColumnOrder(["name", "select"])
-        }
-      >
+      <button type="button" onClick={() => dt.table.setColumnOrder(["name", "select"])}>
         reorder
       </button>
       <DataTable table={dt} />

@@ -1,0 +1,18 @@
+{
+  "en": {
+    "": {
+      "Table:ExpandRow": "Expand row",
+      "Table:CollapseRow": "Collapse row",
+      "Table:ExpandAll": "Expand all",
+      "Table:CollapseAll": "Collapse all"
+    }
+  },
+  "zh-Hans": {
+    "": {
+      "Table:ExpandRow": "展开行",
+      "Table:CollapseRow": "收起行",
+      "Table:ExpandAll": "全部展开",
+      "Table:CollapseAll": "全部收起"
+    }
+  }
+}

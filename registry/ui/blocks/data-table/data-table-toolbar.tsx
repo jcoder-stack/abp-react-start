@@ -3,6 +3,7 @@ import type { RowData } from "@tanstack/react-table";
 import { Download, RefreshCw, Rows3 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import type { ExtraFeatureMap, NoExtraFeatures } from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +22,11 @@ import { cn } from "@/lib/utils";
 const UTILITY_ICON_CLASS = "size-8 text-muted-foreground";
 const SEARCH_DEBOUNCE_MS = 400;
 
-export interface DataTableToolbarProps<TData extends RowData> {
-  table: DataTableInstance<TData>;
+export interface DataTableToolbarProps<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
+  table: DataTableInstance<TData, TExtra>;
   /** 是否渲染内建搜索框；缺省 true。传了 `left` 时搜索框让位。 */
   search?: boolean;
   searchPlaceholder?: string;
@@ -45,7 +49,10 @@ export interface DataTableToolbarProps<TData extends RowData> {
 
 /** 表格卡片顶部条：左区三态（自定义内容/搜索框 ⇄ 批量操作），右区恒定
  * （actions │ utilityLeading · 刷新 · 导出 · 密度 · trailing）。Enter 立即提交搜索。 */
-export function DataTableToolbar<TData extends RowData>(props: DataTableToolbarProps<TData>) {
+export function DataTableToolbar<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+>(props: DataTableToolbarProps<TData, TExtra>) {
   const L = useLocalization();
   const { state, SelectedCount } = props.table;
   const showSearch = props.search ?? true;

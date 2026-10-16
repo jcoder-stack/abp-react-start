@@ -40,7 +40,7 @@ const registry: Registry = JSON.parse(
 
 /** 不随 `jc-abp init` 安装的按需块，starter 里本来就没有它们。这类块的测试直接 import
  *  registry 源码（见 `registry/test/`），只有一份代码，不存在两侧分叉，所以不参与镜像比对。 */
-const OPT_IN_BLOCKS = new Set(["rich-text-editor"]);
+const OPT_IN_BLOCKS = new Set(["rich-text-editor", "data-table-expanding"]);
 
 const pairs = registry.items
   .filter((item) => !OPT_IN_BLOCKS.has(item.name))

@@ -7,9 +7,16 @@ import {
   Subscribe,
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
-import { type ReactNode, useId } from "react";
+import { Fragment, type ReactNode, useId } from "react";
 import { DataTableFooter } from "@/components/data-table/data-table-footer";
-import type { TableFeatures, TableInstance } from "@/components/data-table/table-core";
+import {
+  asBaseTable,
+  type ExtraFeatureMap,
+  type NoExtraFeatures,
+  type TableFeatures,
+  type TableInstance,
+  type TableRowInstance,
+} from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -100,9 +107,12 @@ function DataTableRow<TData extends RowData>(props: DataTableRowProps<TData>) {
   );
 }
 
-export interface DataTableProps<TData extends RowData> {
+export interface DataTableProps<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
   /** 由 `useDataTable` 构造的表实例；列/数据/分页/排序/选择全部经它接入。 */
-  table: DataTableInstance<TData>;
+  table: DataTableInstance<TData, TExtra>;
   /** 无数据可显示、正在首次取数 → 渲染骨架行。 */
   loading?: boolean;
   /** 已有数据在位、正在取新数据 → 表体降透明度。与 `loading` 互斥，react-query 下传
@@ -127,6 +137,13 @@ export interface DataTableProps<TData extends RowData> {
    *  悬停和选中时又特异性更高，会把你的颜色盖回去。 */
   rowProps?: (row: TData) => { className?: string };
   onRowClick?: (row: TData) => void;
+  /** 行后追加一行通栏内容（折叠详情、行内子表），返回 `null`/`undefined`/`false` 即不追加。外层
+   *  `<tr><td colSpan>` 由组件提供，colSpan 跟随可见列数。收 `Row` 而不是 `row.original`：
+   *  要据以判断的是 `row.getIsExpanded()` 这类表格行状态，追加了 `rowExpandingFeature` 时
+   *  它在类型上可见。与 `rowProps` 一样不需要引用稳定。
+   *
+   *  通栏行不吃 `onRowClick`、没有悬停底色，也不参与选中；`<td>` 无内边距，留白由内容自定。 */
+  renderSubRow?: (row: TableRowInstance<TData, TExtra>) => ReactNode;
   /** 每页条数选项，缺省 `[10, 20, 50]`。当前 `pagination.pageSize` 总会被并入去重升序，
    *  所以传了 `useDataTable({ defaultPageSize })` 忘了同步这里，触发器也不会空白。
    *  传了 `footer` 则本项不生效。 */
@@ -136,7 +153,7 @@ export interface DataTableProps<TData extends RowData> {
    *  三个开关；要保留哪部分自己从 ctx 拼，分页动作走 `ctx.table.nextPage()` 这些。
    *  传了它之后 `pageSizes` 不生效，内建的每页行数下拉不再渲染。 */
   footer?: (ctx: {
-    table: TableInstance<TData>;
+    table: TableInstance<TData, TExtra>;
     pagination: PaginationState;
     pageCount: number;
     rowCount?: number;
@@ -147,11 +164,13 @@ export interface DataTableProps<TData extends RowData> {
 
 /** 服务端分页的通用表格。实例由 `useDataTable` 构造后传入，本组件只管表现层：
  *  骨架、空态、表头表体和内建页脚。行操作列由调用方当普通 column 传进来。 */
-export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
+export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap = NoExtraFeatures>(
+  props: DataTableProps<TData, TExtra>,
+) {
   const L = useLocalization();
   const tableId = useId();
   const { table: dt } = props;
-  const table = dt.table;
+  const table = asBaseTable(dt.table);
   const skeletonCount =
     props.skeletonRows === "pageSize"
       ? dt.state.pagination.pageSize
@@ -159,7 +178,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
 
   const footerContent = props.footer ? (
     props.footer({
-      table,
+      table: dt.table,
       pagination: dt.state.pagination,
       pageCount: dt.pageCount,
       rowCount: dt.rowCount,
@@ -287,17 +306,29 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
               </TableCell>
             </TableRow>
           ) : (
-            table
-              .getRowModel()
-              .rows.map((row) => (
-                <DataTableRow
-                  key={row.id}
-                  row={row}
-                  selectionAtom={table.atoms.rowSelection}
-                  rowProps={props.rowProps}
-                  onRowClick={props.onRowClick}
-                />
-              ))
+            table.getRowModel().rows.map((row) => {
+              // 行对象运行时就是带着追加特性的那一个，这里只是把类型放宽回调用方声明的特性集。
+              const subRow = props.renderSubRow?.(
+                row as unknown as TableRowInstance<TData, TExtra>,
+              );
+              return (
+                <Fragment key={row.id}>
+                  <DataTableRow
+                    row={row}
+                    selectionAtom={table.atoms.rowSelection}
+                    rowProps={props.rowProps}
+                    onRowClick={props.onRowClick}
+                  />
+                  {subRow != null && subRow !== false && (
+                    <TableRow data-slot="data-table-sub-row" className="hover:bg-transparent">
+                      <TableCell colSpan={table.getVisibleLeafColumns().length} className="p-0">
+                        {subRow}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })
           )}
         </TableBody>
       </Table>

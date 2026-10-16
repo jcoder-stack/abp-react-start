@@ -3,7 +3,13 @@ import type { Column, RowData } from "@tanstack/react-table";
 import { TableProperties } from "lucide-react";
 import type { ReactNode } from "react";
 import { resolveColumnLabel } from "@/components/data-table/column-label";
-import type { TableFeatures, TableInstance } from "@/components/data-table/table-core";
+import {
+  asBaseTable,
+  type ExtraFeatureMap,
+  type NoExtraFeatures,
+  type TableFeatures,
+  type TableInstance,
+} from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,21 +21,25 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export interface DataTableColumnsMenuProps<TData extends RowData> {
-  table: DataTableInstance<TData>;
+export interface DataTableColumnsMenuProps<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
+  table: DataTableInstance<TData, TExtra>;
   /** 菜单末尾追加自定义项；`items` 输入是完整表实例，非单列。 */
-  items?: (table: TableInstance<TData>) => ReactNode;
+  items?: (table: TableInstance<TData, TExtra>) => ReactNode;
   /** 覆盖单列标签；缺省走 resolveColumnLabel 的三级阶梯。 */
   label?: (column: Column<TableFeatures, TData, unknown>) => ReactNode;
   className?: string;
 }
 
 /** 列显隐菜单；出现哪些列由列定义的 `enableHiding` 原生控制，本组件不做二次过滤。 */
-export function DataTableColumnsMenu<TData extends RowData>(
-  props: DataTableColumnsMenuProps<TData>,
-) {
+export function DataTableColumnsMenu<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+>(props: DataTableColumnsMenuProps<TData, TExtra>) {
   const L = useLocalization();
-  const table = props.table.table;
+  const table = asBaseTable(props.table.table);
   const columns = table.getAllLeafColumns().filter((c) => c.getCanHide());
 
   return (
@@ -59,7 +69,7 @@ export function DataTableColumnsMenu<TData extends RowData>(
             {props.label?.(column) ?? resolveColumnLabel(table, column.id)}
           </DropdownMenuCheckboxItem>
         ))}
-        {props.items?.(table)}
+        {props.items?.(props.table.table)}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -18,9 +18,11 @@ import {
 import { devWarn } from "@/components/data-table/dev-warn";
 import {
   baseFeatureMap,
+  type ExtraFeatureMap,
   features,
+  type NoExtraFeatures,
   type TableColumnDef,
-  type TableFeatures,
+  type TableFeaturesWith,
   type TableInstance,
 } from "@/components/data-table/table-core";
 import {
@@ -109,33 +111,43 @@ function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TDa
   };
 }
 
-export interface UseDataTableOptions<TData extends RowData> {
+export interface UseDataTableOptions<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
   /** 分页/排序/选择状态机；省略则内部自建（纯客户端数据场景，不需要与外部查询参数联动）。 */
   state?: DataTableState;
   /** 列定义，引用必须稳定。`useTable` 每渲染收到新数组会重建列模型，上层所有以 columns
    *  为依赖的 memo 也跟着失效。`header` 里要用 `L()` 就包一层 `useMemo(() => [...], [L])`，
-   *  `L` 的引用是稳的，等价于永久 memo。违反时 DEV 期会告警。 */
-  columns: TableColumnDef<TData>[];
+   *  `L` 的引用是稳的，等价于永久 memo。违反时 DEV 期会告警。
+   *
+   *  追加了特性时两种写法都收：按 `TableColumnDef<TData, TExtra>` 写才能在 cell 里点出追加
+   *  特性的行 API；只用基础 API 的旧列定义原样传入也行，不必为追加一个特性改写全部列。 */
+  columns: NoInfer<TableColumnDef<TData, TExtra>[] | TableColumnDef<TData>[]>;
   data: TData[];
   pageCount?: number;
   rowCount?: number;
   selectable?: boolean;
   getRowId?: (row: TData, index: number) => string;
-  /** 追加 TanStack 特性，与基础集加法合并。引用必须稳定，建议用模块级常量：`useTable` 只在
-   *  挂载时构造一次表实例，特性在那时注册完，之后再变会被忽略，也不会触发重建。
+  /** 追加 TanStack 特性（含 `expandedRowModel` 这类 row model 槽），与基础集加法合并；
+   *  它的类型即 `TExtra`，返回的 `dt.table`、`tableOptions` 随之带上追加特性的 API。
+   *  引用必须稳定，建议用模块级常量：`useTable` 只在挂载时构造一次表实例，特性在那时注册完，
+   *  之后再变会被忽略，也不会触发重建。
    *
-   *  注册不等于渲染。注册只让特性的状态和 API 可用，`DataTable` 的表现层不会自动跟上：
-   *  注册 `columnResizingFeature` 后表头里没有 resize handle，注册 `rowExpandingFeature`
-   *  后表体也只有 `row.getVisibleCells()`。要让它有画面就得改 `data-table.tsx`，
-   *  这正是 copy-in 分发的用法。 */
-  features?: Parameters<typeof tableFeatures>[0];
+   *  注册不等于渲染。注册只让特性的状态和 API 可用，画面靠列定义（cell 里用行 API）与
+   *  `DataTable` 的行级插槽（`renderSubRow`）补上，不必改本块源码；`data-table-expanding`
+   *  块就是照这条路实现的，可作范例。 */
+  features?: TExtra;
   /** 透传给 useTable，展开在受管选项之后，同名键调用方赢，接管即自负。
    *  `features` 走专门的 prop，类型层禁止在这里传，免得打破加法合并的不变式。 */
-  tableOptions?: Omit<Partial<TableOptions<TableFeatures, TData>>, "features">;
+  tableOptions?: NoInfer<Omit<Partial<TableOptions<TableFeaturesWith<TExtra>, TData>>, "features">>;
 }
 
-export interface DataTableInstance<TData extends RowData> {
-  table: TableInstance<TData>;
+export interface DataTableInstance<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
+  table: TableInstance<TData, TExtra>;
   state: DataTableState;
   /** 当前选中行，调用时取值。选中态归表所有，页面不再随它重渲染，
    *  渲染期读到的快照会陈旧——只在动作处理函数里调它。 */
@@ -151,9 +163,12 @@ export interface DataTableInstance<TData extends RowData> {
 }
 
 /** 建 TanStack 表实例：合成勾选列、注册特性、绑定状态机、剪枝离场行的选中态。 */
-export function useDataTable<TData extends RowData>(
-  opts: UseDataTableOptions<TData>,
-): DataTableInstance<TData> {
+export function useDataTable<
+  TData extends RowData,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+>(options: UseDataTableOptions<TData, TExtra>): DataTableInstance<TData, TExtra> {
+  // 内部一律按基础特性集操作，出口再放宽回 TExtra；理由见 table-core 的 `asBaseTable`。
+  const opts = options as unknown as UseDataTableOptions<TData>;
   const L = useLocalization();
   // hooks 必须无条件调用：外部没给 state 也要建内部状态机，只是外部给了就不用
   const internalState = useDataTableState();
@@ -228,7 +243,7 @@ export function useDataTable<TData extends RowData>(
 
   // 全部取自表实例但绕开 table 本身：useTable 每渲染都返回一份新的表对象（options 是渲染期
   // 新建的），拿 table 当依赖等于没 memo；而这些方法与原子建表时就定下，引用恒定。
-  const { getSelectedRowModel, resetRowSelection, setRowSelection } = table;
+  const { getCoreRowModel, getSelectedRowModel, resetRowSelection, setRowSelection } = table;
   const rowSelectionAtom = table.atoms.rowSelection;
 
   // 翻页/排序/换查询语境会换一批在场行，页内选择随之作废。这条不变式原先在状态机里，
@@ -251,6 +266,7 @@ export function useDataTable<TData extends RowData>(
   // 行离场（删除后 refetch、外部 invalidate）时剔除对应的选中 id。选中数有两个口径：
   // 批量条显隐看 state 键数，内容看在场行数，不剪枝就会分裂出「已选 0 项」的幽灵批量条。
   // 剪枝只看当前 data，跟 keepPreviousData 天然兼容，fetching 期间旧行还在场，不会误清。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: opts.data 是触发源而非读取对象——体内经 getCoreRowModel() 读到同一份数据，而那个方法引用恒定，没有它 effect 不会随换数据重跑
   useEffect(() => {
     // 从原子读而非从渲染期快照读：上面那条清空 effect 先跑，翻页同时换数据时快照已经过期。
     // table.atoms 的键是必需的（Atoms<TFeatures> 用了 -?），rowSelectionFeature 已在
@@ -258,12 +274,12 @@ export function useDataTable<TData extends RowData>(
     const current = rowSelectionAtom.get() ?? {};
     const selected = Object.keys(current);
     if (selected.length === 0) return;
-    const present = new Set(
-      opts.data.map((row, index) => opts.getRowId?.(row, index) ?? String(index)),
-    );
+    // 取核心行模型的 flatRows 而不是 opts.data 的顶层：追加 `getSubRows` 的树表里，勾中的
+    // 子行不在顶层，只看顶层会在每次 refetch 时把它们误判离场清掉。
+    const present = new Set(getCoreRowModel().flatRows.map((row) => row.id));
     if (selected.every((id) => present.has(id))) return;
     setRowSelection(Object.fromEntries(Object.entries(current).filter(([id]) => present.has(id))));
-  }, [opts.data, opts.getRowId, rowSelectionAtom, setRowSelection]);
+  }, [opts.data, getCoreRowModel, rowSelectionAtom, setRowSelection]);
 
   const getSelectedRows = useCallback(
     () => getSelectedRowModel().rows.map((r) => r.original),
@@ -293,7 +309,7 @@ export function useDataTable<TData extends RowData>(
   );
 
   return {
-    table,
+    table: table as unknown as TableInstance<TData, TExtra>,
     state,
     getSelectedRows,
     clearSelection,
