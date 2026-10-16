@@ -638,6 +638,44 @@ Export is the one slot-style capability — `useAbpTable(bookService, { onExport
 
 `exportCsv` is your own export function (illustrative); `t.Toolbar`/`t.getListParams` are real bound members/methods.
 
+## ⑪ Row expanding: tree tables and collapsible details (optional)
+
+Row expanding is not built into `useAbpTable`. Install the opt-in [`data-table-expanding`](data-table-expanding.en.md) block (that page covers install and merging its messages), then pass its `expandingFeatures` to `features`; no abp-table source changes needed. `t.table`, column definitions, `tableOptions`, the table object handed to `row.menu`/`row.actions`, and `t.Table`'s `renderSubRow` all infer the expanding API from it, with no casts:
+
+```tsx
+import type { ExpandingFeatures } from "@/components/data-table-expanding/expanding-features";
+import { expandingFeatures } from "@/components/data-table-expanding/expanding-features";
+import { DataTableExpandAllButton, expandColumn, treeColumn } from "@/components/data-table-expanding/row-expander";
+import { useCollapseOnScopeChange } from "@/components/data-table-expanding/use-expanding-data-table";
+
+// Tree table: wrap the first column in treeColumn, point tableOptions.getSubRows at the children
+const columns: TableColumnDef<OrgUnit, ExpandingFeatures>[] = [
+  treeColumn<OrgUnit>({ accessorKey: "displayName", header: "Name" }),
+  { accessorKey: "code", header: "Code" },
+];
+const treeOptions = { getSubRows: (unit: OrgUnit) => unit.children };
+
+const t = useAbpTable(orgUnitTreeSource, { columns, features: expandingFeatures, tableOptions: treeOptions });
+useCollapseOnScopeChange(t); // collapse everything on page/sort/query change
+
+<t.Table>
+  <t.Toolbar>
+    <DataTableExpandAllButton table={t} />
+  </t.Toolbar>
+</t.Table>;
+```
+
+For collapsible details, use `expandColumn<Order>()` as the first column, pass `{ getRowCanExpand: () => true }` as `tableOptions`, and render the detail through `t.Table`'s `renderSubRow`:
+
+```tsx
+<t.Table renderSubRow={(row) => (row.getIsExpanded() ? <OrderLines orderId={row.original.id} /> : null)} />
+```
+
+- Don't skip `useCollapseOnScopeChange(t)`. `useAbpTable` doesn't know about the expanding feature; this line adds the rule that changing page, page size, sorting, or submitting the query collapses everything, matching how selection is cleared.
+- `features`, `tableOptions`, and the columns must be referentially stable; make them module-level constants (as in step ④).
+- The tree is fetched in full; lazy-loading children is not supported. ABP tree endpoints (organization units, for example) usually return a flat list: use a `source` callback (see custom data sources under "Choosing a tier") to fetch everything, assemble the tree by `parentId`, and slice the page of root nodes by `params.SkipCount`/`params.MaxResultCount`. `totalCount` counts root nodes only.
+- Clicking a row still opens the detail (`onOpen`). Clicking the expand button, or pressing Enter/Space on it, does not bubble up as a row click.
+
 ## Choosing a tier
 
 The table/CRUD capability comes in four tiers, each narrower in applicability and freer in control than the one above. The principle is "just enough" — don't drop a tier because a lower one exists.

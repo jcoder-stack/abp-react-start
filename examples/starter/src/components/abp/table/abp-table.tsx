@@ -12,25 +12,38 @@ import type { AbpTableRowConfig } from "@/components/abp/table/use-abp-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnsMenu } from "@/components/data-table/data-table-columns-menu";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import type {
+  ExtraFeatureMap,
+  NoExtraFeatures,
+  TableRowInstance,
+} from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { FormErrorSummary } from "@/components/form/form-error-summary";
 import { Button } from "@/components/ui/button";
 
 /** `t.Table` 的表现层 props：不受管的 `DataTable` 透传项，缺省全部走内建默认。 */
-export interface AbpTableViewOwnProps<TDto> {
+export interface AbpTableViewOwnProps<
+  TDto extends { id?: string },
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
   empty?: ReactNode;
   skeletonRows?: number | "pageSize";
   rowProps?: (row: TDto) => { className?: string };
+  /** 行后追加的通栏内容，语义同 `DataTable` 的同名 prop。行展开的折叠详情用它，
+   *  配 `useAbpTable({ features: expandingFeatures })` 后 `row.getIsExpanded()` 在类型上可见。 */
+  renderSubRow?: (row: TableRowInstance<TDto, TExtra>) => ReactNode;
   pageSizes?: number[];
   searchPlaceholder?: string;
 }
 
 /** `AbpTableView` 消费的实例面：`useDataTable` 全量 + `useAbpTable` 的数据侧接线。
  *  不含五个绑定成员，那些正是靠本组件渲染出来的，反过来要求实例已经带着会是循环依赖。 */
-export interface AbpTableViewInstance<TDto extends { id?: string }>
-  extends DataTableInstance<TDto> {
+export interface AbpTableViewInstance<
+  TDto extends { id?: string },
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> extends DataTableInstance<TDto, TExtra> {
   source: AbpTableSource<TDto>;
-  rowConfig?: AbpTableRowConfig<TDto>;
+  rowConfig?: AbpTableRowConfig<TDto, TExtra>;
   onOpen?: (mode: "create" | "edit" | "view", record?: TDto) => void;
   searchEnabled: boolean;
   submitQuery: () => Promise<void>;
@@ -53,17 +66,23 @@ export interface AbpTableViewSlots {
 // 必须导出。`useAbpTable` 的 `Table` 绑定成员把 `AbpTableView<TDto>` 的元素类型带进了自己的
 // 推断返回类型，声明发出时要能给这个类型具名（tsconfig.base.json 开着 declaration + composite），
 // 不导出会报 TS4058「cannot be named」。
-export interface AbpTableViewProps<TDto extends { id?: string }>
-  extends AbpTableViewOwnProps<TDto> {
-  t: AbpTableViewInstance<TDto>;
+export interface AbpTableViewProps<
+  TDto extends { id?: string },
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> extends AbpTableViewOwnProps<TDto, TExtra> {
+  t: AbpTableViewInstance<TDto, TExtra>;
   slots: AbpTableViewSlots;
 }
 
 /** `t.Table` 的渲染实现：在单张卡片里编排顶部条（搜索框 ⇄ 批量态 + 动作组）、
  *  高级筛选面板和表格。不公开导出，调用方只应经 `t.Table` 用它。 */
-export function AbpTableView<TDto extends { id?: string }>(props: AbpTableViewProps<TDto>) {
+export function AbpTableView<
+  TDto extends { id?: string },
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+>(props: AbpTableViewProps<TDto, TExtra>) {
   const L = useLocalization();
-  const { t, slots, empty, skeletonRows, rowProps, pageSizes, searchPlaceholder } = props;
+  const { t, slots, empty, skeletonRows, rowProps, renderSubRow, pageSizes, searchPlaceholder } =
+    props;
 
   const [expanded, setExpanded] = useState(false);
   const reactId = useId();
@@ -170,6 +189,7 @@ export function AbpTableView<TDto extends { id?: string }>(props: AbpTableViewPr
       empty={empty}
       skeletonRows={skeletonRows}
       rowProps={rowProps}
+      renderSubRow={renderSubRow}
       pageSizes={pageSizes}
       onRowClick={rowClickHandler}
     >
