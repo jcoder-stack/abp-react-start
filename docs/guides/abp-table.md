@@ -635,6 +635,44 @@ const t = useAbpTable(userService, {
 
 `exportCsv` 是业务自己实现的导出函数（示意），`t.Toolbar`/`t.getListParams` 都是真实的绑定成员/方法。
 
+## ⑪ 行展开：树表与折叠详情（可选）
+
+行展开不在 `useAbpTable` 内建，需另装按需块 [`data-table-expanding`](data-table-expanding.md)（安装和词条合并见该页）。装好后不用改 abp-table 的源码，把块里的 `expandingFeatures` 传给 `features` 就行。`t.table`、列定义、`tableOptions`、`row.menu`/`row.actions` 拿到的表对象，以及 `t.Table` 的 `renderSubRow`，都会按它推断出展开 API，不用强转：
+
+```tsx
+import type { ExpandingFeatures } from "@/components/data-table-expanding/expanding-features";
+import { expandingFeatures } from "@/components/data-table-expanding/expanding-features";
+import { DataTableExpandAllButton, expandColumn, treeColumn } from "@/components/data-table-expanding/row-expander";
+import { useCollapseOnScopeChange } from "@/components/data-table-expanding/use-expanding-data-table";
+
+// 树表：首列用 treeColumn 包一层，tableOptions.getSubRows 指明子行
+const columns: TableColumnDef<OrgUnit, ExpandingFeatures>[] = [
+  treeColumn<OrgUnit>({ accessorKey: "displayName", header: "Name" }),
+  { accessorKey: "code", header: "Code" },
+];
+const treeOptions = { getSubRows: (unit: OrgUnit) => unit.children };
+
+const t = useAbpTable(orgUnitTreeSource, { columns, features: expandingFeatures, tableOptions: treeOptions });
+useCollapseOnScopeChange(t); // 翻页/排序/查询时收起全部
+
+<t.Table>
+  <t.Toolbar>
+    <DataTableExpandAllButton table={t} />
+  </t.Toolbar>
+</t.Table>;
+```
+
+折叠详情把首列换成 `expandColumn<Order>()`，`tableOptions` 传 `{ getRowCanExpand: () => true }`，详情内容交给 `t.Table` 的 `renderSubRow`：
+
+```tsx
+<t.Table renderSubRow={(row) => (row.getIsExpanded() ? <OrderLines orderId={row.original.id} /> : null)} />
+```
+
+- `useCollapseOnScopeChange(t)` 别漏。`useAbpTable` 不认识展开特性，翻页、改每页条数、排序、提交查询时收起全部的规则由这一行补上，和勾选态的清空口径一致。
+- `features`、`tableOptions`、列定义都要引用稳定，写成模块级常量（同第④步）。
+- 树要一次全量拉取，懒加载子节点不在支持范围内。ABP 的树形端点（如组织单元）一般返回平铺列表，用 `source` 回调（见「选层指南」的自定义数据源）拉全量、按 `parentId` 组装成树，再按 `params.SkipCount`/`params.MaxResultCount` 切根节点那一页。`totalCount` 只数根节点。
+- 默认点行开详情（`onOpen`）。点展开钮或在展开钮上按 Enter/Space 不会冒泡成点行。
+
 ## 选层指南
 
 本仓库的表格/CRUD 能力分四层，从上到下依次收窄适用面、放开控制力。挑层的原则是「够用就好」——不要因为某个更底层存在就默认往下走。

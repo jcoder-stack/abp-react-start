@@ -85,6 +85,17 @@ const dt = useExpandingDataTable({ columns, data, getRowId: (o) => o.id, tableOp
 
 外层的 `<tr><td colSpan>` 由组件提供，`colSpan` 跟随可见列数。`<td>` 没有内边距，留白由详情内容自己决定。详情里如果要发请求，就让详情组件自己用 `useQuery`，展开时才挂载、才发请求。
 
+## 在 `useAbpTable` 里用
+
+`useAbpTable` 的 `features` 直接收 `expandingFeatures`，`t` 的各处类型会随之带上展开 API；`treeColumn`、`expandColumn`、`DataTableExpandAllButton` 照常用，`DataTableExpandAllButton` 直接传 `t`。折叠详情的 `renderSubRow` 传给 `t.Table`。`useAbpTable` 不认识展开特性，翻页时收起的规则要补一行 `useCollapseOnScopeChange(t)`：
+
+```tsx
+const t = useAbpTable(orgUnitTreeSource, { columns, features: expandingFeatures, tableOptions: treeOptions });
+useCollapseOnScopeChange(t);
+```
+
+完整写法和树数据的取法见 [abp-table 指南](abp-table.md)第⑪步。
+
 ## 内置行为
 
 - 翻页、改每页条数、排序、换查询条件时会收起全部，和勾选状态的清空规则一致。挂载时通过 `tableOptions.initialState.expanded` 给的初始展开状态会保留。
@@ -99,4 +110,4 @@ const dt = useExpandingDataTable({ columns, data, getRowId: (o) => o.id, tableOp
 2. 列定义写成 `TableColumnDef<TData, typeof myFeatures>`，cell 里就能用这些特性的行 API。只用基础 API 的旧列定义可以原样传入。
 3. 需要在表体里出画面的，用 `DataTable` 的 `renderSubRow`。
 
-要同时用展开和别的特性时，不用 `useExpandingDataTable`，直接这样写：`useDataTable({ features: { ...expandingFeatures, ...myFeatures } })`。注意翻页时收起展开的逻辑在 `useExpandingDataTable` 里，这样写就要自己处理。
+要同时用展开和别的特性时，不用 `useExpandingDataTable`，直接这样写：`useDataTable({ features: { ...expandingFeatures, ...myFeatures } })`。翻页时收起展开的规则在 `useExpandingDataTable` 里，这样写时建表后补一行 `useCollapseOnScopeChange(dt)`。
