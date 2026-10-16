@@ -25,5 +25,6 @@ All assembly and mechanics live down in the packages: the ABP auth runtime facto
 | `tree` | A general tree block (expand/collapse, checking; cascade policy left to the consumer) |
 | `abp-permission-sheet` | The permission tree sheet (groups as Accordion, a Tree per group) |
 | `admin-pages` | The five admin pages: users / roles / tenants / settings / profile |
+| `rich-text-editor` | Opt-in Tiptap 3 editor + read-only viewer: HTML in/out, toolbar & bubble menu, palette colors, image upload hook, Word paste cleanup, Markdown export, Mention suggestion helper. Not installed by `init`; see [`docs/guides/rich-text-editor.en.md`](../docs/guides/rich-text-editor.en.md) |
 
 Install steps, dependency order, and each block's prerequisites are in [`docs/guides/install-blocks.md`](../docs/guides/install-blocks.md). After changing block sources, rebuild the artifacts with `bun run build:registry`.

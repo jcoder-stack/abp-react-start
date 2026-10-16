@@ -46,6 +46,7 @@ shadcn treats a **bare name** as an official-registry item: `abp-crud` would res
 | `tree` | — | — |
 | `abp-permission-sheet` | `tree`, `form` | `jc-abp gen` run against the ABP Permission Management module |
 | `admin-pages` | `app-shell` plus everything above except `abp-layout`/`abp-login` | `jc-abp gen` run against the four built-in modules: Identity / TenantManagement / SettingManagement / Account |
+| `rich-text-editor` | — | Not installed by `init`; add it on its own and merge its catalog into `__root.tsx`, see [`rich-text-editor.en.md`](rich-text-editor.en.md) |
 
 The "non-registry prerequisites" column is the easiest to trip on: those import targets are **not distributed with the registry**, and missing them is a compile failure, not a runtime error.
 

@@ -106,6 +106,7 @@ npx jc-abp gen && bun run dev
 | [列表页与 CRUD](docs/guides/abp-table.md) | `useAbpTable` / `useAbpSheet` 从 service 描述符到整页接线 |
 | [表单体系](docs/guides/forms.md) | 四层架构、字段组件、校验的四条通道 |
 | [文件上传与下载](docs/guides/files.md) | 生成的上传 mutation、流式下载与进度、两条路各自的限制 |
+| [富文本编辑器](docs/guides/rich-text-editor.md) | 按需装的 Tiptap 编辑器块：HTML 存储、图片上传、@提及扩展点、后端清洗白名单 |
 | [设计规范](DESIGN.md) | 色板、排版、组件约定（英文） |
 
 ## 开发

@@ -877,6 +877,325 @@
           "target": "~/public/manifest.webmanifest"
         }
       ]
+    },
+    {
+      "name": "rich-text-editor",
+      "type": "registry:block",
+      "title": "Rich Text Editor",
+      "description": "Tiptap 3 rich text editor (HTML in/out) with toolbar, bubble menu, palette colors, tables, task lists, code highlighting, image upload hook, Word paste cleanup, Markdown export and a Mention suggestion helper; plus a read-only viewer.",
+      "registryDependencies": [
+        "button",
+        "command",
+        "dropdown-menu",
+        "input",
+        "popover",
+        "separator",
+        "tooltip"
+      ],
+      "dependencies": [
+        "@jcoder-stack/abp-react",
+        "lucide-react",
+        "@floating-ui/dom",
+        "@tiptap/core",
+        "@tiptap/pm",
+        "@tiptap/react",
+        "@tiptap/starter-kit",
+        "@tiptap/extension-list",
+        "@tiptap/extension-table",
+        "@tiptap/extension-text-style",
+        "@tiptap/extension-highlight",
+        "@tiptap/extension-image",
+        "@tiptap/extension-file-handler",
+        "@tiptap/extension-code-block-lowlight",
+        "@tiptap/extension-bubble-menu",
+        "@tiptap/extensions",
+        "@tiptap/extension-mention",
+        "@tiptap/suggestion",
+        "@tiptap/markdown",
+        "lowlight",
+        "highlight.js"
+      ],
+      "devDependencies": [
+        "@tailwindcss/typography"
+      ],
+      "cssVars": {
+        "light": {
+          "rte-text-gray": "oklch(0.52 0.02 259)",
+          "rte-text-red": "oklch(0.55 0.2 27)",
+          "rte-text-orange": "oklch(0.56 0.15 50)",
+          "rte-text-yellow": "oklch(0.56 0.12 85)",
+          "rte-text-green": "oklch(0.52 0.13 150)",
+          "rte-text-blue": "oklch(0.52 0.18 260)",
+          "rte-text-purple": "oklch(0.52 0.2 300)",
+          "rte-text-pink": "oklch(0.55 0.2 355)",
+          "rte-highlight-gray": "oklch(0.93 0.01 259)",
+          "rte-highlight-red": "oklch(0.92 0.05 20)",
+          "rte-highlight-orange": "oklch(0.93 0.06 60)",
+          "rte-highlight-yellow": "oklch(0.95 0.09 95)",
+          "rte-highlight-green": "oklch(0.93 0.06 150)",
+          "rte-highlight-blue": "oklch(0.92 0.05 250)",
+          "rte-highlight-purple": "oklch(0.92 0.05 305)",
+          "rte-highlight-pink": "oklch(0.93 0.05 355)"
+        },
+        "dark": {
+          "rte-text-gray": "oklch(0.75 0.02 259)",
+          "rte-text-red": "oklch(0.74 0.15 25)",
+          "rte-text-orange": "oklch(0.78 0.13 55)",
+          "rte-text-yellow": "oklch(0.85 0.13 90)",
+          "rte-text-green": "oklch(0.78 0.14 150)",
+          "rte-text-blue": "oklch(0.75 0.13 255)",
+          "rte-text-purple": "oklch(0.75 0.14 300)",
+          "rte-text-pink": "oklch(0.76 0.14 355)",
+          "rte-highlight-gray": "oklch(0.38 0.02 259)",
+          "rte-highlight-red": "oklch(0.38 0.09 25)",
+          "rte-highlight-orange": "oklch(0.4 0.08 55)",
+          "rte-highlight-yellow": "oklch(0.42 0.08 90)",
+          "rte-highlight-green": "oklch(0.38 0.07 150)",
+          "rte-highlight-blue": "oklch(0.38 0.08 255)",
+          "rte-highlight-purple": "oklch(0.38 0.09 300)",
+          "rte-highlight-pink": "oklch(0.38 0.09 355)"
+        }
+      },
+      "css": {
+        "@plugin \"@tailwindcss/typography\"": {},
+        "[data-slot=\"rich-text-content\"] .prose": {
+          "--tw-prose-body": "var(--foreground)",
+          "--tw-prose-headings": "var(--foreground)",
+          "--tw-prose-lead": "var(--muted-foreground)",
+          "--tw-prose-links": "var(--primary)",
+          "--tw-prose-bold": "var(--foreground)",
+          "--tw-prose-counters": "var(--muted-foreground)",
+          "--tw-prose-bullets": "var(--muted-foreground)",
+          "--tw-prose-hr": "var(--border)",
+          "--tw-prose-quotes": "var(--foreground)",
+          "--tw-prose-quote-borders": "var(--border)",
+          "--tw-prose-captions": "var(--muted-foreground)",
+          "--tw-prose-code": "var(--foreground)",
+          "--tw-prose-pre-code": "var(--foreground)",
+          "--tw-prose-pre-bg": "var(--muted)",
+          "--tw-prose-th-borders": "var(--border)",
+          "--tw-prose-td-borders": "var(--border)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"gray\"]": {
+          "color": "var(--rte-text-gray)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"red\"]": {
+          "color": "var(--rte-text-red)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"orange\"]": {
+          "color": "var(--rte-text-orange)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"yellow\"]": {
+          "color": "var(--rte-text-yellow)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"green\"]": {
+          "color": "var(--rte-text-green)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"blue\"]": {
+          "color": "var(--rte-text-blue)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"purple\"]": {
+          "color": "var(--rte-text-purple)"
+        },
+        "[data-slot=\"rich-text-content\"] span[data-color=\"pink\"]": {
+          "color": "var(--rte-text-pink)"
+        },
+        "[data-slot=\"rich-text-content\"] mark": {
+          "background-color": "var(--rte-highlight-yellow)",
+          "color": "inherit",
+          "border-radius": "0.125rem",
+          "padding": "0 0.125rem"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"gray\"]": {
+          "background-color": "var(--rte-highlight-gray)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"red\"]": {
+          "background-color": "var(--rte-highlight-red)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"orange\"]": {
+          "background-color": "var(--rte-highlight-orange)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"yellow\"]": {
+          "background-color": "var(--rte-highlight-yellow)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"green\"]": {
+          "background-color": "var(--rte-highlight-green)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"blue\"]": {
+          "background-color": "var(--rte-highlight-blue)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"purple\"]": {
+          "background-color": "var(--rte-highlight-purple)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] mark[data-color=\"pink\"]": {
+          "background-color": "var(--rte-highlight-pink)",
+          "color": "inherit"
+        },
+        "[data-slot=\"rich-text-content\"] p.is-editor-empty:first-child::before": {
+          "content": "attr(data-placeholder)",
+          "float": "left",
+          "height": "0",
+          "pointer-events": "none",
+          "color": "var(--muted-foreground)"
+        },
+        "[data-slot=\"rich-text-content\"] :not(pre) > code": {
+          "background-color": "var(--muted)",
+          "border-radius": "0.25rem",
+          "padding": "0.125rem 0.25rem",
+          "font-weight": "400"
+        },
+        "[data-slot=\"rich-text-content\"] :not(pre) > code::before, [data-slot=\"rich-text-content\"] :not(pre) > code::after": {
+          "content": "none"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"]": {
+          "list-style": "none",
+          "padding-left": "0.25rem"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"] li": {
+          "display": "flex",
+          "align-items": "flex-start",
+          "gap": "0.5rem",
+          "padding-left": "0"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"] li > label": {
+          "flex": "none",
+          "margin-top": "0.25em",
+          "user-select": "none"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"] li > label input": {
+          "accent-color": "var(--primary)"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"] li > div": {
+          "flex": "1 1 auto",
+          "min-width": "0"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"] li > div > p": {
+          "margin": "0"
+        },
+        "[data-slot=\"rich-text-content\"] ul[data-type=\"taskList\"] li[data-checked=\"true\"] > div": {
+          "color": "var(--muted-foreground)",
+          "text-decoration": "line-through"
+        },
+        "[data-slot=\"rich-text-content\"] .tableWrapper": {
+          "overflow-x": "auto"
+        },
+        "[data-slot=\"rich-text-content\"] table": {
+          "table-layout": "fixed",
+          "width": "100%",
+          "border-collapse": "collapse"
+        },
+        "[data-slot=\"rich-text-content\"] th, [data-slot=\"rich-text-content\"] td": {
+          "position": "relative",
+          "border": "1px solid var(--border)",
+          "padding": "0.375rem 0.5rem",
+          "vertical-align": "top"
+        },
+        "[data-slot=\"rich-text-content\"] th": {
+          "background-color": "var(--muted)",
+          "text-align": "left"
+        },
+        "[data-slot=\"rich-text-content\"] th > p, [data-slot=\"rich-text-content\"] td > p": {
+          "margin": "0"
+        },
+        "[data-slot=\"rich-text-content\"] .selectedCell::after": {
+          "content": "\"\"",
+          "position": "absolute",
+          "inset": "0",
+          "pointer-events": "none",
+          "background-color": "color-mix(in oklch, var(--primary) 12%, transparent)"
+        },
+        "[data-slot=\"rich-text-content\"] img": {
+          "max-width": "100%",
+          "height": "auto",
+          "border-radius": "0.375rem"
+        },
+        "[data-slot=\"rich-text-content\"] .ProseMirror-selectednode": {
+          "outline": "2px solid var(--ring)",
+          "outline-offset": "2px"
+        },
+        "[data-slot=\"rich-text-content\"] [data-type=\"mention\"]": {
+          "border-radius": "0.25rem",
+          "padding": "0 0.125rem",
+          "color": "var(--primary)",
+          "background-color": "color-mix(in oklch, var(--primary) 10%, transparent)"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-comment, [data-slot=\"rich-text-content\"] .hljs-quote": {
+          "color": "var(--muted-foreground)",
+          "font-style": "italic"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-keyword, [data-slot=\"rich-text-content\"] .hljs-selector-tag, [data-slot=\"rich-text-content\"] .hljs-built_in, [data-slot=\"rich-text-content\"] .hljs-type": {
+          "color": "var(--rte-text-purple)"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-string, [data-slot=\"rich-text-content\"] .hljs-regexp, [data-slot=\"rich-text-content\"] .hljs-addition": {
+          "color": "var(--rte-text-green)"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-number, [data-slot=\"rich-text-content\"] .hljs-literal, [data-slot=\"rich-text-content\"] .hljs-symbol, [data-slot=\"rich-text-content\"] .hljs-bullet": {
+          "color": "var(--rte-text-orange)"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-title, [data-slot=\"rich-text-content\"] .hljs-section": {
+          "color": "var(--rte-text-blue)"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-attr, [data-slot=\"rich-text-content\"] .hljs-attribute, [data-slot=\"rich-text-content\"] .hljs-variable, [data-slot=\"rich-text-content\"] .hljs-template-variable, [data-slot=\"rich-text-content\"] .hljs-name, [data-slot=\"rich-text-content\"] .hljs-tag, [data-slot=\"rich-text-content\"] .hljs-deletion": {
+          "color": "var(--rte-text-red)"
+        },
+        "[data-slot=\"rich-text-content\"] .hljs-meta": {
+          "color": "var(--rte-text-gray)"
+        }
+      },
+      "files": [
+        {
+          "path": "ui/blocks/rich-text-editor/palette.ts",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/palette.ts"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/office-paste.ts",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/office-paste.ts"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/extensions.ts",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/extensions.ts"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/use-rich-text-editor.ts",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/use-rich-text-editor.ts"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/rich-text-toolbar.tsx",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/rich-text-toolbar.tsx"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/rich-text-editor.tsx",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/rich-text-editor.tsx"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/rich-text-viewer.tsx",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/rich-text-viewer.tsx"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/mention-suggestion.tsx",
+          "type": "registry:component",
+          "target": "components/rich-text-editor/mention-suggestion.tsx"
+        },
+        {
+          "path": "ui/blocks/rich-text-editor/rich-text-editor-messages.json",
+          "type": "registry:file",
+          "target": "components/rich-text-editor/rich-text-editor-messages.json"
+        }
+      ]
     }
   ]
 }
