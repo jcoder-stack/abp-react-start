@@ -85,6 +85,17 @@ const dt = useExpandingDataTable({ columns, data, getRowId: (o) => o.id, tableOp
 
 The component provides the outer `<tr><td colSpan>`, and `colSpan` follows the number of visible columns. The `<td>` has no padding, so the detail content sets its own spacing. If the detail needs data, give it its own `useQuery`: it mounts, and fetches, only when the row is expanded.
 
+## Using it with `useAbpTable`
+
+`useAbpTable`'s `features` takes `expandingFeatures` directly, and every type on `t` picks up the expanding API. Use `treeColumn`, `expandColumn`, and `DataTableExpandAllButton` as usual; pass `t` straight to `DataTableExpandAllButton`. For collapsible details, give `renderSubRow` to `t.Table`. `useAbpTable` doesn't know about the expanding feature, so add `useCollapseOnScopeChange(t)` to get the collapse-on-page-change rule:
+
+```tsx
+const t = useAbpTable(orgUnitTreeSource, { columns, features: expandingFeatures, tableOptions: treeOptions });
+useCollapseOnScopeChange(t);
+```
+
+See step ⑪ of the [abp-table guide](abp-table.en.md) for the full example and how to fetch tree data.
+
 ## Built-in behavior
 
 - Everything collapses when the page, page size, sorting or query changes, matching the rule that clears row selection. An initial expanded state passed through `tableOptions.initialState.expanded` at mount is kept.
@@ -99,4 +110,4 @@ This block is built entirely on the extension points `data-table` exposes; it do
 2. Type columns as `TableColumnDef<TData, typeof myFeatures>` to use the feature's row API inside cells. Existing columns that only use the base API can be passed as they are.
 3. For anything that has to render in the table body, use `DataTable`'s `renderSubRow`.
 
-To combine expanding with other features, skip `useExpandingDataTable` and call `useDataTable({ features: { ...expandingFeatures, ...myFeatures } })` directly. Note that collapsing on page change lives in `useExpandingDataTable`, so you'll need to handle it yourself in that case.
+To combine expanding with other features, skip `useExpandingDataTable` and call `useDataTable({ features: { ...expandingFeatures, ...myFeatures } })` directly. Collapsing on page change lives in `useExpandingDataTable`, so in that case call `useCollapseOnScopeChange(dt)` after creating the table.

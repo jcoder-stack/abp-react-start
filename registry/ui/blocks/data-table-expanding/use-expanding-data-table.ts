@@ -5,6 +5,7 @@ import {
   type UseDataTableOptions,
   useDataTable,
 } from "@/components/data-table/use-data-table";
+import type { DataTableState } from "@/components/data-table/use-data-table-state";
 import { type ExpandingFeatures, expandingFeatures } from "./expanding-features";
 
 export type UseExpandingDataTableOptions<TData extends RowData> = Omit<
@@ -12,17 +13,18 @@ export type UseExpandingDataTableOptions<TData extends RowData> = Omit<
   "features"
 >;
 
-/** 带行展开的 `useDataTable`。树表传 `tableOptions.getSubRows`，折叠详情传
- *  `tableOptions.getRowCanExpand: () => true` 并配 `DataTable` 的 `renderSubRow`。
- *
- *  翻页、改每页条数、排序、换查询语境时收起全部：换了一批在场行，旧的展开态（尤其是
+/** 翻页、改每页条数、排序、换查询语境时收起全部：换了一批在场行，旧的展开态（尤其是
  *  「全部展开」的 `true`）不该带进新的一页。规则与核心对勾选态的清空一致。
- *  还要追加别的特性时不用本 hook，直接 `useDataTable({ features: { ...expandingFeatures, ... } })`。 */
-export function useExpandingDataTable<TData extends RowData>(
-  opts: UseExpandingDataTableOptions<TData>,
-): DataTableInstance<TData, ExpandingFeatures> {
-  const dt = useDataTable<TData, ExpandingFeatures>({ ...opts, features: expandingFeatures });
-
+ *
+ *  `useExpandingDataTable` 已内置；自己用 `features` 注册展开特性的表（`useDataTable` 追加
+ *  别的特性、`useAbpTable({ features: expandingFeatures })`）在建表后调一次。收实例而不是
+ *  表对象：作用域取自 `state`，`useAbpTable` 的返回值直接传 `t`。 */
+export function useCollapseOnScopeChange(dt: {
+  state: DataTableState;
+  // 结构化收窄而非 `TableInstance<TData, ExpandingFeatures>`：表泛型不变，展开之外还追加了
+  // 别的特性的表赋不给后者。
+  table: { resetExpanded: () => void };
+}): void {
   const { pageIndex, pageSize } = dt.state.pagination;
   const scopeKey = `${pageIndex}:${pageSize}:${dt.state.scopeEpoch}:${dt.state.sorting.map((s) => `${s.id}:${s.desc}`).join(",")}`;
   const lastScope = useRef(scopeKey);
@@ -33,6 +35,17 @@ export function useExpandingDataTable<TData extends RowData>(
     lastScope.current = scopeKey;
     resetExpanded();
   }, [scopeKey, resetExpanded]);
+}
 
+/** 带行展开的 `useDataTable`。树表传 `tableOptions.getSubRows`，折叠详情传
+ *  `tableOptions.getRowCanExpand: () => true` 并配 `DataTable` 的 `renderSubRow`。
+ *  换页/排序/查询语境时收起全部，见 `useCollapseOnScopeChange`。
+ *  还要追加别的特性时不用本 hook，直接 `useDataTable({ features: { ...expandingFeatures, ... } })`
+ *  再调 `useCollapseOnScopeChange`。 */
+export function useExpandingDataTable<TData extends RowData>(
+  opts: UseExpandingDataTableOptions<TData>,
+): DataTableInstance<TData, ExpandingFeatures> {
+  const dt = useDataTable<TData, ExpandingFeatures>({ ...opts, features: expandingFeatures });
+  useCollapseOnScopeChange(dt);
   return dt;
 }

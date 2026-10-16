@@ -4,7 +4,8 @@
     "composite": false,
     "declaration": false,
     "noEmit": true,
-    "rootDir": "."
+    // 放到仓库根：按需块不进 starter，它们的类型契约直接引 registry 源码。
+    "rootDir": "../.."
   },
   "include": ["test/**/*.test-d.ts"]
 }

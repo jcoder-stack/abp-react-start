@@ -33,8 +33,17 @@ import { AbpBulkDeleteView } from "@/components/abp/table/abp-bulk-delete";
 import { AbpTableView, type AbpTableViewOwnProps } from "@/components/abp/table/abp-table";
 import { RowActionsMenu } from "@/components/abp/table/row-actions-menu";
 import { devWarn } from "@/components/data-table/dev-warn";
-import type { CellTableInstance, TableColumnDef } from "@/components/data-table/table-core";
-import { type UseDataTableOptions, useDataTable } from "@/components/data-table/use-data-table";
+import type {
+  CellTableInstance,
+  ExtraFeatureMap,
+  NoExtraFeatures,
+  TableColumnDef,
+} from "@/components/data-table/table-core";
+import {
+  type DataTableInstance,
+  type UseDataTableOptions,
+  useDataTable,
+} from "@/components/data-table/use-data-table";
 import { useDataTableState } from "@/components/data-table/use-data-table-state";
 import { useAppForm } from "@/components/form/form-hook";
 
@@ -74,12 +83,17 @@ type AbpTableSourceService<
   Partial<CrudWriteHooks<TCreate, TUpdate>> &
   Partial<CrudDeleteHook>;
 
-export interface AbpTableRowConfig<TDto extends { id?: string }> {
+/** 行级配置。`TExtra` 随 `useAbpTable` 的 `features` 推断，`menu`/`actions` 拿到的表对象
+ *  因此带着追加特性的 API。 */
+export interface AbpTableRowConfig<
+  TDto extends { id?: string },
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> {
   /** 追加在内置「···」菜单三项之后的自定义菜单项。引用必须稳定（模块级函数或 `useCallback`），
    *  它在操作列的 `useMemo` 依赖里，每渲染换新引用会让整张表的列模型重建。 */
-  menu?: (row: TDto, table: CellTableInstance<TDto>) => ReactNode;
+  menu?: (row: TDto, table: CellTableInstance<TDto, TExtra>) => ReactNode;
   /** 插入内置「···」菜单**左侧**的行内常驻操作。同上，引用必须稳定。 */
-  actions?: (row: TDto, table: CellTableInstance<TDto>) => ReactNode;
+  actions?: (row: TDto, table: CellTableInstance<TDto, TExtra>) => ReactNode;
   /** 覆盖对应内置项的默认出现条件；省略时按 can/onOpen/click 推导。 */
   view?: boolean;
   edit?: boolean;
@@ -96,9 +110,11 @@ export interface AbpTableRowConfig<TDto extends { id?: string }> {
 export interface UseAbpTableOptions<
   TDto extends { id?: string },
   TQueryDefaults extends Record<string, unknown>,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
 > {
-  /** 列定义，见 `useDataTable` 同名 prop 的引用稳定性要求。 */
-  columns: TableColumnDef<TDto>[];
+  /** 列定义，见 `useDataTable` 同名 prop 的引用稳定性要求。追加了 `features` 时两种写法都收，
+   *  同 `useDataTable`。只对 `TExtra` 关推断：`TDto` 在回调式 source 下还得靠列定义推出来。 */
+  columns: TableColumnDef<TDto, NoInfer<TExtra>>[] | TableColumnDef<TDto>[];
   /** 查询表单。`defaults` 只在这里生效（字段上不带 `default`），首帧就用它发请求，
    *  免得先空筛选请求一次、挂载后再请求一次，中间闪一下未筛数据。
    *  省略则不建查询表单，`queryForm` 的 values 退化成空对象。 */
@@ -119,12 +135,15 @@ export interface UseAbpTableOptions<
       onDynamicAsync?: FormAsyncValidateOrFn<TQueryDefaults>;
     };
   };
-  row?: AbpTableRowConfig<TDto>;
+  row?: NoInfer<AbpTableRowConfig<TDto, TExtra>>;
   onOpen?: (mode: "create" | "edit" | "view", record?: TDto) => void;
   selectable?: boolean;
   defaultPageSize?: number;
-  features?: UseDataTableOptions<TDto>["features"];
-  tableOptions?: UseDataTableOptions<TDto>["tableOptions"];
+  /** 追加 TanStack 特性，语义与引用稳定性要求同 `useDataTable` 的同名 prop；它的类型即
+   *  `TExtra`，`t.table`、列定义、`tableOptions`、`row.menu`/`row.actions` 随之带上追加特性的 API。
+   *  行展开直接传 `data-table-expanding` 块的 `expandingFeatures`。 */
+  features?: TExtra;
+  tableOptions?: UseDataTableOptions<TDto, TExtra>["tableOptions"];
   /** 顶部条「导出」图标的回调插槽；缺席不渲染导出按钮。组件库不内置导出实现。 */
   onExport?: () => void;
   /** 搜索框的初始值（深链预填），只在挂载时播种一次。 */
@@ -278,12 +297,16 @@ export function useAbpTable<
   TUpdate = unknown,
   TListParams extends Record<string, unknown> = Record<string, unknown>,
   TQueryDefaults extends Record<string, unknown> = Record<string, never>,
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
 >(
   source:
     | AbpTableSourceService<TDto, TCreate, TUpdate, TListParams>
     | ((params: ListParams) => AbpTableSource<TDto>),
-  opts: UseAbpTableOptions<TDto, TQueryDefaults>,
+  options: UseAbpTableOptions<TDto, TQueryDefaults, TExtra>,
 ) {
+  // 内部一律按基础特性集操作，出口再放宽回 TExtra；理由见 table-core 的 `asBaseTable`。
+  // 行配置的回调运行时拿到的就是带追加特性的表，只是这里按基础集定型。
+  const opts = options as unknown as UseAbpTableOptions<TDto, TQueryDefaults>;
   const L = useLocalization();
   const state = useDataTableState({
     defaultPageSize: opts.defaultPageSize,
@@ -465,13 +488,13 @@ export function useAbpTable<
   });
 
   const instanceWithoutComponents = {
-    ...dt,
+    ...(dt as unknown as DataTableInstance<TDto, TExtra>),
     source: src,
     queryForm,
     submitQuery,
     resetQuery,
     getListParams,
-    rowConfig: opts.row,
+    rowConfig: options.row,
     onOpen: opts.onOpen,
     searchEnabled: src.supportsFilter,
     // 已提交的筛选项数，不是表单草稿。驱动筛选钮上的"还筛着"圆点，面板收起后唯一的状态提示。
@@ -497,7 +520,7 @@ export function useAbpTable<
         keepSelected: read().self.keepSelected,
         canDelete: read().self.rowConfig?.canDelete,
       });
-    const Table = (p: AbpTableViewOwnProps<TDto> & { children?: ReactNode }) => {
+    const Table = (p: AbpTableViewOwnProps<TDto, TExtra> & { children?: ReactNode }) => {
       // 槽位扫描靠引用相等识别自家绑定成员（组件身份在 useBoundComponents 内跨渲染不变，
       // child.type 的比较因此稳定）。未知的直接子元素只 devWarn 不渲染，
       // t.Table 不是通用容器，只认这三种。
@@ -514,13 +537,14 @@ export function useAbpTable<
             "useAbpTable: t.Table 只认 t.QueryForm/t.Toolbar/t.BulkBar 直接子元素，其余直接子元素会被忽略。",
           );
       });
-      const { empty, skeletonRows, rowProps, pageSizes, searchPlaceholder } = p;
-      return createElement(AbpTableView<TDto>, {
+      const { empty, skeletonRows, rowProps, renderSubRow, pageSizes, searchPlaceholder } = p;
+      return createElement(AbpTableView<TDto, TExtra>, {
         t: read().self,
         slots,
         empty,
         skeletonRows,
         rowProps,
+        renderSubRow,
         pageSizes,
         searchPlaceholder,
       });
@@ -533,10 +557,14 @@ export function useAbpTable<
 
 /** `useAbpTable` 的完整返回类型：`DataTableInstance` 全成员 + 数据侧接线 + 五个绑定成员。
  *  派生自 hook 自身的返回类型而不是手写，省得手拼 TanStack Form 那十几个校验器泛型形参。
+ *  传了 `features` 的表用第三个参数带上它的类型。
  *
  *  `abp-table.tsx` 的 `AbpTableViewInstance` 不是它的扩展，是更窄的另一个类型，不含绑定成员。
  *  那些成员正是靠 `AbpTableView` 渲染出来的，反过来要求它消费的实例已经带着，会是循环依赖。 */
 export type AbpTableInstance<
   TDto extends { id?: string },
   TQueryDefaults extends Record<string, unknown> = Record<string, never>,
-> = ReturnType<typeof useAbpTable<TDto, unknown, unknown, Record<string, unknown>, TQueryDefaults>>;
+  TExtra extends ExtraFeatureMap = NoExtraFeatures,
+> = ReturnType<
+  typeof useAbpTable<TDto, unknown, unknown, Record<string, unknown>, TQueryDefaults, TExtra>
+>;
