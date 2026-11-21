@@ -27,7 +27,7 @@ describe("partitionDeletable", () => {
 
 describe("bulkDeleteNotice", () => {
   it("无跳过时沿用成功 / 全败 / 部分失败三种结局", () => {
-    expect(bulkDeleteNotice(3, 0, 0)).toEqual({ kind: "success", key: "Crud:Deleted", args: [] });
+    expect(bulkDeleteNotice(3, 0, 0)).toEqual({ kind: "success", key: "Crud:Deleted", args: [3] });
     expect(bulkDeleteNotice(3, 3, 0)).toEqual({
       kind: "error",
       key: "Crud:OperationFailed",

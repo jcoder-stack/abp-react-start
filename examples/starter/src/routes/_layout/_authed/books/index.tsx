@@ -8,6 +8,7 @@ import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
 import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";
 import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -239,6 +240,10 @@ function BooksPage() {
               </t.SelectedCount>
               <t.BulkDelete />
             </t.BulkBar>
+
+            <t.Utility>
+              <DataTableSortMenu table={t} />
+            </t.Utility>
           </t.Table>
         </TabsContent>
         <TabsContent value="l1" className="space-y-2">

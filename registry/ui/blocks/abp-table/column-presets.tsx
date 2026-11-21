@@ -1,4 +1,4 @@
-import { useLocalization } from "@jcoder-stack/abp-react/react";
+import { Instant, useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import type { RowData } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { type Status, StatusBadge } from "@/components/abp/table/status-badge";
@@ -11,10 +11,12 @@ export type ColumnLabel = string | (() => ReactNode);
 
 /** 预设列的可覆盖面。预设产出的是普通 `ColumnDef`，这里的键整键覆盖预设的默认值，
  *  包括 `cell`/`header`/`meta`——预设是加法糖，任何时候都能退回 TanStack 原生写法。 */
-type ColumnOverrides<TData extends RowData> = Partial<TableColumnDef<TData>>;
+export type ColumnOverrides<TData extends RowData> = Partial<TableColumnDef<TData>>;
 
-/** `TData` 上值类型可赋给 `TValue` 的字段名。DTO 字段普遍可选，故按 `NonNullable` 判定。 */
-type FieldsOf<TData, TValue> = {
+/** `TData` 上值类型可赋给 `TValue` 的字段名。DTO 字段普遍可选，故按 `NonNullable` 判定。
+ *  导出给自定义预设用：照内建预设的样子写一个返回 `TableColumnDef` 的函数，`key` 用它收窄，
+ *  表头用 `columnHeader`，就和内建的没有区别。 */
+export type FieldsOf<TData, TValue> = {
   [K in Extract<keyof TData, string>]-?: NonNullable<TData[K]> extends TValue ? K : never;
 }[Extract<keyof TData, string>];
 
@@ -30,6 +32,16 @@ function BoolCell(props: { value: boolean | undefined; status: Status | undefine
     return <span className={props.value ? undefined : "text-muted-foreground"}>{text}</span>;
   }
   return <StatusBadge status={props.status}>{text}</StatusBadge>;
+}
+
+function NumberCell(props: { value: number | undefined; digits: number | undefined }) {
+  const culture = useCulture();
+  if (typeof props.value !== "number") return null;
+  // 按界面语言分组与取小数点：定点字符串没有千分位，六位以上的数读起来要数位数。
+  return new Intl.NumberFormat(culture, {
+    minimumFractionDigits: props.digits,
+    maximumFractionDigits: props.digits,
+  }).format(props.value);
 }
 
 function PrimaryCell(props: { title: string; secondary: string | undefined; avatar: boolean }) {
@@ -65,7 +77,7 @@ function dateOnly(value: string | undefined): string {
 }
 
 /**
- * 列构造器：v9 原生的 `accessor`/`display`/`group` 原样透出，另加六个 ABP 后台常见列型的预设。
+ * 列构造器：v9 原生的 `accessor`/`display`/`group` 原样透出，另加八个 ABP 后台常见列型的预设。
  * `primary` 是记录的身份列（首字块 + 名称 + 次要标识），横向滚动时固定在左侧，一张表至多一个。
  *
  * 预设省掉的是重复的 cell 渲染与对齐，不是表达力：每个预设都接 `opts` 整键覆盖，
@@ -142,13 +154,44 @@ export function createAbpColumns<TData extends RowData>() {
       accessorKey: key,
       header: columnHeader(label),
       meta: { align: "right" },
-      cell: ({ row }) => {
-        const value = row.original[key] as number | undefined;
-        return typeof value === "number" ? value.toFixed(digits) : "";
-      },
+      cell: ({ row }) => (
+        <NumberCell value={row.original[key] as number | undefined} digits={digits} />
+      ),
       ...overrides,
     };
   };
+
+  const number = (
+    key: FieldsOf<TData, number>,
+    label: ColumnLabel,
+    opts?: {
+      /** 固定小数位数；省略则按数值本身（整数不补零，小数至多三位）。 */
+      digits?: number;
+    } & ColumnOverrides<TData>,
+  ): TableColumnDef<TData> => {
+    const { digits, ...overrides } = opts ?? {};
+    return {
+      accessorKey: key,
+      header: columnHeader(label),
+      meta: { align: "right" },
+      cell: ({ row }) => (
+        <NumberCell value={row.original[key] as number | undefined} digits={digits} />
+      ),
+      ...overrides,
+    };
+  };
+
+  const datetime = (
+    key: FieldsOf<TData, string>,
+    label: ColumnLabel,
+    opts?: ColumnOverrides<TData>,
+  ): TableColumnDef<TData> => ({
+    accessorKey: key,
+    header: columnHeader(label),
+    // 真实时刻按租户时区显示；date-only 字段用 `date`，那里刻意不做时区换算。
+    cell: ({ row }) => <Instant value={row.original[key] as string | undefined} />,
+    ...opts,
+  });
 
   const enumColumn = (
     key: FieldsOf<TData, number | string>,
@@ -208,7 +251,9 @@ export function createAbpColumns<TData extends RowData>() {
     primary,
     text,
     date,
+    datetime,
     money,
+    number,
     enum: enumColumn,
     bool,
   };

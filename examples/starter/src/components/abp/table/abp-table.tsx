@@ -64,6 +64,8 @@ export interface AbpTableViewSlots {
   toolbar?: ReactNode;
   /** `t.BulkBar` 的内容，经顶部条批量态渲染；仅有选中行时出现。 */
   bulkBar?: ReactNode;
+  /** `t.Utility` 的内容，并入顶部条右侧的功能图标组，排在列菜单之前。 */
+  utility?: ReactNode;
 }
 
 // 必须导出。`useAbpTable` 的 `Table` 绑定成员把 `AbpTableView<TDto>` 的元素类型带进了自己的
@@ -144,6 +146,7 @@ export function AbpTableView<
         </>
       }
     >
+      {slots.utility}
       <DataTableColumnsMenu table={t} />
     </DataTableToolbar>
   );

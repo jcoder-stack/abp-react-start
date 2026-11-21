@@ -185,12 +185,14 @@ Rows are separated **only by a hairline bottom border, no zebra striping** — s
 - **Rows** — 13px, height per [Density](#density). Hover is a `muted` 50% tint. Clickable rows open the view sheet; Enter / Space do the same from the keyboard.
 - **Selection** — the checkbox fills `primary`; a selected row uses `row-selected` (a very light primary, distinguishable from the neutral hover).
 - **Primary column** — the column that says which record this is: an initial block, the name in medium weight, an optional muted secondary identifier. **One line, not two** — row height is declared (see [Density](#density)), and a second line would hand it back to content. It stays fixed on the left while the table scrolls horizontally, together with the selection column, and a hairline marks the edge of the fixed area. At most one per table, placed first; its width is capped so a long name can't squeeze out the scrollable part on a narrow screen.
-- **Numeric columns** — declaring `align: "right"` on a column adds `tabular-nums` automatically (the money preset does this).
+- **Numeric columns** — declaring `align: "right"` on a column adds `tabular-nums` automatically (the money and number presets do this). Numbers are grouped per the UI language; an ungrouped six-digit figure makes the reader count digits.
 - **Row actions** — one `⋯` ghost button per row, 28px, **always visible**: muted at rest, darker on row hover or keyboard focus. Hidden-until-hover makes the actions column read as empty, as if you lack permission.
 
-The toolbar's right side is, in order: filter, refresh, export, density, columns. The left side holds page actions; "New" is the only primary button in the table.
+The toolbar's right side is, in order: filter, refresh, export, density, page-supplied utilities (the multi-sort menu, for example), columns. Page-supplied ones follow the same ghost icon-button look. The left side holds page actions; "New" is the only primary button in the table.
 
 When rows are selected, the toolbar's left area **is replaced in place by a bulk-action row**: count, bulk actions (dangerous ones are destructive-colored ghost buttons with an icon), clear. The right-side tools stay put. In-place replacement keeps dangerous bulk actions visible without making them primary, and avoids a second toolbar.
+
+**Every bulk action gives the same feedback as bulk delete**: rows run one at a time, the batch reports a single toast, failed rows stay selected, rows the action doesn't apply to are counted as skipped.
 
 **Bulk delete reports one toast and never reports a hollow success**: all deleted → success; some failed → warning, with the backend's reasons appended one per line; if rows were skipped as not deletable (the row-level check said no, or the row has no id), say how many were deleted, failed and skipped — a user who ticked N rows and sees "Deleted" after only some went will assume all of them did. Failed rows stay selected for a retry; skipped rows are deselected (a retry can't delete them either).
 

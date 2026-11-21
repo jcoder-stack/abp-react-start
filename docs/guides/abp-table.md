@@ -241,7 +241,7 @@ const roleSchema = buildRoleSchema(L);
 
 ## ④ 列定义
 
-用 `createAbpColumns<TDto>()`。它把 v9 原生的 `accessor` / `display` / `group` 原样透出，另加六个后台常见列型的预设，**第二个参数是词条 key 而不是已翻译的字符串**：
+用 `createAbpColumns<TDto>()`。它把 v9 原生的 `accessor` / `display` / `group` 原样透出，另加八个后台常见列型的预设，**第二个参数是词条 key 而不是已翻译的字符串**：
 
 ```ts
 const col = createAbpColumns<AbpSwaggerBooksBookDto>();
@@ -258,16 +258,20 @@ const columns = [
 
 `L()` 由预设在渲染期于单元格内部调用，列定义因此不依赖任何 hook——**可以写在模块级**，引用天然稳定，不必包 `useMemo`。（`useAbpTable` 内部的 `useDataTable` 每渲染收到新数组都会重建列模型；违反引用稳定契约时 DEV 期有 `console.warn` 提示。列里若引用了组件内的值，那就仍需写在组件体内并用 `useMemo` 把依赖写全。）
 
-六个预设：
+八个预设：
 
 | 预设 | 渲染 | 专属选项 |
 |---|---|---|
 | `primary` | 记录的身份列：首字块 + 加粗名称 + muted 的次要标识，同一行；**横向滚动时固定在左侧**（有勾选列时连它一起固定）。一张表至多一个，放在最前 | `secondary`（次要标识的字段名）、`avatar`（默认 true，记录没有「谁」的含义时关掉） |
 | `text` | 原值 | — |
 | `date` | ISO 值的日期段（不做时区换算——date-only 字段没有时刻语义，换算只会挪错一天） | — |
-| `money` | 定点小数，右对齐 | `digits`（默认 2） |
+| `datetime` | 真实时刻，按租户时区显示为 `yyyy-MM-dd HH:mm`。date-only 字段用 `date` | — |
+| `money` | 固定小数位，按界面语言加千分位，右对齐 | `digits`（默认 2） |
+| `number` | 按界面语言加千分位，右对齐 | `digits`（省略则不补零） |
 | `enum` | 值经 `map` 映射成词条；查不到的值按原样渲染，不吞掉 | `map`、`fallback`（值为空时的词条 key） |
 | `bool` | `StatusBadge` 是/否 | `trueStatus`、`falseStatus`（语义色） |
+
+**要加自己的列型**，照内建预设写一个返回 `TableColumnDef` 的函数即可：`key` 的类型用导出的 `FieldsOf<TData, 值类型>` 收窄，表头用 `columnHeader(label)`，第三个参数接 `ColumnOverrides<TData>` 并展开在最后。
 
 **预设是加法糖，不是围墙。** 第三个参数还接受任意 `ColumnDef` 键，整键覆盖预设的默认值——包括 `cell` / `header` / `meta`。覆盖不动的场景直接用 `col.accessor` / `col.display` 手写原生列定义，此时表头用 `columnHeader("词条key")` 而不要直接调 `L()`，否则列定义又绑回 hook、失去模块级常量的资格：
 
@@ -512,6 +516,7 @@ const t = useAbpTable(roleService, {
 | `actions` | `(row, table) => ReactNode` | 插入内置「···」菜单**左侧**，行内常驻 |
 | `view`/`edit`/`delete` | `boolean` | 覆盖对应内置项的默认出现条件 |
 | `click` | `false \| ((row) => void)` | 覆盖「点行开详情」的默认行为；`false` 关闭 |
+| `canEdit` | `(row) => boolean` | 逐行收窄编辑项：返回 `false` 的行不出「编辑」。只能收窄，表级不许改时返回 `true` 也不出；引用必须稳定。点行打开的详情不受影响 |
 | `canDelete` | `(row) => boolean` | 逐行收窄删除项：返回 `false` 的行不出「删除」，`t.BulkDelete` 也跳过它并在提示里交代跳过了几条。只能收窄，表级不许删时返回 `true` 也不出；引用必须稳定 |
 | `deleteConfirm` | `string` | 删除确认框的说明，替换通用的「此操作不可撤销」 |
 
@@ -615,6 +620,32 @@ const t = useAbpTable(userService, {
 - **失败的行留在勾选里**：成功的行随失效重取从列表消失、天然退出选中；失败的行经 `keepSelected` 留在选中态，用户不用重新勾选，直接再点一次就是重试。
 - **自实现数据源要支持批删**，得在 `AbpTableSource.delete` 上给出可选的 `many(ids) => Promise<{ failed: string[] }>`；没给则 `t.BulkDelete` 不渲染并在 DEV 告警（`createCrudService` 的产物自带）。
 
+### 通用批量动作：`t.BulkAction`
+
+删除之外的批量动作（启用、停用、归档…）用 `t.BulkAction`，反馈与 `t.BulkDelete` 同一套：逐行顺序执行、整批只给一条提示、失败的行留在勾选里供重试、结束后重取一次列表。页面只描述「对一行做什么」：
+
+```tsx
+<t.BulkBar>
+  <t.BulkAction
+    label={L("App::Activate")}
+    icon={<Check />}
+    run={(row) => activate.mutateAsync({ id: row.id ?? "" })}
+    canRun={(row) => !row.isActive}
+  />
+  <t.BulkDelete />
+</t.BulkBar>
+```
+
+| prop | 说明 |
+|---|---|
+| `label` / `icon` | 按钮文字（已翻译）与图标 |
+| `run` | 对一行执行动作，失败就抛错。**不要在里面弹提示或失效列表**——逐条提示会把 N 条变成 N 个 toast |
+| `canRun` | 返回 `false` 的选中行不执行，计入「跳过」并在提示里交代 |
+| `confirm` | `{ title, description? }`，给了就先弹确认框。不可撤销的动作必须给 |
+| `destructive` | 危险动作，按钮用 destructive 色 |
+
+给 `run` 用的 mutation 不要带 `onSuccess` / `onError` 提示回调，理由同上。
+
 ## ⑩ 工具条追加
 
 顶部条右区（刷新 · 导出 · 密度 · 列设置）大半是内建能力，不用接线：刷新对当前查询发起 `refetch`，拉取中图标自转；密度在舒适 / 紧凑两档间切换（行高见 DESIGN.md「Data tables」，随行内是否有操作按钮而不同），状态存内存；列显隐菜单同理。三者只要用 `useAbpTable`/`t.Table` 就自动出现。
@@ -635,6 +666,22 @@ const t = useAbpTable(userService, {
 ```
 
 `exportCsv` 是业务自己实现的导出函数（示意），`t.Toolbar`/`t.getListParams` 都是真实的绑定成员/方法。
+
+`onExport` 的回调还会收到一个上下文参数 `{ getListParams, getSelectedRows }`，不必回头引用 `t`：`onExport: ({ getListParams, getSelectedRows }) => …`。两个都是取值函数，点击时才读。
+
+**`t.Utility`** 把内容并入右侧的功能图标组，排在列设置之前，用来挂图标钮。内建的多列排序菜单就这么接：
+
+```tsx
+import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";
+
+<t.Table>
+  <t.Utility>
+    <DataTableSortMenu table={t} />
+  </t.Utility>
+</t.Table>
+```
+
+放进去的按钮沿用图标组的外观：`variant="ghost" size="icon"`、`size-8 text-muted-foreground`，带 `aria-label` 和 Tooltip。
 
 ## ⑪ 行展开：树表与折叠详情（可选）
 
