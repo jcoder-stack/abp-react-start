@@ -87,7 +87,7 @@ function bookTypeLabelKey(value: number | undefined): string {
 // 不必再包 useMemo，也就不存在「每渲染新数组重建列模型」那类退化。
 const col = createAbpColumns<AbpSwaggerBooksBookDto>();
 const columns = [
-  col.text("name", "App::BookName"),
+  col.primary("name", "App::BookName", { avatar: false }),
   col.text("authorName", "App::BookAuthor", { enableSorting: false }),
   col.enum("type", "App::BookType", {
     map: BOOK_TYPE_KEYS,

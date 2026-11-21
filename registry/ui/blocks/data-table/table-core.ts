@@ -20,6 +20,9 @@ export interface TableColumnMeta {
   align?: "left" | "right" | "center";
   className?: string;
   label?: ReactNode;
+  /** 横向滚动时固定在左侧。一张表只认第一个声明它的列，且该列应排在最前（勾选列之后）：
+   *  固定的是「这条记录是谁」，排在中间的列固定住，前面的列会从它底下滑过去。 */
+  sticky?: boolean;
 }
 
 /** 基础特性映射；供 DataTable 与调用方追加特性时做加法合并。

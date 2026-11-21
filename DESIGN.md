@@ -184,6 +184,7 @@ Rows are separated **only by a hairline bottom border, no zebra striping** — s
 - **Header** — `muted` at 50% background, `muted-foreground` text; English 12px uppercase with positive tracking, CJK 13px without uppercase (the button inside a sortable header follows along, handled once in the theme layer). The chevron of a sortable column is low-opacity at rest and turns `primary` on the current sort column; with multi-sort, a priority number appears next to the arrow.
 - **Rows** — 13px, height per [Density](#density). Hover is a `muted` 50% tint. Clickable rows open the view sheet; Enter / Space do the same from the keyboard.
 - **Selection** — the checkbox fills `primary`; a selected row uses `row-selected` (a very light primary, distinguishable from the neutral hover).
+- **Primary column** — the column that says which record this is: an initial block, the name in medium weight, an optional muted secondary identifier. **One line, not two** — row height is declared (see [Density](#density)), and a second line would hand it back to content. It stays fixed on the left while the table scrolls horizontally, together with the selection column, and a hairline marks the edge of the fixed area. At most one per table, placed first; its width is capped so a long name can't squeeze out the scrollable part on a narrow screen.
 - **Numeric columns** — declaring `align: "right"` on a column adds `tabular-nums` automatically (the money preset does this).
 - **Row actions** — one `⋯` ghost button per row, 28px, **always visible**: muted at rest, darker on row hover or keyboard focus. Hidden-until-hover makes the actions column read as empty, as if you lack permission.
 
@@ -276,7 +277,7 @@ The landing page is the only part of this system that **isn't an admin screen**,
 | Tablet | ≥640px | Card grids and the filter panel at 2 columns; the sidebar stays expanded, users can collapse it to the icon rail |
 | Mobile | <768px | Sidebar becomes a drawer; tables scroll horizontally inside their card; pagination keeps only previous / next and "page X of Y"; grids drop to 1 column below 640px |
 
-**Tables never turn into card lists.** They scroll horizontally inside the card — while scanning fields, the record's identity has to stay on screen (the sticky primary column isn't built yet, see [Known gaps](#known-gaps)).
+**Tables never turn into card lists.** They scroll horizontally inside the card — while scanning fields, the record's identity has to stay on screen (that is what the sticky primary column is for, see [Tables](#tables)).
 
 ## Customization layer
 
@@ -313,7 +314,6 @@ These rules deliberately sit outside any `@layer`: primitives carry their own ut
 - **Illustrations for empty / loading / error states** are undefined; components only have text states.
 - **Toast position and stacking** follow the primitive; not specified.
 - **Print styles** don't exist.
-- **Table primary column**: there is no column preset for "avatar / initials block + name and secondary identifier on two lines, ID in monospace", and no sticky primary column when scrolling horizontally. Current column presets are text, date, money, enum and boolean.
 - **Touch targets**: keeping every tappable control at a ≥44px hit area below 768px (grown with padding, not by enlarging the control) is a goal, not yet implemented; controls are still desktop-sized on phones.
 - **A third density** (beyond comfortable / compact) isn't designed.
 - **No writing guidelines**: error-message tone, empty-state wording, verbs vs. nouns on buttons, punctuation.
