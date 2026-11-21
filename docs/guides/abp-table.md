@@ -673,6 +673,54 @@ useCollapseOnScopeChange(t); // 翻页/排序/查询时收起全部
 - 树要一次全量拉取，懒加载子节点不在支持范围内。ABP 的树形端点（如组织单元）一般返回平铺列表，用 `source` 回调（见「选层指南」的自定义数据源）拉全量、按 `parentId` 组装成树，再按 `params.SkipCount`/`params.MaxResultCount` 切根节点那一页。`totalCount` 只数根节点。
 - 默认点行开详情（`onOpen`）。点展开钮或在展开钮上按 Enter/Space 不会冒泡成点行。
 
+## ⑫ 记住列表位置与视图偏好（可选）
+
+两件事，各自独立，按页开启；不开时表格行为与之前完全一致。
+
+**列表位置进 URL**（页码、每页条数、排序、搜索词）：从详情页返回、刷新、把链接发给同事，看到的是同一页。
+
+```tsx
+import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
+
+export const Route = createFileRoute("/_layout/_authed/books/")({
+  validateSearch: parseListSearch,
+  component: BooksPage,
+});
+
+function BooksPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const t = useAbpTable(bookService, {
+    columns,
+    list: searchListStore(search, (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+    ),
+  });
+}
+```
+
+- URL 形如 `?page=3&size=20&sort=name,-creationTime&q=foo`；等于默认值的键不出现，默认状态就是一条干净的 URL。
+- 用 `replace` 而不是 push，翻页和排序不各占一条历史记录。
+- 给了 `list` 后 `initialFilter` 不生效，搜索词以 URL 的 `q` 为准，深链直接写 `?q=…`。
+- 改了 `defaultPageSize` 的表，把同一个值也传给 `searchListStore` 的第三个参数（`{ defaultPageSize }`），否则默认每页条数会被当成非默认值写进 URL。
+- 页面还有别的 search 参数时，在自己的 `validateSearch` 里把 `parseListSearch(search)` 的结果展开进去。
+- **查询表单的结构化参数不在其内**，仍只存在组件里。
+
+**视图偏好存本机**（密度、每页条数、列显隐）：
+
+```tsx
+import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+
+const t = useAbpTable(bookService, {
+  columns,
+  preferences: localStoragePreferences("books"),
+});
+```
+
+- 名字按表取并保持稳定：改名等于丢掉所有用户已存的偏好，两张表共用一个名字会互相覆盖。
+- 两者都开时，链接里的每页条数优先于个人偏好——分享出去的「第 3 页」得是同一个第 3 页。
+- 要存到别处（如 ABP 的用户设置），照 `DataTablePreferenceStore` 的形状自己实现：`subscribe` / `get` / `set`，即 `useSyncExternalStore` 的契约。
+
 ## 选层指南
 
 本仓库的表格/CRUD 能力分四层，从上到下依次收窄适用面、放开控制力。挑层的原则是「够用就好」——不要因为某个更底层存在就默认往下走。

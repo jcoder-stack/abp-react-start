@@ -15,6 +15,8 @@ import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
 import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
+import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { IdentityPermissions } from "@/permissions";
 import { buildRoleSchema } from "@/routes/_layout/_authed/identity/-role-schema";
@@ -36,6 +38,7 @@ const columns = [
 
 /** 角色本身无可分配对象，故无角色 MultiCombobox。 */
 export const Route = createFileRoute("/_layout/_authed/identity/roles")({
+  validateSearch: parseListSearch,
   beforeLoad: requirePermission(IdentityPermissions.Roles.Default),
   component: RolesPage,
 });
@@ -58,6 +61,8 @@ interface RoleFormValues {
 const EMPTY_VALUES: RoleFormValues = { name: "", isDefault: false, isPublic: false };
 
 function RolesPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const L = useLocalization();
   const can = usePermissionChecker();
   const canManagePermissions = can(IdentityPermissions.Roles.ManagePermissions);
@@ -89,6 +94,10 @@ function RolesPage() {
     columns,
     row: { menu: permissionMenuItem },
     onOpen: sheet.open,
+    list: searchListStore(search, (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+    ),
+    preferences: localStoragePreferences("identity-roles"),
   });
 
   return (

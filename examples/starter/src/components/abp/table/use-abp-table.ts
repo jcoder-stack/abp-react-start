@@ -44,7 +44,11 @@ import {
   type UseDataTableOptions,
   useDataTable,
 } from "@/components/data-table/use-data-table";
-import { useDataTableState } from "@/components/data-table/use-data-table-state";
+import {
+  type DataTableListStore,
+  type DataTablePreferenceStore,
+  useDataTableState,
+} from "@/components/data-table/use-data-table-state";
 import { useAppForm } from "@/components/form/form-hook";
 
 /** 留白字段不该变成 `Name=` 空串发给后端，`""` 和 `undefined` 都不进请求。 */
@@ -146,8 +150,15 @@ export interface UseAbpTableOptions<
   tableOptions?: UseDataTableOptions<TDto, TExtra>["tableOptions"];
   /** 顶部条「导出」图标的回调插槽；缺席不渲染导出按钮。组件库不内置导出实现。 */
   onExport?: () => void;
-  /** 搜索框的初始值（深链预填），只在挂载时播种一次。 */
+  /** 搜索框的初始值（深链预填），只在挂载时播种一次。给了 `list` 时不生效。 */
   initialFilter?: string;
+  /** 把页码、每页条数、排序、搜索词交给外部持有（典型是 URL search params），从详情页返回、
+   *  刷新、分享链接时原样恢复。见 `useDataTableState` 的同名选项与 `list-search.ts` 的助手。
+   *  查询表单的结构化参数不在其内。 */
+  list?: DataTableListStore;
+  /** 记住密度、每页条数和列显隐。传 `localStoragePreferences("<表的稳定名字>")`，
+   *  或自己实现 `DataTablePreferenceStore`。引用必须稳定。 */
+  preferences?: DataTablePreferenceStore;
 }
 
 /**
@@ -311,6 +322,8 @@ export function useAbpTable<
   const state = useDataTableState({
     defaultPageSize: opts.defaultPageSize,
     initialFilter: opts.initialFilter,
+    list: opts.list,
+    preferences: opts.preferences,
   });
 
   const queryDefaults: TQueryDefaults = opts.query?.defaults ?? ({} as TQueryDefaults);

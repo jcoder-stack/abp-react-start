@@ -201,6 +201,10 @@ When rows are selected, the toolbar's left area **is replaced in place by a bulk
 
 **Pagination** sits in the table footer, separated from the row grid by a 1px border: total (hidden when 0), page size, page controls, with the current page in a neutral fill (`secondary` background + weight), not primary — see [Color and status](#color-and-status). The page-number window is fixed at 7 slots so buttons don't jump sideways when paging.
 
+**The search box** carries a leading search icon and, once it has text, a clear button. Clearing commits at once instead of waiting for the typing debounce — a click that takes 400ms to show a result reads as a miss.
+
+**What a table remembers** is split by who it belongs to. *Position* — page, page size, sorting, keyword — belongs to the link: a page can put it in the URL so that returning from a detail page, reloading or sharing lands on the same rows; defaults stay out of the URL. *View preferences* — density, page size, column visibility — belong to the person and can be kept on the device. When both hold a page size, the link wins. Both are opt-in per page.
+
 **Deep-link filters**: when another page links into a list with a keyword, `initialFilter` pre-fills the search box; if the data source doesn't support search, a dev-time warning fires instead of silently ignoring it.
 
 ## Sidebar

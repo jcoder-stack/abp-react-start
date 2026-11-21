@@ -25,6 +25,8 @@ import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
 import { columnHeader, createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
+import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { IdentityPermissions } from "@/permissions";
 
@@ -37,6 +39,7 @@ const PermissionSheet = lazy(() =>
 
 /** 用户 DTO 不带 roleNames，故 open() 需先 GET .../roles 再开 sheet。 */
 export const Route = createFileRoute("/_layout/_authed/identity/users")({
+  validateSearch: parseListSearch,
   beforeLoad: requirePermission(IdentityPermissions.Users.Default),
   component: UsersPage,
 });
@@ -142,6 +145,8 @@ const columns = [
 ];
 
 function UsersPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const L = useLocalization();
   const can = usePermissionChecker();
   const canManagePermissions = can(IdentityPermissions.Users.ManagePermissions);
@@ -207,6 +212,10 @@ function UsersPage() {
     columns,
     row: { menu: permissionMenuItem },
     onOpen: sheet.open,
+    list: searchListStore(search, (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+    ),
+    preferences: localStoragePreferences("identity-users"),
   });
 
   // MultiCombobox 的角色候选项只在编辑态（create/edit）且有 Update 权限时才拉，防止 view 态

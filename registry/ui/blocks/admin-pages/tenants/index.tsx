@@ -23,12 +23,15 @@ import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
 import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
+import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
 import { TenantManagementPermissions } from "@/permissions";
 
 /** /tenants：TenantManagement 模块的租户 CRUD；create/edit 字段集不同：create 额外收
  * adminEmailAddress/adminPassword（开租户时建种子管理员），edit 只改 name（后端 TenantUpdateDto
  * 本就不收管理员字段，修改管理员是另一条 Identity.Users 链路）。 */
 export const Route = createFileRoute("/_layout/_authed/tenants/")({
+  validateSearch: parseListSearch,
   beforeLoad: requirePermission(TenantManagementPermissions.Tenants.Default),
   component: TenantsPage,
 });
@@ -72,6 +75,8 @@ function toUpdateInput(value: TenantFormValues): VoloAbpTenantManagementTenantUp
 }
 
 function TenantsPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const L = useLocalization();
 
   const sheet = useAbpSheet(tenantService, {
@@ -121,7 +126,14 @@ function TenantsPage() {
       mode === "create" ? L("App::TenantCreateTitle") : (record?.name ?? ""),
   });
 
-  const t = useAbpTable(tenantService, { columns, onOpen: sheet.open });
+  const t = useAbpTable(tenantService, {
+    columns,
+    onOpen: sheet.open,
+    list: searchListStore(search, (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+    ),
+    preferences: localStoragePreferences("tenants"),
+  });
   const isCreate = sheet.mode === "create";
 
   return (

@@ -7,6 +7,8 @@ import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
 import { createAbpColumns } from "@/components/abp/table/column-presets";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
+import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -50,6 +52,7 @@ async function loadAuthorOptions(search: string): Promise<ComboboxOption[]> {
 
 /** demo 后端未给 book 端点定义权限策略,故 service 描述符省略 `policy`、每个 `source.can.*` 门都为 true。 */
 export const Route = createFileRoute("/_layout/_authed/books/")({
+  validateSearch: parseListSearch,
   component: BooksPage,
 });
 
@@ -136,6 +139,8 @@ function toInput(value: BookFormValues): AbpSwaggerBooksCreateUpdateBookDto {
 }
 
 function BooksPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const L = useLocalization();
 
   // 以生成的 body schema 为基底：max(128) 这类后端约束免费继承；`type` 是表单 SelectField 的
@@ -194,6 +199,10 @@ function BooksPage() {
     selectable: true,
     query: { defaults: { Name: "", MinPublishDate: "" } },
     onOpen: sheet.open,
+    list: searchListStore(search, (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+    ),
+    preferences: localStoragePreferences("books"),
   });
 
   return (
