@@ -130,7 +130,7 @@ function FullNameCell(props: { name?: string | null; surname?: string | null }) 
 
 const col = createAbpColumns<VoloAbpIdentityIdentityUserDto>();
 const columns = [
-  col.text("userName", "AbpIdentity::UserName"),
+  col.primary("userName", "AbpIdentity::UserName"),
   col.display({
     id: "fullName",
     header: columnHeader("Admin:FullName"),

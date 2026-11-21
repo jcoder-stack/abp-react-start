@@ -241,7 +241,7 @@ const roleSchema = buildRoleSchema(L);
 
 ## ④ 列定义
 
-用 `createAbpColumns<TDto>()`。它把 v9 原生的 `accessor` / `display` / `group` 原样透出，另加五个后台常见列型的预设，**第二个参数是词条 key 而不是已翻译的字符串**：
+用 `createAbpColumns<TDto>()`。它把 v9 原生的 `accessor` / `display` / `group` 原样透出，另加六个后台常见列型的预设，**第二个参数是词条 key 而不是已翻译的字符串**：
 
 ```ts
 const col = createAbpColumns<AbpSwaggerBooksBookDto>();
@@ -258,10 +258,11 @@ const columns = [
 
 `L()` 由预设在渲染期于单元格内部调用，列定义因此不依赖任何 hook——**可以写在模块级**，引用天然稳定，不必包 `useMemo`。（`useAbpTable` 内部的 `useDataTable` 每渲染收到新数组都会重建列模型；违反引用稳定契约时 DEV 期有 `console.warn` 提示。列里若引用了组件内的值，那就仍需写在组件体内并用 `useMemo` 把依赖写全。）
 
-五个预设：
+六个预设：
 
 | 预设 | 渲染 | 专属选项 |
 |---|---|---|
+| `primary` | 记录的身份列：首字块 + 加粗名称 + muted 的次要标识，同一行；**横向滚动时固定在左侧**（有勾选列时连它一起固定）。一张表至多一个，放在最前 | `secondary`（次要标识的字段名）、`avatar`（默认 true，记录没有「谁」的含义时关掉） |
 | `text` | 原值 | — |
 | `date` | ISO 值的日期段（不做时区换算——date-only 字段没有时刻语义，换算只会挪错一天） | — |
 | `money` | 定点小数，右对齐 | `digits`（默认 2） |

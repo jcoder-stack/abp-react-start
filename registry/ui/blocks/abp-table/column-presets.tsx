@@ -32,6 +32,26 @@ function BoolCell(props: { value: boolean | undefined; status: Status | undefine
   return <StatusBadge status={props.status}>{text}</StatusBadge>;
 }
 
+function PrimaryCell(props: { title: string; secondary: string | undefined; avatar: boolean }) {
+  // 按码点取首字符：`title[0]` 会把代理对（部分 emoji、生僻汉字）切成半个。
+  const initial = Array.from(props.title.trim())[0] ?? "";
+  return (
+    // 封顶宽度：固定列不随内容无限变宽，否则窄屏上一个长名字就把可滚动区挤没了。
+    <div className="flex max-w-64 min-w-0 items-center gap-2">
+      {props.avatar && (
+        <span
+          aria-hidden="true"
+          className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-muted font-medium text-2xs text-muted-foreground uppercase"
+        >
+          {initial}
+        </span>
+      )}
+      <span className="truncate font-medium">{props.title}</span>
+      {props.secondary && <span className="truncate text-muted-foreground">{props.secondary}</span>}
+    </div>
+  );
+}
+
 /** 把列标签转成 `ColumnDef["header"]` 渲染器。预设内部用它；手写 `accessor`/`display` 列时
  *  也该用它而不是直接调 `L()`——那会把列定义重新绑回 hook，失去模块级常量的资格。 */
 export function columnHeader(label: ColumnLabel): () => ReactNode {
@@ -45,7 +65,8 @@ function dateOnly(value: string | undefined): string {
 }
 
 /**
- * 列构造器：v9 原生的 `accessor`/`display`/`group` 原样透出，另加五个 ABP 后台常见列型的预设。
+ * 列构造器：v9 原生的 `accessor`/`display`/`group` 原样透出，另加六个 ABP 后台常见列型的预设。
+ * `primary` 是记录的身份列（首字块 + 名称 + 次要标识），横向滚动时固定在左侧，一张表至多一个。
  *
  * 预设省掉的是重复的 cell 渲染与对齐，不是表达力：每个预设都接 `opts` 整键覆盖，
  * 覆盖不了的场景直接用 `accessor`/`display` 手写。
@@ -72,6 +93,33 @@ export function createAbpColumns<TData extends RowData>() {
     header: columnHeader(label),
     ...opts,
   });
+
+  const primary = (
+    key: FieldsOf<TData, string>,
+    label: ColumnLabel,
+    opts?: {
+      /** 跟在名称后的次要标识（邮箱、编码），muted 色。与名称同一行：行高是声明出来的
+       *  40/32px，叠成两行会把它重新交给内容决定。 */
+      secondary?: FieldsOf<TData, string>;
+      /** 名称前的首字块；缺省 true。记录没有「谁」的含义（如配置项）时关掉。 */
+      avatar?: boolean;
+    } & ColumnOverrides<TData>,
+  ): TableColumnDef<TData> => {
+    const { secondary, avatar = true, ...overrides } = opts ?? {};
+    return {
+      accessorKey: key,
+      header: columnHeader(label),
+      meta: { sticky: true },
+      cell: ({ row }) => (
+        <PrimaryCell
+          title={(row.original[key] as string | undefined) ?? ""}
+          secondary={secondary ? (row.original[secondary] as string | undefined) : undefined}
+          avatar={avatar}
+        />
+      ),
+      ...overrides,
+    };
+  };
 
   const date = (
     key: FieldsOf<TData, string>,
@@ -157,6 +205,7 @@ export function createAbpColumns<TData extends RowData>() {
     accessor: helper.accessor,
     display: helper.display,
     group: helper.group,
+    primary,
     text,
     date,
     money,

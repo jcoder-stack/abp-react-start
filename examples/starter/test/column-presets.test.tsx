@@ -13,6 +13,7 @@ interface Row {
   title: string;
   publishDate?: string;
   price?: number;
+  code?: string;
   kind?: number;
   active?: boolean;
 }
@@ -37,6 +38,32 @@ function renderRows(columns: TableColumnDef<Row>[], data: Row[]) {
 }
 
 describe("column presets", () => {
+  it("primary 列渲染名称，并把次要标识跟在后面", async () => {
+    renderRows(
+      [col.primary("title", "Table:Columns", { secondary: "code" })],
+      [{ id: "1", title: "Orwell", code: "BK-1984" }],
+    );
+    expect((await screen.findAllByText("Orwell")).length).toBeGreaterThan(0);
+    expect(screen.getByText("BK-1984")).toBeDefined();
+  });
+
+  it("primary 列的首字块对读屏隐藏，关掉 avatar 后不渲染", async () => {
+    const first = renderRows(
+      [col.primary("title", "Table:Columns")],
+      [{ id: "1", title: "Orwell" }],
+    );
+    const initial = await screen.findByText("O");
+    expect(initial.getAttribute("aria-hidden")).toBe("true");
+    first.unmount();
+
+    renderRows(
+      [col.primary("title", "Table:Columns", { avatar: false })],
+      [{ id: "1", title: "Orwell" }],
+    );
+    expect((await screen.findAllByText("Orwell")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("O")).toBeNull();
+  });
+
   it("date 列只渲染 ISO 值的日期段", async () => {
     renderRows(
       [col.date("publishDate", "Table:Columns")],

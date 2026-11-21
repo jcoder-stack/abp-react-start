@@ -48,10 +48,22 @@ function justifyClass(align?: "left" | "right" | "center") {
   return "justify-start";
 }
 
+/** 固定单元格的共同部分。底色必须不透明，否则滚过去的列会透上来；而行的悬停色和表头色都是
+ *  半透明的，所以拆成两层：单元格自己铺 `bg-card`，状态色画在 `::before` 上叠在它之上、
+ *  内容之下（sticky 自成层叠上下文，`-z-10` 出不去）。 */
+const STICKY_CELL = "sticky z-10 bg-card before:absolute before:inset-0 before:-z-10";
+/** 固定区右缘的分隔线。画在 `::after` 上：表格是 border-collapse，单元格自己的边框不跟着 sticky 走。 */
+const STICKY_EDGE = "after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border";
+/** 主列紧贴勾选列之后。勾选列声明的是 `w-10`，但自动布局的表格会把它压到内容宽度，
+ *  所以固定时用 `min-w-10` 钉死，否则两者之间会露出一条缝，滚过去的列从缝里透出来。 */
+const STICKY_SELECT = "left-0 min-w-10";
+const STICKY_AFTER_SELECT = "left-10";
+
 interface DataTableRowProps<TData extends RowData>
   extends Pick<DataTableProps<TData>, "rowProps" | "onRowClick"> {
   row: Row<TableFeatures, TData>;
   selectionAtom: TableInstance<TData>["atoms"]["rowSelection"];
+  stickyClassOf: (columnId: string) => string | undefined;
 }
 
 /** 表体的一行。整行包在自己那一行的选中订阅里：`data-state` 是 `<TableRow>` 上的属性，
@@ -65,7 +77,7 @@ interface DataTableRowProps<TData extends RowData>
  *  则要能独立成立，它的契约不该是「只有被 DataTableRow 包着才会刷新」——`UseDataTableOptions`
  *  的 `features` TSDoc 正教着下游改本文件的表体。 */
 function DataTableRow<TData extends RowData>(props: DataTableRowProps<TData>) {
-  const { row, selectionAtom, rowProps, onRowClick } = props;
+  const { row, selectionAtom, rowProps, onRowClick, stickyClassOf } = props;
   return (
     <Subscribe source={selectionAtom} selector={(s) => Boolean(s?.[row.id])}>
       {(selected) => (
@@ -99,6 +111,11 @@ function DataTableRow<TData extends RowData>(props: DataTableRowProps<TData>) {
               className={cn(
                 alignClass(cell.column.columnDef.meta?.align),
                 cell.column.columnDef.meta?.className,
+                stickyClassOf(cell.column.id) &&
+                  cn(
+                    stickyClassOf(cell.column.id),
+                    "group-hover:before:bg-muted/50 group-data-[state=selected]:before:bg-row-selected",
+                  ),
               )}
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -184,6 +201,19 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
       : (props.skeletonRows ?? DEFAULT_SKELETON_ROWS);
   const hasError = props.error != null && props.error !== false;
 
+  const visibleColumns = table.getVisibleLeafColumns();
+  const stickyColumnId = visibleColumns.find((column) => column.columnDef.meta?.sticky)?.id;
+  const hasSelectColumn = visibleColumns.some((column) => column.id === "select");
+  // 有固定主列时勾选列一起固定：它在主列左边，不固定就会从主列底下滑走，行也就没法勾了。
+  const stickyClassOf = (columnId: string) => {
+    if (stickyColumnId === undefined) return undefined;
+    if (columnId === "select") return cn(STICKY_CELL, STICKY_SELECT);
+    if (columnId === stickyColumnId) {
+      return cn(STICKY_CELL, STICKY_EDGE, hasSelectColumn ? STICKY_AFTER_SELECT : "left-0");
+    }
+    return undefined;
+  };
+
   const footerContent = props.footer ? (
     props.footer({
       table: dt.table,
@@ -235,6 +265,8 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
                       "bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground",
                       alignClass(header.column.columnDef.meta?.align),
                       header.column.columnDef.meta?.className,
+                      stickyClassOf(header.column.id) &&
+                        cn(stickyClassOf(header.column.id), "before:bg-muted/50"),
                     )}
                   >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
@@ -315,7 +347,11 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
                     // 数据到达时列不横向跳动。
                     <TableCell
                       key={column.id}
-                      className={cn(alignClass(meta?.align), meta?.className)}
+                      className={cn(
+                        alignClass(meta?.align),
+                        meta?.className,
+                        stickyClassOf(column.id),
+                      )}
                     >
                       <Skeleton
                         className={cn(
@@ -354,6 +390,7 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
                     selectionAtom={table.atoms.rowSelection}
                     rowProps={props.rowProps}
                     onRowClick={props.onRowClick}
+                    stickyClassOf={stickyClassOf}
                   />
                   {subRow != null && subRow !== false && (
                     <TableRow data-slot="data-table-sub-row" className="hover:bg-transparent">

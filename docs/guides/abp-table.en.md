@@ -243,7 +243,7 @@ Three points:
 
 ## ④ Column definitions
 
-Use `createAbpColumns<TDto>()`. It passes v9's native `accessor` / `display` / `group` through untouched and adds five presets for column shapes common in admin tables. **The second argument is a message key, not an already-translated string:**
+Use `createAbpColumns<TDto>()`. It passes v9's native `accessor` / `display` / `group` through untouched and adds six presets for column shapes common in admin tables. **The second argument is a message key, not an already-translated string:**
 
 ```ts
 const col = createAbpColumns<AbpSwaggerBooksBookDto>();
@@ -260,10 +260,11 @@ const columns = [
 
 `L()` is called by the presets at render time inside the cell, so column definitions depend on no hook — **they can live at module scope**, referentially stable by construction, with no `useMemo` wrapper. (`useAbpTable`'s internal `useDataTable` rebuilds the column model whenever it receives a new array; violating the stability contract logs a `console.warn` in DEV. If your columns do reference in-component values, keep them in the component body under `useMemo` with complete deps.)
 
-The five presets:
+The six presets:
 
 | Preset | Renders | Own options |
 |---|---|---|
+| `primary` | the record's identity column: an initial block, the name in medium weight and a muted secondary identifier, all on one line; **stays fixed on the left while the table scrolls horizontally** (together with the selection column when there is one). At most one per table, placed first | `secondary` (field name of the secondary identifier), `avatar` (default true; turn it off when the record isn't a "who") |
 | `text` | the raw value | — |
 | `date` | the date portion of an ISO value (no timezone conversion — date-only fields carry no time-of-day meaning, converting only shifts the day) | — |
 | `money` | fixed-point, right-aligned | `digits` (default 2) |
