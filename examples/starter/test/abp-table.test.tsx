@@ -100,6 +100,119 @@ describe("AbpTable error state", () => {
   });
 });
 
+describe("AbpTable refresh failure with data in place", () => {
+  function StaleHarness(props: { refetch?: () => void }) {
+    const t = useAbpTable(
+      makeSource({
+        listQuery: {
+          data: { items: [{ id: "1", name: "DDD" }], totalCount: 1 },
+          isPending: false,
+          isFetching: false,
+          isError: true,
+          refetch: props.refetch,
+        },
+      }),
+      { columns },
+    );
+    return <t.Table />;
+  }
+
+  it("keeps the loaded rows on screen and says the refresh failed", async () => {
+    renderWithProviders(<StaleHarness />, { messages });
+
+    expect(await screen.findByText("DDD")).toBeDefined();
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't refresh");
+  });
+
+  it("retries from the banner", async () => {
+    const refetch = vi.fn();
+    renderWithProviders(<StaleHarness refetch={refetch} />, { messages });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AbpTable first-load failure", () => {
+  it("keeps the column headers in place", async () => {
+    function Harness() {
+      const t = useAbpTable(
+        makeSource({
+          listQuery: { data: undefined, isPending: false, isFetching: false, isError: true },
+        }),
+        { columns },
+      );
+      return <t.Table />;
+    }
+    renderWithProviders(<Harness />, { messages });
+
+    expect(await screen.findByText("Operation failed")).toBeDefined();
+    expect(screen.getByRole("columnheader", { name: "Name" })).toBeDefined();
+  });
+});
+
+describe("AbpTable empty state while filtering", () => {
+  const emptySource = () =>
+    makeSource({
+      listQuery: {
+        data: { items: [], totalCount: 0 },
+        isPending: false,
+        isFetching: false,
+        isError: false,
+      },
+      totalCount: 0,
+    });
+
+  function FilteredHarness(props: { initialFilter?: string }) {
+    const t = useAbpTable(emptySource(), { columns, initialFilter: props.initialFilter });
+    return <t.Table />;
+  }
+
+  it("says plain 'No data' when nothing is filtering", async () => {
+    renderWithProviders(<FilteredHarness />, { messages });
+
+    expect(await screen.findByText("No data")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+  });
+
+  it("explains that filters hid everything and clears the keyword on request", async () => {
+    renderWithProviders(<FilteredHarness initialFilter="ddd" />, { messages });
+
+    expect(await screen.findByText("No results match the current filters")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(await screen.findByText("No data")).toBeDefined();
+    expect((screen.getByPlaceholderText("Search…") as HTMLInputElement).value).toBe("");
+  });
+});
+
+describe("AbpTable search box vs. filter panel", () => {
+  function PanelHarness(props: { initialFilter?: string }) {
+    const t = useAbpTable(makeSource(), { columns, initialFilter: props.initialFilter });
+    return (
+      <t.Table>
+        <t.QueryForm>
+          <span data-testid="qf-field" />
+        </t.QueryForm>
+      </t.Table>
+    );
+  }
+
+  it("gives way to the panel when no keyword is in force", async () => {
+    renderWithProviders(<PanelHarness />, { messages });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Filters" }));
+    expect(screen.queryByPlaceholderText("Search…")).toBeNull();
+  });
+
+  it("stays visible when a keyword is still filtering, so it can be seen and cleared", async () => {
+    renderWithProviders(<PanelHarness initialFilter="ddd" />, { messages });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Filters" }));
+    expect((screen.getByPlaceholderText("Search…") as HTMLInputElement).value).toBe("ddd");
+  });
+});
+
 describe("AbpTable create button gating", () => {
   function CreateGateHarness(props: { canCreate: boolean }) {
     const t = useAbpTable(

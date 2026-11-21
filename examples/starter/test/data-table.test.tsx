@@ -76,6 +76,7 @@ function Harness({
   empty,
   skeletonRows,
   loading,
+  error,
   rowProps,
   footer,
 }: {
@@ -93,6 +94,7 @@ function Harness({
   empty?: ReactNode;
   skeletonRows?: number | "pageSize";
   loading?: boolean;
+  error?: ReactNode;
   rowProps?: (row: Row) => { className?: string };
   footer?: DataTableProps<Row>["footer"];
 }) {
@@ -111,6 +113,7 @@ function Harness({
         empty={empty}
         skeletonRows={skeletonRows}
         loading={loading}
+        error={error}
         rowProps={rowProps}
         footer={footer}
       >
@@ -472,6 +475,25 @@ describe("DataTable", () => {
     renderWithProviders(<Harness data={[]} loading />, { messages });
     const body = (await screen.findByRole("table")).querySelector("tbody");
     expect(body?.querySelectorAll("tr").length).toBe(5);
+  });
+
+  it("lays skeleton rows out one cell per visible column", async () => {
+    renderWithProviders(<Harness data={[]} loading selectable skeletonRows={1} />, { messages });
+    const table = await screen.findByRole("table");
+    const headerCells = table.querySelectorAll("thead th").length;
+    expect(headerCells).toBeGreaterThan(1);
+    expect(table.querySelectorAll("tbody tr:first-child td").length).toBe(headerCells);
+  });
+
+  it("replaces the body with the error content, keeping the header and dropping the footer", async () => {
+    renderWithProviders(
+      <Harness data={[{ id: "1", name: "Alpha" }]} rowCount={1} error={<span>加载失败</span>} />,
+      { messages },
+    );
+    expect(await screen.findByText("加载失败")).toBeDefined();
+    expect(screen.getByRole("columnheader", { name: "Name" })).toBeDefined();
+    expect(screen.queryByText("Alpha")).toBeNull();
+    expect(screen.queryByText("1 items")).toBeNull();
   });
 
   it("merges caller row classes without dropping the component's own", async () => {

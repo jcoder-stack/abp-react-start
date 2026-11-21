@@ -31,6 +31,9 @@ import { cn } from "@/lib/utils";
 
 const DEFAULT_SKELETON_ROWS = 5;
 
+/** 骨架条的宽度轮换：同一列上下等宽、相邻列不等宽，读起来像一张表而不是一摞横条。 */
+const SKELETON_WIDTHS = ["w-3/4", "w-1/2", "w-2/3"] as const;
+
 function alignClass(align?: "left" | "right" | "center") {
   // 右对齐即数字列（DESIGN.md「Tables」）：一并给等宽数字，否则 Inter 的比例数字宽窄不一，
   // 同列上下对不齐、跨组件（分页/页码）看着像换了字体。
@@ -123,8 +126,12 @@ export interface DataTableProps<
    *  `h-24 text-center text-muted-foreground`，插图 + 标题 + 按钮这类空状态会被强制居中、
    *  标题被染成 muted 色，要退出得自己在内容上加覆盖类。 */
   empty?: ReactNode;
-  /** 骨架行数；缺省 5。传 `"pageSize"` 跟随当前 `pagination.pageSize`，
-   *  避免 `pageSize=50` 时 5 行骨架突变成 50 行数据的跳变。 */
+  /** 首次取数失败、没有任何数据可显示时的表体内容。给了它，表体整块换成这段内容（外层
+   *  `<tr><td colSpan>` 由组件提供），表头留在原位，页脚不渲染——出错时总数和页数都不可信。
+   *  已有数据在位的刷新失败不该走这里：那时旧数据仍有效，调用方应保留表体，另行提示。 */
+  error?: ReactNode;
+  /** 骨架行数；缺省 5。后台里不满一页的小表很常见，跟随每页条数会让它们从十行骨架塌成
+   *  两三行数据。通常能填满一页的大表传 `"pageSize"`，跟随当前 `pagination.pageSize`。 */
   skeletonRows?: number | "pageSize";
   /** 行级属性，只开 `className`。事件走 `onRowClick`，万能透传会让调用方覆盖掉
    *  `key`/`data-state` 这些组件自管的东西。收 `row.original` 而不是 `Row`，要判断的是业务
@@ -163,7 +170,7 @@ export interface DataTableProps<
 }
 
 /** 服务端分页的通用表格。实例由 `useDataTable` 构造后传入，本组件只管表现层：
- *  骨架、空态、表头表体和内建页脚。行操作列由调用方当普通 column 传进来。 */
+ *  骨架、空态、报错态、表头表体和内建页脚。行操作列由调用方当普通 column 传进来。 */
 export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap = NoExtraFeatures>(
   props: DataTableProps<TData, TExtra>,
 ) {
@@ -175,6 +182,7 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
     props.skeletonRows === "pageSize"
       ? dt.state.pagination.pageSize
       : (props.skeletonRows ?? DEFAULT_SKELETON_ROWS);
+  const hasError = props.error != null && props.error !== false;
 
   const footerContent = props.footer ? (
     props.footer({
@@ -287,13 +295,41 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
             props.fetching && "opacity-60 transition-opacity duration-150 delay-100",
           )}
         >
-          {props.loading ? (
+          {hasError ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                colSpan={table.getVisibleLeafColumns().length}
+                className="h-24 text-center"
+              >
+                {props.error}
+              </TableCell>
+            </TableRow>
+          ) : props.loading ? (
             Array.from({ length: skeletonCount }, (_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: 骨架占位行数固定且从不重排
-              <TableRow key={`skeleton-${i}`}>
-                <TableCell colSpan={table.getVisibleLeafColumns().length}>
-                  <Skeleton className="h-5 w-full" />
-                </TableCell>
+              <TableRow key={`skeleton-${i}`} className="hover:bg-transparent">
+                {table.getVisibleLeafColumns().map((column, columnIndex) => {
+                  const meta = column.columnDef.meta;
+                  return (
+                    // 每列一格而不是整行一条：列宽在骨架期就由表头和 meta.className 定下，
+                    // 数据到达时列不横向跳动。
+                    <TableCell
+                      key={column.id}
+                      className={cn(alignClass(meta?.align), meta?.className)}
+                    >
+                      <Skeleton
+                        className={cn(
+                          // 没有取值器的是展示列（勾选框、行操作），内容本就是个小图标位。
+                          column.accessorFn
+                            ? ["h-4", SKELETON_WIDTHS[columnIndex % SKELETON_WIDTHS.length]]
+                            : "size-4",
+                          meta?.align === "right" && "ml-auto",
+                          meta?.align === "center" && "mx-auto",
+                        )}
+                      />
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))
           ) : table.getRowModel().rows.length === 0 ? (
@@ -334,7 +370,9 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
       </Table>
       {/* footer 返回 falsy（无限滚动这类不要页脚的接管）时连外壳一起不渲染，
           否则卡片底部会留一条 1px 上边框加一段空白。 */}
-      {footerContent ? <div className="border-t px-4 py-2">{footerContent}</div> : null}
+      {footerContent && !hasError ? (
+        <div className="border-t px-4 py-2">{footerContent}</div>
+      ) : null}
     </div>
   );
 }

@@ -18,7 +18,6 @@ import type {
   TableRowInstance,
 } from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
-import { FormErrorSummary } from "@/components/form/form-error-summary";
 import { Button } from "@/components/ui/button";
 
 /** `t.Table` 的表现层 props：不受管的 `DataTable` 透传项，缺省全部走内建默认。 */
@@ -50,6 +49,10 @@ export interface AbpTableViewInstance<
   resetQuery: () => void;
   /** 当前已提交的筛选项数，驱动筛选钮上的"还筛着"圆点。 */
   activeQueryCount: number;
+  /** 查询表单回默认值并清掉搜索关键字，随即重新取数。 */
+  clearFilters: () => void;
+  /** 当前筛选是否偏离了默认状态；为 false 时 `clearFilters` 不会改变结果。 */
+  canClearFilters: boolean;
   onExport?: () => void;
 }
 
@@ -85,6 +88,10 @@ export function AbpTableView<
     props;
 
   const [expanded, setExpanded] = useState(false);
+  // 面板展开会让出搜索框，但展开那一刻已有关键字在生效时不能让：藏起来它仍在筛选，
+  // 用户既看不到也清不掉。按展开瞬间锁定而不是实时跟随，否则在面板开着时把关键字删空，
+  // 输入框会在自己手底下消失。
+  const [searchKept, setSearchKept] = useState(false);
   const reactId = useId();
   const panelId = `${reactId}-query-panel`;
 
@@ -95,7 +102,7 @@ export function AbpTableView<
     <DataTableToolbar
       table={t}
       // 面板展开时让出搜索框：面板里是更精确的字段筛选，同屏再摆一个模糊搜索是重复入口。
-      search={t.searchEnabled && !expanded}
+      search={t.searchEnabled && (!expanded || searchKept)}
       searchPlaceholder={searchPlaceholder}
       // 这里再订阅一次是刻意的：顶部条那层 SelectedCount 只负责「左区该显示什么」，
       // 计数是批量条自己的数据。把数字从顶部条传下来会让「计数从哪来」重新耦合进
@@ -116,7 +123,10 @@ export function AbpTableView<
         hasQuery ? (
           <AbpQueryPanelToggle
             expanded={expanded}
-            onToggle={() => setExpanded((value) => !value)}
+            onToggle={() => {
+              setSearchKept(t.state.params.filter !== "");
+              setExpanded((value) => !value);
+            }}
             panelId={panelId}
             activeCount={t.activeQueryCount}
           />
@@ -138,41 +148,58 @@ export function AbpTableView<
     </DataTableToolbar>
   );
 
-  const renderQueryPanel = (last: boolean) =>
+  const queryPanel =
     hasQuery && expanded ? (
       <AbpQueryPanelView
         fields={queryFields}
         onSubmit={() => void t.submitQuery()}
         onReset={() => t.resetQuery()}
         panelId={panelId}
-        last={last}
       />
     ) : null;
 
-  if (t.source.listQuery.isError) {
-    // 查询区和搜索框要留在报错态里。筛选值和搜索词是用户自己输入的，也最容易触发后端 400，
-    // 一起吞掉就等于把用户锁死在自己的输入里，只能整页刷新。顶部条跟非报错态共用同一个
-    // `toolbar`，报错态没有表格托底，包一层卡片容器撑住外观。
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="overflow-hidden rounded-md border bg-card">
-          {toolbar}
-          {renderQueryPanel(true)}
-        </div>
-        <FormErrorSummary errors={[L("Crud:OperationFailed")]} />
-        {t.source.listQuery.refetch && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="self-start"
-            onClick={() => t.source.listQuery.refetch?.()}
-          >
-            {L("Crud:Retry")}
-          </Button>
-        )}
+  const { isError, refetch } = t.source.listQuery;
+  const hasData = t.source.listQuery.data !== undefined;
+  const retryButton = refetch ? (
+    <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+      {L("Crud:Retry")}
+    </Button>
+  ) : null;
+
+  // 首次取数就失败：表体换成报错，工具栏、查询面板和表头都留着。筛选值和搜索词是用户自己
+  // 输入的，也最容易触发后端 400，一起吞掉等于把用户锁死在自己的输入里。
+  const errorBody =
+    isError && !hasData ? (
+      <div role="alert" className="flex flex-col items-center gap-3 py-6">
+        <p className="text-destructive">{L("Crud:OperationFailed")}</p>
+        {retryButton}
       </div>
-    );
-  }
+    ) : undefined;
+
+  // 刷新失败但旧数据还在：旧数据仍是上一次的有效结果，留在原位，只加一条提示。
+  const staleBanner =
+    isError && hasData ? (
+      <div
+        role="alert"
+        className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2 text-sm"
+      >
+        {/* 颜色挂在文字上而不是容器上：outline 按钮不自带前景色，会把容器的红继承过去。 */}
+        <span className="text-destructive">{L("Table:RefreshFailed")}</span>
+        {retryButton}
+      </div>
+    ) : null;
+
+  const filtered = t.activeQueryCount > 0 || t.state.params.filter !== "";
+  const filteredEmpty = filtered ? (
+    <div className="flex flex-col items-center gap-3 py-6">
+      <p>{L("Table:EmptyFiltered")}</p>
+      {t.canClearFilters && (
+        <Button type="button" variant="outline" size="sm" onClick={t.clearFilters}>
+          {L("Table:ClearFilters")}
+        </Button>
+      )}
+    </div>
+  ) : undefined;
 
   // 默认 onOpen 存在时点行开详情；false 关闭；也可给自定义回调。
   const click = t.rowConfig?.click;
@@ -186,7 +213,10 @@ export function AbpTableView<
       table={t}
       loading={t.source.listQuery.isPending}
       fetching={t.source.listQuery.isFetching && !t.source.listQuery.isPending}
-      empty={empty}
+      // 调用方给了空状态就整个听它的；没给时，筛选中的空表换一句话并给出清除出口，
+      // 「本来就没数据」与「被筛没了」是两种处境。
+      empty={empty ?? filteredEmpty}
+      error={errorBody}
       skeletonRows={skeletonRows}
       rowProps={rowProps}
       renderSubRow={renderSubRow}
@@ -194,7 +224,8 @@ export function AbpTableView<
       onRowClick={rowClickHandler}
     >
       {toolbar}
-      {renderQueryPanel(false)}
+      {staleBanner}
+      {queryPanel}
     </DataTable>
   );
 }

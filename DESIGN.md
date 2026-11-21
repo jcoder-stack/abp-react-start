@@ -193,7 +193,11 @@ When rows are selected, the toolbar's left area **is replaced in place by a bulk
 
 **Bulk delete reports one toast and never reports a hollow success**: all deleted → success; some failed → warning, with the backend's reasons appended one per line; if rows were skipped as not deletable (the row-level check said no, or the row has no id), say how many were deleted, failed and skipped — a user who ticked N rows and sees "Deleted" after only some went will assume all of them did. Failed rows stay selected for a retry; skipped rows are deselected (a retry can't delete them either).
 
-**Refresh and errors**: while refetching, the table body fades to 60% (after a 100ms delay, so fast requests don't flash) and carries `aria-busy`; on error the toolbar, query panel and search all stay, and the body is replaced by an error message and a Retry button — never rendered as an empty list.
+**Loading**: skeleton rows are laid out one cell per column, so column widths don't jump when data arrives. There are five of them by default: lists shorter than a page are common in an admin, and a page-sized skeleton collapsing into two rows jumps more than five do. A table that normally fills its page can ask for a page-sized skeleton.
+
+**Refresh and errors**: while refetching, the table body fades to 60% (after a 100ms delay, so fast requests don't flash) and carries `aria-busy`. When the first load fails, the toolbar, query panel, search and **column headers** all stay, the body is replaced by an error message and a Retry button, and the footer is dropped (neither the total nor the page count can be trusted) — never rendered as an empty list. When a refresh fails with rows already on screen, **the rows stay**: they are still the last valid result, and replacing them with an error block throws away what the user was reading. A one-line destructive notice with Retry sits under the toolbar instead.
+
+**Empty states come in two kinds.** With nothing filtering, the table says "No data". With a keyword or query field in force, it says no results match and offers "Clear filters" — but only when clearing would change something (a table filtered solely by its query defaults has nothing to clear, and a button that does nothing is worse than none). A caller-supplied empty state replaces both.
 
 **Pagination** sits in the table footer, separated from the row grid by a 1px border: total (hidden when 0), page size, page controls, with the current page in a neutral fill (`secondary` background + weight), not primary — see [Color and status](#color-and-status). The page-number window is fixed at 7 slots so buttons don't jump sideways when paging.
 
@@ -217,7 +221,7 @@ Current item = a surface one step up + a 2px indicator bar on the left (`sidebar
 
 Structured, endpoint-driven query forms (the ABP admin tables) **deliberately don't use the chip pattern**: fields sit in a labeled grid inside a filter panel, collapsed by default and opened by the filter icon (`ListFilter`) in the toolbar.
 
-Opening the panel **replaces** the scoped search box — the panel's precise fields supersede fuzzy matching, and two search inputs on one screen are redundant. The panel has its own Reset / Query row; Query is a secondary button, because the toolbar's only primary button belongs to "New". When the panel is collapsed with filters still active, the filter icon keeps a dot (with an equivalent count for screen readers); otherwise a collapsed panel hides the fact that the table is being filtered.
+Opening the panel **replaces** the scoped search box — the panel's precise fields supersede fuzzy matching, and two search inputs on one screen are redundant. **The exception is a keyword already in force**: hiding the box then would leave a filter the user can neither see nor clear, so the box stays for as long as that panel session lasts (decided at the moment the panel opens, so the box doesn't vanish under the cursor when the keyword is deleted). The panel has its own Reset / Query row; Query is a secondary button, because the toolbar's only primary button belongs to "New". When the panel is collapsed with filters still active, the filter icon keeps a dot (with an equivalent count for screen readers); otherwise a collapsed panel hides the fact that the table is being filtered.
 
 ## Icons
 

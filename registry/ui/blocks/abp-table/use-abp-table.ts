@@ -374,6 +374,12 @@ export function useAbpTable<
     void submitQuery();
   }, [submitQuery]);
 
+  const { commitSearch } = state;
+  const clearFilters = useCallback(() => {
+    resetQuery();
+    commitSearch("");
+  }, [resetQuery, commitSearch]);
+
   // 只读出口，导出「全部匹配行」这类需求要拿当前已提交的完整请求参数。
   // 返回的是提交结果的快照而不是表单草稿，「表单是唯一取值源」的不变式不破。
   const paramsRef = useRef(params);
@@ -499,6 +505,12 @@ export function useAbpTable<
     searchEnabled: src.supportsFilter,
     // 已提交的筛选项数，不是表单草稿。驱动筛选钮上的"还筛着"圆点，面板收起后唯一的状态提示。
     activeQueryCount: Object.keys(safeParams).length,
+    clearFilters,
+    // 「清了会不会有变化」：关键字非空，或已提交的查询参数偏离了默认值。只带着默认值筛选时
+    // 没有可清的东西，空态不该给一个点了没反应的按钮。
+    canClearFilters:
+      state.params.filter !== "" ||
+      JSON.stringify(params) !== JSON.stringify(pruneEmpty(queryDefaults)),
     onExport: opts.onExport,
   };
 
