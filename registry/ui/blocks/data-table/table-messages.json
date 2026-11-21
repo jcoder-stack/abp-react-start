@@ -3,6 +3,9 @@
     "": {
       "Table:Search": "Search…",
       "Table:Empty": "No data",
+      "Table:EmptyFiltered": "No results match the current filters",
+      "Table:ClearFilters": "Clear filters",
+      "Table:RefreshFailed": "Couldn't refresh. Showing the last loaded data.",
       "Table:Query": "Query",
       "Table:Reset": "Reset",
       "Table:RowsPerPage": "Rows per page",
@@ -37,6 +40,9 @@
     "": {
       "Table:Search": "搜索…",
       "Table:Empty": "暂无数据",
+      "Table:EmptyFiltered": "没有符合当前筛选条件的结果",
+      "Table:ClearFilters": "清除筛选",
+      "Table:RefreshFailed": "刷新失败，当前显示的是上次加载的数据。",
       "Table:Query": "查询",
       "Table:Reset": "重置",
       "Table:RowsPerPage": "每页行数",

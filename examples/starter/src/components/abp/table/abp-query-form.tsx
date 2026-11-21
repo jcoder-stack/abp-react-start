@@ -81,8 +81,6 @@ export interface AbpQueryPanelViewProps {
   onSubmit: () => void;
   onReset: () => void;
   panelId: string;
-  /** 面板是卡片里最后一段时（报错态没有表格托底）收窄下内边距，底下没有表格要隔开了。 */
-  last?: boolean;
 }
 
 /** 高级筛选面板：带标签的字段网格 + 底部「重置 / 查询」按钮行，渲染在顶部条与表头之间，
@@ -95,7 +93,7 @@ export function AbpQueryPanelView(props: AbpQueryPanelViewProps) {
       id={props.panelId}
       // 不画下边框、改留一段白：边框紧贴表头的 muted 色带会让面板读成表格的一部分，
       // 而它是临时打开的层。留白之后表头色块自然成为表格块的起点。
-      className={cn("px-4 pt-4", props.last ? "pb-4" : "pb-5")}
+      className="px-4 pt-4 pb-5"
       onKeyDown={submitOnEnter(props.onSubmit)}
     >
       <legend className="sr-only">{L("Table:Query")}</legend>

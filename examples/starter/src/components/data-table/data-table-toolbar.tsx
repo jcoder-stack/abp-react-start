@@ -62,9 +62,24 @@ export function DataTableToolbar<
   // 以已提交的搜索值起步：深链预填时输入框要显示它，而不是空着却在筛选。
   const [searchInput, setSearchInput] = useState(state.params.filter);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const { commitSearch } = state;
+  const committedFilter = state.params.filter;
+  // 本工具条自己提交过的最新值。已提交值与它不同，说明是外部改的（空态的「清除筛选」等），
+  // 输入框要跟上；相同则是自己那次提交的回声，此时用户可能已经又敲了几个字，不能回写。
+  const ownCommit = useRef(committedFilter);
 
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  useEffect(() => {
+    if (committedFilter === ownCommit.current) return;
+    ownCommit.current = committedFilter;
+    clearTimeout(timer.current);
+    setSearchInput(committedFilter);
+  }, [committedFilter]);
+
+  const commitSearch = (value: string) => {
+    ownCommit.current = value;
+    state.commitSearch(value);
+  };
 
   const onSearchChange = (value: string) => {
     setSearchInput(value);
