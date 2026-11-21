@@ -29,6 +29,7 @@ import {
   type CrudWriteHooks,
   type ListParams,
 } from "@/components/abp/crud/crud-service";
+import { type AbpBulkActionProps, AbpBulkActionView } from "@/components/abp/table/abp-bulk-action";
 import { AbpBulkDeleteView } from "@/components/abp/table/abp-bulk-delete";
 import { AbpTableView, type AbpTableViewOwnProps } from "@/components/abp/table/abp-table";
 import { RowActionsMenu } from "@/components/abp/table/row-actions-menu";
@@ -104,6 +105,9 @@ export interface AbpTableRowConfig<
   delete?: boolean;
   /** 默认：`onOpen` 存在时点行开详情；`false` 关闭；也可给自定义回调。 */
   click?: false | ((row: TDto) => void);
+  /** 逐行收窄编辑项：返回 false 的行不出编辑项（只隐藏不灰显）。只能收窄不能放开，同 `canDelete`；
+   *  引用必须稳定。点行打开的详情不受它影响。 */
+  canEdit?: (row: TDto) => boolean;
   /** 逐行收窄删除项：返回 false 的行不出删除项（只隐藏不灰显），`t.BulkDelete` 也跳过它。只能收窄
    *  不能放开——表级判定（权限、`delete`）不许删时，这里返回 true 也不出。引用必须稳定，同 `menu`。 */
   canDelete?: (row: TDto) => boolean;
@@ -148,8 +152,9 @@ export interface UseAbpTableOptions<
    *  行展开直接传 `data-table-expanding` 块的 `expandingFeatures`。 */
   features?: TExtra;
   tableOptions?: UseDataTableOptions<TDto, TExtra>["tableOptions"];
-  /** 顶部条「导出」图标的回调插槽；缺席不渲染导出按钮。组件库不内置导出实现。 */
-  onExport?: () => void;
+  /** 顶部条「导出」图标的回调插槽；缺席不渲染导出按钮。组件库不内置导出实现。
+   *  回调拿到当前已提交的完整请求参数和选中行，「导出全部匹配」与「只导出选中」都不用自己拼。 */
+  onExport?: (context: AbpTableExportContext<TDto>) => void;
   /** 搜索框的初始值（深链预填），只在挂载时播种一次。给了 `list` 时不生效。 */
   initialFilter?: string;
   /** 把页码、每页条数、排序、搜索词交给外部持有（典型是 URL search params），从详情页返回、
@@ -159,6 +164,15 @@ export interface UseAbpTableOptions<
   /** 记住密度、每页条数和列显隐。传 `localStoragePreferences("<表的稳定名字>")`，
    *  或自己实现 `DataTablePreferenceStore`。引用必须稳定。 */
   preferences?: DataTablePreferenceStore;
+}
+
+/** `onExport` 的上下文。两个都是取值函数：点击时才读，拿到的是那一刻的值。 */
+export interface AbpTableExportContext<TDto> {
+  /** 当前已提交的完整列表请求参数（查询表单 + 分页/排序/搜索）。导出全部匹配行时去掉
+   *  `SkipCount` / `MaxResultCount` 再发。 */
+  getListParams: () => Record<string, unknown>;
+  /** 当前选中的行；没开 `selectable` 时恒为空数组。 */
+  getSelectedRows: () => TDto[];
 }
 
 /**
@@ -452,7 +466,7 @@ export function useAbpTable<
             rowActions: row.actions,
             show: {
               view: showView,
-              edit: showEdit,
+              edit: showEdit && (row.canEdit?.(cellRow.original) ?? true),
               delete: isRowDeletable(showDelete, cellRow.original, row.canDelete),
             },
             deleteConfirm: row.deleteConfirm,
@@ -465,6 +479,7 @@ export function useAbpTable<
     opts.onOpen,
     row.actions,
     row.menu,
+    row.canEdit,
     row.canDelete,
     row.deleteConfirm,
     showView,
@@ -524,7 +539,9 @@ export function useAbpTable<
     canClearFilters:
       state.params.filter !== "" ||
       JSON.stringify(params) !== JSON.stringify(pruneEmpty(queryDefaults)),
-    onExport: opts.onExport,
+    onExport: opts.onExport
+      ? () => opts.onExport?.({ getListParams, getSelectedRows: dt.getSelectedRows })
+      : undefined,
   };
 
   // 绑定成员挂载。五个成员的身份跨渲染稳定（见 useBoundComponents），接线值经 read() 读活。
@@ -536,6 +553,17 @@ export function useAbpTable<
     const QueryForm = (_p: { children: ReactNode }) => null;
     const Toolbar = (p: { children: ReactNode }) => createElement(Fragment, null, p.children);
     const BulkBar = (p: { children: ReactNode }) => createElement(Fragment, null, p.children);
+    /** 顶部条右侧功能图标区的追加项（排序菜单、自定义图标钮），排在列菜单之前。 */
+    const Utility = (p: { children: ReactNode }) => createElement(Fragment, null, p.children);
+    // 通用批量动作，摆在 t.BulkBar 里用。选中行、失败行回填和整批结束后的重取都接好了，
+    // 页面只给「对一行做什么」。
+    const BulkAction = (p: AbpBulkActionProps<TDto>) =>
+      createElement(AbpBulkActionView<TDto>, {
+        ...p,
+        getSelectedRows: read().self.getSelectedRows,
+        keepSelected: read().self.keepSelected,
+        refetch: read().self.source.listQuery.refetch,
+      });
     // 内建批量删除。删除 mutation 和列表失效都在 source 上，页面再写一遍就是把同一份样板
     // 抄进每个 CRUD 页。摆在 t.BulkBar 里用。
     const BulkDelete = () =>
@@ -549,17 +577,22 @@ export function useAbpTable<
       // 槽位扫描靠引用相等识别自家绑定成员（组件身份在 useBoundComponents 内跨渲染不变，
       // child.type 的比较因此稳定）。未知的直接子元素只 devWarn 不渲染，
       // t.Table 不是通用容器，只认这三种。
-      const slots: { query?: { children: ReactNode }; toolbar?: ReactNode; bulkBar?: ReactNode } =
-        {};
+      const slots: {
+        query?: { children: ReactNode };
+        toolbar?: ReactNode;
+        bulkBar?: ReactNode;
+        utility?: ReactNode;
+      } = {};
       Children.forEach(p.children, (child) => {
         if (!isValidElement(child)) return;
         if (child.type === QueryForm) slots.query = child.props as { children: ReactNode };
         else if (child.type === Toolbar) slots.toolbar = child;
         else if (child.type === BulkBar) slots.bulkBar = child;
+        else if (child.type === Utility) slots.utility = child;
         else
           devWarn(
             "abp-table:unknown-child",
-            "useAbpTable: t.Table 只认 t.QueryForm/t.Toolbar/t.BulkBar 直接子元素，其余直接子元素会被忽略。",
+            "useAbpTable: t.Table 只认 t.QueryForm/t.Toolbar/t.BulkBar/t.Utility 直接子元素，其余直接子元素会被忽略。",
           );
       });
       const { empty, skeletonRows, rowProps, renderSubRow, pageSizes, searchPlaceholder } = p;
@@ -574,7 +607,7 @@ export function useAbpTable<
         searchPlaceholder,
       });
     };
-    return { Table, QueryForm, Toolbar, BulkBar, BulkDelete };
+    return { Table, QueryForm, Toolbar, BulkBar, Utility, BulkDelete, BulkAction };
   });
 
   return { ...instanceWithoutComponents, ...bound };

@@ -243,7 +243,7 @@ Three points:
 
 ## ④ Column definitions
 
-Use `createAbpColumns<TDto>()`. It passes v9's native `accessor` / `display` / `group` through untouched and adds six presets for column shapes common in admin tables. **The second argument is a message key, not an already-translated string:**
+Use `createAbpColumns<TDto>()`. It passes v9's native `accessor` / `display` / `group` through untouched and adds eight presets for column shapes common in admin tables. **The second argument is a message key, not an already-translated string:**
 
 ```ts
 const col = createAbpColumns<AbpSwaggerBooksBookDto>();
@@ -260,16 +260,20 @@ const columns = [
 
 `L()` is called by the presets at render time inside the cell, so column definitions depend on no hook — **they can live at module scope**, referentially stable by construction, with no `useMemo` wrapper. (`useAbpTable`'s internal `useDataTable` rebuilds the column model whenever it receives a new array; violating the stability contract logs a `console.warn` in DEV. If your columns do reference in-component values, keep them in the component body under `useMemo` with complete deps.)
 
-The six presets:
+The eight presets:
 
 | Preset | Renders | Own options |
 |---|---|---|
 | `primary` | the record's identity column: an initial block, the name in medium weight and a muted secondary identifier, all on one line; **stays fixed on the left while the table scrolls horizontally** (together with the selection column when there is one). At most one per table, placed first | `secondary` (field name of the secondary identifier), `avatar` (default true; turn it off when the record isn't a "who") |
 | `text` | the raw value | — |
 | `date` | the date portion of an ISO value (no timezone conversion — date-only fields carry no time-of-day meaning, converting only shifts the day) | — |
-| `money` | fixed-point, right-aligned | `digits` (default 2) |
+| `datetime` | a real instant, shown in the tenant time zone as `yyyy-MM-dd HH:mm`. Use `date` for date-only fields | — |
+| `money` | fixed fraction digits, grouped per the UI language, right-aligned | `digits` (default 2) |
+| `number` | grouped per the UI language, right-aligned | `digits` (omit to avoid padding zeros) |
 | `enum` | the value mapped through `map` to a message; values not in the map render as-is rather than being swallowed | `map`, `fallback` (message key for an absent value) |
 | `bool` | a yes/no `StatusBadge` | `trueStatus`, `falseStatus` (semantic color) |
+
+**To add your own column shape**, write a function returning a `TableColumnDef` the way the built-in presets do: narrow `key` with the exported `FieldsOf<TData, ValueType>`, build the header with `columnHeader(label)`, and take `ColumnOverrides<TData>` as the third argument, spread last.
 
 **Presets are sugar, not a wall.** The third argument also accepts any `ColumnDef` key, replacing the preset's default wholesale — including `cell` / `header` / `meta`. When overriding isn't enough, write a native column with `col.accessor` / `col.display`; use `columnHeader("Message:Key")` for the header rather than calling `L()` directly, which would bind the definition back to a hook and forfeit module-scope placement:
 
@@ -514,6 +518,7 @@ const t = useAbpTable(roleService, {
 | `actions` | `(row, table) => ReactNode` | Inserted **left of** the built-in "···" menu, always visible in the row |
 | `view`/`edit`/`delete` | `boolean` | Overrides the corresponding built-in item's default visibility |
 | `click` | `false \| ((row) => void)` | Overrides the default "click row opens detail"; `false` disables |
+| `canEdit` | `(row) => boolean` | Narrows the Edit item per row: rows returning `false` get no "Edit". It can only narrow — when the table level disallows editing, returning `true` doesn't bring it back; the reference must be stable. The detail opened by clicking a row is unaffected |
 | `canDelete` | `(row) => boolean` | Narrows deletion per row: rows returning `false` get no Delete item, and `t.BulkDelete` skips them and reports how many were skipped. It can only narrow — when the table cannot delete, `true` adds nothing; keep the reference stable |
 | `deleteConfirm` | `string` | Body of the delete confirmation, replacing the generic "This cannot be undone" |
 
@@ -618,6 +623,32 @@ Key points:
 - **Failed rows stay selected**: succeeded rows disappear with the invalidation refetch and leave the selection naturally; failed rows are kept via `keepSelected`, so the user re-clicks once to retry rather than re-selecting.
 - **Custom data sources supporting bulk delete** must provide the optional `many(ids) => Promise<{ failed: string[] }>` on `AbpTableSource.delete`; without it `t.BulkDelete` doesn't render and DEV warns (`createCrudService` output has it built in).
 
+### Generic bulk actions: `t.BulkAction`
+
+For bulk actions other than delete (activate, deactivate, archive…) use `t.BulkAction`. Feedback is the same as `t.BulkDelete`: rows run one after another, the whole batch reports a single toast, failed rows stay selected for a retry, and the list is refetched once at the end. The page only says what to do with one row:
+
+```tsx
+<t.BulkBar>
+  <t.BulkAction
+    label={L("App::Activate")}
+    icon={<Check />}
+    run={(row) => activate.mutateAsync({ id: row.id ?? "" })}
+    canRun={(row) => !row.isActive}
+  />
+  <t.BulkDelete />
+</t.BulkBar>
+```
+
+| prop | Meaning |
+|---|---|
+| `label` / `icon` | Button text (already translated) and icon |
+| `run` | Performs the action on one row and throws on failure. **Don't toast or invalidate the list inside it** — per-row toasts turn N rows into N toasts |
+| `canRun` | Selected rows returning `false` are not run; they count as skipped and the toast says so |
+| `confirm` | `{ title, description? }`; when given, a confirm dialog comes first. Required for irreversible actions |
+| `destructive` | Dangerous action; the button uses the destructive color |
+
+The mutation handed to `run` should not carry `onSuccess` / `onError` toast callbacks, for the same reason.
+
 ## ⑩ Toolbar additions
 
 The top bar's right area (refresh · export · density · columns) is mostly built-in, no wiring: refresh refetches the current query with a spinning icon; density toggles comfortable/compact (row heights in DESIGN.md "Data tables", varying with inline action buttons), state in memory; the column visibility menu likewise. All three appear just by using `useAbpTable`/`t.Table`.
@@ -638,6 +669,22 @@ Export is the one slot-style capability — `useAbpTable(bookService, { onExport
 ```
 
 `exportCsv` is your own export function (illustrative); `t.Toolbar`/`t.getListParams` are real bound members/methods.
+
+The `onExport` callback also receives a context argument `{ getListParams, getSelectedRows }`, so it doesn't need to reach back for `t`: `onExport: ({ getListParams, getSelectedRows }) => …`. Both are getters, read at click time.
+
+**`t.Utility`** puts content into the utility icon group on the right, before the columns menu. The built-in multi-sort menu is attached this way:
+
+```tsx
+import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";
+
+<t.Table>
+  <t.Utility>
+    <DataTableSortMenu table={t} />
+  </t.Utility>
+</t.Table>
+```
+
+Buttons placed there follow the group's look: `variant="ghost" size="icon"`, `size-8 text-muted-foreground`, with an `aria-label` and a Tooltip.
 
 ## ⑪ Row expanding: tree tables and collapsible details (optional)
 

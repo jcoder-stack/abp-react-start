@@ -41,6 +41,26 @@ export function partitionDeletable<TDto extends { id?: string }>(
   return { ids, skipped };
 }
 
+/** 整批结局四种提示各用哪条词条。删除与通用批量动作的措辞不同（「已删除」vs「已处理」），
+ *  判定逻辑是同一套。 */
+export interface BulkNoticeKeys {
+  /** 全部成功。带一个参数：成功条数。 */
+  done: string;
+  /** 部分失败：成功数、失败数。 */
+  partialFailure: string;
+  /** 有跳过：成功数、失败数、跳过数。 */
+  skipped: string;
+  /** 选中的全被跳过：跳过数。 */
+  noneApplicable: string;
+}
+
+const BULK_DELETE_KEYS: BulkNoticeKeys = {
+  done: "Crud:Deleted",
+  partialFailure: "Crud:BulkDeletePartialFailure",
+  skipped: "Crud:BulkDeleteSkipped",
+  noneApplicable: "Crud:BulkDeleteNoneDeletable",
+};
+
 export interface BulkDeleteNotice {
   kind: "success" | "warning" | "error";
   key: string;
@@ -56,26 +76,42 @@ export function bulkDeleteNotice(
   skipped: number,
   reasons: readonly string[] = [],
 ): BulkDeleteNotice {
-  const notice = bulkDeleteOutcome(requested, failed, skipped);
+  return bulkNotice(BULK_DELETE_KEYS, requested, failed, skipped, reasons);
+}
+
+/** `bulkDeleteNotice` 的通用形态：同一套判定，词条由调用方给。 */
+export function bulkNotice(
+  keys: BulkNoticeKeys,
+  requested: number,
+  failed: number,
+  skipped: number,
+  reasons: readonly string[] = [],
+): BulkDeleteNotice {
+  const notice = bulkOutcome(keys, requested, failed, skipped);
   return failed > 0 && reasons.length > 0 ? { ...notice, description: reasons.join("\n") } : notice;
 }
 
-function bulkDeleteOutcome(requested: number, failed: number, skipped: number): BulkDeleteNotice {
+function bulkOutcome(
+  keys: BulkNoticeKeys,
+  requested: number,
+  failed: number,
+  skipped: number,
+): BulkDeleteNotice {
   const deleted = requested - failed;
   // 空选择：一条都没发出去，不能报「已删除」
   if (requested === 0 && skipped === 0)
     return { kind: "error", key: "Crud:OperationFailed", args: [] };
   if (requested === 0 && skipped > 0)
-    return { kind: "error", key: "Crud:BulkDeleteNoneDeletable", args: [skipped] };
+    return { kind: "error", key: keys.noneApplicable, args: [skipped] };
   if (skipped > 0)
     return {
       kind: deleted === 0 ? "error" : "warning",
-      key: "Crud:BulkDeleteSkipped",
+      key: keys.skipped,
       args: [deleted, failed, skipped],
     };
-  if (failed === 0) return { kind: "success", key: "Crud:Deleted", args: [] };
+  if (failed === 0) return { kind: "success", key: keys.done, args: [deleted] };
   if (deleted === 0) return { kind: "error", key: "Crud:OperationFailed", args: [] };
-  return { kind: "warning", key: "Crud:BulkDeletePartialFailure", args: [deleted, failed] };
+  return { kind: "warning", key: keys.partialFailure, args: [deleted, failed] };
 }
 
 /**
