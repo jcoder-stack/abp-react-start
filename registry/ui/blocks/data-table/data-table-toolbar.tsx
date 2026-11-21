@@ -1,6 +1,6 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { RowData } from "@tanstack/react-table";
-import { Download, RefreshCw, Rows3 } from "lucide-react";
+import { Download, RefreshCw, Rows3, Search, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { ExtraFeatureMap, NoExtraFeatures } from "@/components/data-table/table-core";
@@ -13,7 +13,12 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -95,13 +100,33 @@ export function DataTableToolbar<
   const idle =
     props.left ??
     (showSearch ? (
-      <Input
-        className="h-8 w-56"
-        value={searchInput}
-        placeholder={props.searchPlaceholder ?? L("Table:Search")}
-        onChange={(e) => onSearchChange(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && flushSearch()}
-      />
+      <InputGroup className="h-8 w-56">
+        <InputGroupAddon>
+          <Search />
+        </InputGroupAddon>
+        <InputGroupInput
+          value={searchInput}
+          placeholder={props.searchPlaceholder ?? L("Table:Search")}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && flushSearch()}
+        />
+        {searchInput !== "" && (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              size="icon-xs"
+              aria-label={L("Table:SearchClear")}
+              // 清空是一次明确的提交，不走防抖：点了却要等 400ms 才见结果，会被当成没点上。
+              onClick={() => {
+                clearTimeout(timer.current);
+                setSearchInput("");
+                commitSearch("");
+              }}
+            >
+              <X />
+            </InputGroupButton>
+          </InputGroupAddon>
+        )}
+      </InputGroup>
     ) : null);
 
   // 只有在给了 bulk 内容时才订阅选中态：没有批量内容的表，左区恒定，多挂一个订阅者没有意义。

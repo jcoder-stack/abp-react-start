@@ -676,6 +676,54 @@ For collapsible details, use `expandColumn<Order>()` as the first column, pass `
 - The tree is fetched in full; lazy-loading children is not supported. ABP tree endpoints (organization units, for example) usually return a flat list: use a `source` callback (see custom data sources under "Choosing a tier") to fetch everything, assemble the tree by `parentId`, and slice the page of root nodes by `params.SkipCount`/`params.MaxResultCount`. `totalCount` counts root nodes only.
 - Clicking a row still opens the detail (`onOpen`). Clicking the expand button, or pressing Enter/Space on it, does not bubble up as a row click.
 
+## ⑫ Remembering list position and view preferences (optional)
+
+Two independent things, enabled per page. Without them the table behaves exactly as before.
+
+**List position in the URL** (page, page size, sorting, keyword): coming back from a detail page, reloading, or sending the link to a colleague lands on the same page.
+
+```tsx
+import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
+
+export const Route = createFileRoute("/_layout/_authed/books/")({
+  validateSearch: parseListSearch,
+  component: BooksPage,
+});
+
+function BooksPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const t = useAbpTable(bookService, {
+    columns,
+    list: searchListStore(search, (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+    ),
+  });
+}
+```
+
+- The URL looks like `?page=3&size=20&sort=name,-creationTime&q=foo`; keys equal to their defaults are left out, so the default state is a clean URL.
+- `replace`, not push: paging and sorting don't each take a history entry.
+- With `list` set, `initialFilter` has no effect; the keyword comes from `q`, so deep links write `?q=…`.
+- If the table changes `defaultPageSize`, pass the same value as `searchListStore`'s third argument (`{ defaultPageSize }`), otherwise the default page size is written to the URL as if it were not the default.
+- If the page has other search params, spread `parseListSearch(search)` into your own `validateSearch`.
+- **Structured query-form params are not included**; they still live in the component only.
+
+**View preferences on this device** (density, page size, column visibility):
+
+```tsx
+import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
+
+const t = useAbpTable(bookService, {
+  columns,
+  preferences: localStoragePreferences("books"),
+});
+```
+
+- Name it after the table and keep it stable: renaming discards every user's stored preferences, and two tables sharing a name overwrite each other.
+- With both enabled, the page size in the link wins over the personal preference — a shared "page 3" has to be the same page 3.
+- To store them elsewhere (ABP user settings, say), implement `DataTablePreferenceStore`: `subscribe` / `get` / `set`, the `useSyncExternalStore` contract.
+
 ## Choosing a tier
 
 The table/CRUD capability comes in four tiers, each narrower in applicability and freer in control than the one above. The principle is "just enough" — don't drop a tier because a lower one exists.

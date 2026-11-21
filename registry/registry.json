@@ -264,7 +264,7 @@
         "table",
         "select",
         "button",
-        "input",
+        "input-group",
         "skeleton",
         "pagination",
         "checkbox",
@@ -293,6 +293,16 @@
           "path": "ui/blocks/data-table/use-data-table-state.ts",
           "type": "registry:component",
           "target": "components/data-table/use-data-table-state.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/data-table-preferences.ts",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-preferences.ts"
+        },
+        {
+          "path": "ui/blocks/data-table/list-search.ts",
+          "type": "registry:component",
+          "target": "components/data-table/list-search.ts"
         },
         {
           "path": "ui/blocks/data-table/use-data-table.ts",

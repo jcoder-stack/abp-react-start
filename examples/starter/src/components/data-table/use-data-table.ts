@@ -1,9 +1,12 @@
 import { type Localize, useLocalization } from "@jcoder-stack/abp-react/react";
 import {
+  type ColumnVisibilityState,
+  functionalUpdate,
   type RowData,
   Subscribe,
   type TableOptions,
   tableFeatures,
+  type Updater,
   useTable,
 } from "@tanstack/react-table";
 import {
@@ -208,6 +211,7 @@ export function useDataTable<
       );
     }
   });
+  const { setColumnVisibility } = state;
   const table = useTable(
     {
       features: tableFeatureSet,
@@ -216,6 +220,13 @@ export function useDataTable<
       pageCount: opts.pageCount ?? 1,
       onPaginationChange: state.onPaginationChange,
       onSortingChange: state.onSortingChange,
+      // 接了偏好存储时列显隐改由它持有。没存过值之前 state 里不带这一片，表实例仍按
+      // 自己的初始状态（含调用方 `tableOptions.initialState` 给的默认隐藏列）显示；
+      // 用户第一次动列时以表的当前值为基准写进存储，此后才转为受控。
+      ...(setColumnVisibility && {
+        onColumnVisibilityChange: (updater: Updater<ColumnVisibilityState>) =>
+          setColumnVisibility(functionalUpdate(updater, table.atoms.columnVisibility.get())),
+      }),
       enableRowSelection: opts.selectable ?? false,
       manualPagination: true,
       manualSorting: true,
@@ -227,6 +238,7 @@ export function useDataTable<
       state: {
         pagination: state.pagination,
         sorting: state.sorting,
+        ...(state.columnVisibility && { columnVisibility: state.columnVisibility }),
         ...opts.tableOptions?.state,
       },
     },
