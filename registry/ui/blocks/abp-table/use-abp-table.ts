@@ -644,10 +644,28 @@ export function useAbpTable<
   const listAllRef = useRef(listAll);
   listAllRef.current = listAll;
 
+  // 页面自己用 `t.SelectedCount` 写的文案（「导出 N 项」）也得跟着「全部匹配」走，否则批量条说
+  // 已选 128 项、旁边的按钮却说导出 10 项。身份必须稳定，理由同 `useDataTable` 的那一个。
+  const PageSelectedCount = dt.SelectedCount;
+  const totalCountRef = useRef(src.totalCount);
+  totalCountRef.current = src.totalCount;
+  const SelectedCount = useMemo(
+    () =>
+      function SelectedCount(p: { children: (count: number) => ReactNode }) {
+        return createElement(PageSelectedCount, {
+          // biome-ignore lint/correctness/noChildrenProp: children 是 render prop，createElement 的可变子参数只收 ReactNode
+          children: (count: number) =>
+            p.children(allMatchingRef.current && count > 0 ? totalCountRef.current : count),
+        });
+      },
+    [PageSelectedCount],
+  );
+
   const instanceWithoutComponents = {
     ...(dt as unknown as DataTableInstance<TDto, TExtra>),
     clearSelection,
     keepSelected,
+    SelectedCount,
     /** 批量动作该处理的行：页内选择时是选中行，「全部匹配」时去数据源取回全部。 */
     resolveSelectedRows,
     allMatching,

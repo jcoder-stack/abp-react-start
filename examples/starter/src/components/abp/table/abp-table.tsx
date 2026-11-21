@@ -119,10 +119,7 @@ export function AbpTableView<
       bulk={
         <t.SelectedCount>
           {(count) => (
-            <AbpBulkBarView
-              selectedCount={t.allMatching ? t.source.totalCount : count}
-              onClear={t.clearSelection}
-            >
+            <AbpBulkBarView selectedCount={count} onClear={t.clearSelection}>
               {slots.bulkBar}
             </AbpBulkBarView>
           )}
@@ -223,6 +220,7 @@ export function AbpTableView<
   ) : t.canSelectAllMatching && matchingCount > pageRowCount ? (
     <t.SelectedCount>
       {(count) =>
+        // 这里的 count 在未进入「全部匹配」时就是页内选中数。
         pageRowCount > 0 && count === pageRowCount ? (
           <div className="flex flex-wrap items-center gap-2 border-b bg-row-selected px-4 py-2 text-sm">
             {L("Table:PageSelected", count)}
