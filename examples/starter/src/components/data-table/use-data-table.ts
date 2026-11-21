@@ -66,7 +66,10 @@ interface SelectionIdentitySubscribeProps {
  *  包在同样的订阅里，删掉这一份测试也全绿。重叠是有意的：本列定义要能独立成立，契约不该是
  *  「只有被 `DataTableRow` 包着才会刷新」，而 `UseDataTableOptions.features` 的 TSDoc 正教着
  *  下游去改 `data-table.tsx` 的表体。代价只是每行多一个订阅。 */
-function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TData> {
+function selectionColumn<TData extends RowData>(
+  L: Localize,
+  onInput: () => void,
+): TableColumnDef<TData> {
   return {
     id: "select",
     enableSorting: false,
@@ -86,8 +89,10 @@ function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TDa
               : table.getIsSomePageRowsSelected()
                 ? "indeterminate"
                 : false,
-            onCheckedChange: (value: boolean | "indeterminate") =>
-              table.getToggleAllPageRowsSelectedHandler()({ target: { checked: value === true } }),
+            onCheckedChange: (value: boolean | "indeterminate") => {
+              onInput();
+              table.getToggleAllPageRowsSelectedHandler()({ target: { checked: value === true } });
+            },
             "aria-label": L("Table:SelectAll"),
             // 半选只隐藏对勾，保留 indeterminate。对勾表示「全选」，拿它表示「部分」会误导；
             // aria-checked="mixed" 得留着，否则读屏会把「已选 2 行」播报成「未选中」。
@@ -105,8 +110,10 @@ function selectionColumn<TData extends RowData>(L: Localize): TableColumnDef<TDa
         children: (selected) =>
           createElement(Checkbox, {
             checked: selected,
-            onCheckedChange: (value: boolean | "indeterminate") =>
-              row.getToggleSelectedHandler()({ target: { checked: value === true } }),
+            onCheckedChange: (value: boolean | "indeterminate") => {
+              onInput();
+              row.getToggleSelectedHandler()({ target: { checked: value === true } });
+            },
             onClick: (e: MouseEvent) => e.stopPropagation(),
             "aria-label": L("Table:SelectRow"),
           }),
@@ -131,6 +138,9 @@ export interface UseDataTableOptions<
   pageCount?: number;
   rowCount?: number;
   selectable?: boolean;
+  /** 用户亲手动了勾选框（表头或行内）时调用，在选中态写入之前。程序性的写入（翻页清空、
+   *  `keepSelected`）不触发，所以它能把「用户改了选择」和「表自己调整了选择」分开。不需要引用稳定。 */
+  onSelectionInput?: () => void;
   getRowId?: (row: TData, index: number) => string;
   /** 追加 TanStack 特性（含 `expandedRowModel` 这类 row model 槽），与基础集加法合并；
    *  它的类型即 `TExtra`，返回的 `dt.table`、`tableOptions` 随之带上追加特性的 API。
@@ -177,8 +187,13 @@ export function useDataTable<
   const internalState = useDataTableState();
   const state = opts.state ?? internalState;
 
+  const onSelectionInputRef = useRef(opts.onSelectionInput);
+  onSelectionInputRef.current = opts.onSelectionInput;
   const columns = useMemo(
-    () => (opts.selectable ? [selectionColumn<TData>(L), ...opts.columns] : opts.columns),
+    () =>
+      opts.selectable
+        ? [selectionColumn<TData>(L, () => onSelectionInputRef.current?.()), ...opts.columns]
+        : opts.columns,
     [opts.selectable, opts.columns, L],
   );
   const tableFeatureSet = useMemo(

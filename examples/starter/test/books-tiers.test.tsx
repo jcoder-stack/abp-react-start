@@ -23,6 +23,7 @@ import { admin, renderWithProviders } from "./test-utils";
 // record 存在时 enabled，三条用例都不进编辑态。
 vi.mock("@/routes/_layout/_authed/books/-book-api", () => ({
   useGetApiAppBook: vi.fn(),
+  getApiAppBook: vi.fn(async () => ({ items: [], totalCount: 0 })),
   getApiAppAuthor: vi.fn(async () => ({ items: [], totalCount: 0 })),
   useGetApiAppAuthorId: () => ({ data: undefined }),
   useDeleteApiAppBookId: vi.fn(),

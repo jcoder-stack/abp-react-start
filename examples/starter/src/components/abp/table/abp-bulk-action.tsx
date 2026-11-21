@@ -43,7 +43,7 @@ export interface AbpBulkActionProps<TDto extends { id?: string }> {
 export interface AbpBulkActionViewProps<TDto extends { id?: string }>
   extends AbpBulkActionProps<TDto> {
   /** 执行时才取选中行：选中态归表所有，渲染期读到的快照会陈旧。 */
-  getSelectedRows: () => TDto[];
+  getSelectedRows: () => TDto[] | Promise<TDto[]>;
   keepSelected: (ids: string[]) => void;
   /** 整批结束后重取列表。 */
   refetch?: () => void;
@@ -68,7 +68,7 @@ export function AbpBulkActionView<TDto extends { id?: string }>(
       const reasons = new Set<string>();
       let requested = 0;
       let skipped = 0;
-      for (const row of props.getSelectedRows()) {
+      for (const row of await props.getSelectedRows()) {
         // 无 id 的行失败后没法留在勾选里供重试，与判定为不适用的行一样计入跳过。
         if (row.id === undefined || !(props.canRun?.(row) ?? true)) {
           skipped++;

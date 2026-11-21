@@ -380,6 +380,28 @@ Identical to [`books/index.tsx`](../../examples/starter/src/routes/_layout/_auth
 
 The query area is not a separate card — `t.QueryForm`'s fields render into the **advanced filter panel** inside the table card: proper labels, a three-column grid, and the panel's own "Reset / Query" button row at the bottom. The panel starts collapsed, toggled by the funnel button in the top bar's right-side function group (same group as refresh/density/columns; it survives entering bulk mode). While the panel is open, the quick search box on the left yields — precise field filters and a fuzzy search on the same screen would be a duplicate entry. When collapsed with filters still active, the funnel shows a dot (screen readers get "N filters applied").
 
+### Filter summary row (optional)
+
+With the panel collapsed, the filter button only carries a dot — it doesn't say what is being filtered. Declare how fields read in `query.summary` and a read-only summary row appears above the table; each item can be removed on its own, and "Clear filters" at the end clears them all:
+
+```tsx
+const t = useAbpTable(bookService, {
+  columns,
+  query: {
+    defaults: { Name: "", Type: "" },
+    summary: {
+      Name: { label: L("App::BookName") },
+      Type: { label: L("App::BookType"), format: (value) => L(BOOK_TYPE_KEYS[Number(value)]) },
+    },
+  },
+});
+```
+
+- Only declared fields are listed, and only while their committed value differs from `defaults`; when none does, there is no row.
+- `format` turns the raw value into readable text — needed for enums and date ranges; without it, `String(value)`.
+- When the row is shown, the search keyword is listed too, so "Clear filters" clears exactly what the row lists.
+- Hidden while the panel is open: the fields themselves are in view.
+
 ### `QueryDateRange`: one control for a range
 
 When a two-ended field ("from–to date") belongs in the query area, use `QueryDateRange` — one `DateRangePicker` reading and writing two flat query params (`from`/`to` still map 1:1 to the backend DTO), with no hand-assembling two `t.queryForm.AppField`s like the old two-field form. **Every existing endpoint in this repo (book/users/roles/tenants) has only a single lower-bound param — none genuinely has an upper-bound field. With only a lower bound, use the single `f.DateField` form above** (what the `books` page actually uses). Below is the form for a hypothetical endpoint that truly has both date bounds — your endpoint must actually have both params to copy it:
@@ -622,6 +644,25 @@ Key points:
 - **Results summarized in three branches**: all succeeded `Crud:Deleted`; all failed `Crud:OperationFailed`; partial `Crud:BulkDeletePartialFailure` (`{0}` succeeded, `{1}` failed) — never report just "failed" and drop how many made it.
 - **Failed rows stay selected**: succeeded rows disappear with the invalidation refetch and leave the selection naturally; failed rows are kept via `keepSelected`, so the user re-clicks once to retry rather than re-selecting.
 - **Custom data sources supporting bulk delete** must provide the optional `many(ids) => Promise<{ failed: string[] }>` on `AbpTableSource.delete`; without it `t.BulkDelete` doesn't render and DEV warns (`createCrudService` output has it built in).
+
+### Selecting across pages
+
+Selection is per page: paging clears it. To run a bulk action on every matching row, give the service a plain fetch function:
+
+```ts
+const bookService = createCrudService({
+  useList: useGetApiAppBook,
+  fetchList: getApiAppBook, // the plain function orval generates under the same name
+  // …
+});
+```
+
+Then, with the whole page ticked, a line appears above the table: "All 10 on this page are selected. Select all 128 matching". Clicking it enters the all-matching state, which survives paging and sorting; `t.BulkDelete` and `t.BulkAction` then work on every matching row (the ones not loaded are fetched with the current criteria, 1000 at a time).
+
+- **Two steps on purpose**: making "select all" mean every matching row would let users run bulk actions on rows they never saw.
+- Unticking any row by hand, clearing the selection or changing the query falls back to the page selection.
+- Without `fetchList` the entry point doesn't exist and nothing else changes. For a custom source the counterpart is `AbpTableSource.listAll`.
+- `getSelectedRows()` in the `onExport` context is still the loaded, selected rows; in the all-matching state export by `getListParams()`.
 
 ### Generic bulk actions: `t.BulkAction`
 

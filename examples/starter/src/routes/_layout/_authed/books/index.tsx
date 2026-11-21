@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getApiAppAuthor,
+  getApiAppBook,
   getGetApiAppBookQueryKey,
   useDeleteApiAppBookId,
   useGetApiAppAuthorId,
@@ -63,6 +64,7 @@ const bookService = createCrudService({
   useUpdate: usePutApiAppBookId,
   useDelete: useDeleteApiAppBookId,
   listKey: getGetApiAppBookQueryKey,
+  fetchList: getApiAppBook,
   supportsFilter: false,
 });
 
@@ -198,7 +200,13 @@ function BooksPage() {
   const t = useAbpTable(bookService, {
     columns,
     selectable: true,
-    query: { defaults: { Name: "", MinPublishDate: "" } },
+    query: {
+      defaults: { Name: "", MinPublishDate: "" },
+      summary: {
+        Name: { label: L("App::BookName") },
+        MinPublishDate: { label: L("App::BookPublishedAfter") },
+      },
+    },
     onOpen: sheet.open,
     list: searchListStore(search, (patch) =>
       navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
