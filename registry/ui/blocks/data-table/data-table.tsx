@@ -246,7 +246,11 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
         <Table
           // 行高是声明出来的，不是内容撑出来的：此前两档都靠单元格内距，于是同一档里
           // "有行尾菜单的行"比"纯文本行"高 12px，密度实际由那个按钮决定。
-          className={cn(dt.state.density === "compact" ? "[&_td]:h-8" : "[&_td]:h-10")}
+          // 窄屏基本是触屏，行高统一到 44px 的点击区下限，密度档在那里不生效。
+          className={cn(
+            dt.state.density === "compact" ? "[&_td]:h-8" : "[&_td]:h-10",
+            "max-md:[&_td]:h-11",
+          )}
           aria-busy={props.loading || props.fetching ? true : undefined}
         >
           <TableHeader>

@@ -330,6 +330,11 @@
           "target": "components/data-table/column-label.ts"
         },
         {
+          "path": "ui/blocks/data-table/data-table-utility-button.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-utility-button.tsx"
+        },
+        {
           "path": "ui/blocks/data-table/data-table-view-menu.tsx",
           "type": "registry:component",
           "target": "components/data-table/data-table-view-menu.tsx"

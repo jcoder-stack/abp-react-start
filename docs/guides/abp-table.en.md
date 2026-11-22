@@ -694,6 +694,8 @@ The mutation handed to `run` should not carry `onSuccess` / `onError` toast call
 
 The top bar's right area (refresh · export · view settings) is mostly built-in, no wiring: refresh refetches the current query with a spinning icon; view settings is one panel holding density (comfortable / compact, row heights in DESIGN.md "Density"), page size and which columns are shown — all three change how the table looks, not what it holds, so they share one entry and the footer no longer has a page-size dropdown. When the view differs from the default the icon carries a dot and the panel offers "Restore default view", which goes back to the default density, the default page size and all columns in one step. It appears just by using `useAbpTable`/`t.Table`; change the page-size options with `<t.Table pageSizes={[...]}>`.
 
+Below `md` the toolbar does not wrap: the search box takes the remaining width, "New" shrinks to an icon button, and the tools on the right collapse into a "More" panel where each is drawn as a labelled row; icon buttons, the search box and table rows all get a 44px hit area. "More" carries a dot while a filter is in force or the view has been changed. None of this needs wiring.
+
 Export is the one slot-style capability — `useAbpTable(bookService, { onExport: () => exportCsv(t.getListParams()) })`: the export icon renders only when `onExport` is passed; the component library ships no export implementation (neither CSV nor XLSX is assumed). The click just forwards to your callback, and `t.getListParams()` returns the full currently-submitted request params (a snapshot of paging/sorting/search + structured filters — not the form draft); your code decides whether "export" means all matching rows or something else.
 
 `t.Toolbar` appends content right of the built-in "create" button, for custom toolbar actions `onExport` can't express. No current page in this repo has such additions; below is the `t.Toolbar` equivalent of the `onExport` example above, only for when you need a custom button look instead of the built-in export icon:
@@ -713,7 +715,7 @@ Export is the one slot-style capability — `useAbpTable(bookService, { onExport
 
 The `onExport` callback also receives a context argument `{ getListParams, getSelectedRows }`, so it doesn't need to reach back for `t`: `onExport: ({ getListParams, getSelectedRows }) => …`. Both are getters, read at click time.
 
-**`t.Utility`** puts content into the utility icon group on the right, before view settings. The built-in multi-sort menu is attached this way:
+**`t.Utility`** puts content into the utility icon group on the right, before view settings. Write your own buttons with `DataTableUtilityButton` (`@/components/data-table/data-table-utility-button`): give it a `label` and an icon — on wide screens it is an icon button with a tooltip, and when the toolbar collapses into "More" it becomes an icon-plus-text row by itself. If it opens a menu or panel, pass the trigger component as `trigger` (for example `trigger={PopoverTrigger}`) rather than wrapping it. The built-in multi-sort menu is attached this way:
 
 ```tsx
 import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";

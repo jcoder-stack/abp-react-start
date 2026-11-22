@@ -1,8 +1,12 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { RowData } from "@tanstack/react-table";
-import { Download, RefreshCw, Search, X } from "lucide-react";
+import { Download, EllipsisVertical, RefreshCw, Search, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  DataTableUtilityButton,
+  UtilityMenuContext,
+} from "@/components/data-table/data-table-utility-button";
 import type { ExtraFeatureMap, NoExtraFeatures } from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Button } from "@/components/ui/button";
@@ -12,12 +16,10 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-/** 顶部条功能图标钮的共同外观：ghost 32px 方钮、静态色比正文更轻，hover 才提亮。 */
-const UTILITY_ICON_CLASS = "size-8 text-muted-foreground";
 const SEARCH_DEBOUNCE_MS = 400;
 
 export interface DataTableToolbarProps<
@@ -41,12 +43,17 @@ export interface DataTableToolbarProps<
   actions?: ReactNode;
   /** 功能区最前的散件（如查询面板开合钮），排在刷新之前，与「改表格外观」的那几个分开。 */
   utilityLeading?: ReactNode;
+  /** 窄屏功能钮收进「更多」后，里面有东西不在默认状态（筛选生效、视图改过）时传 true，
+   *  「更多」钮上给一个圆点——否则收起来就看不出还筛着。 */
+  attention?: boolean;
   /** trailing 区：视图设置（`DataTableViewMenu`）等散件，并入右侧功能图标组。 */
   children?: ReactNode;
 }
 
 /** 表格卡片顶部条：左区三态（自定义内容/搜索框 ⇄ 批量操作），右区恒定
- * （actions │ utilityLeading · 刷新 · 导出 · trailing）。Enter 立即提交搜索。 */
+ * （actions │ utilityLeading · 刷新 · 导出 · trailing）。Enter 立即提交搜索。
+ * 窄屏（`md` 以下）不折行：右区功能钮收进「更多」面板，trailing 里的钮用
+ * `DataTableUtilityButton` 写就会跟着改画成菜单行。 */
 export function DataTableToolbar<
   TData extends RowData,
   TExtra extends ExtraFeatureMap = NoExtraFeatures,
@@ -85,6 +92,9 @@ export function DataTableToolbar<
     timer.current = setTimeout(() => commitSearch(value), SEARCH_DEBOUNCE_MS);
   };
 
+  const [moreOpen, setMoreOpen] = useState(false);
+  const utilityMenu = useMemo(() => ({ close: () => setMoreOpen(false) }), []);
+
   const flushSearch = () => {
     clearTimeout(timer.current);
     commitSearch(searchInput);
@@ -93,7 +103,7 @@ export function DataTableToolbar<
   const idle =
     props.left ??
     (showSearch ? (
-      <InputGroup className="h-8 w-56">
+      <InputGroup className="h-8 w-56 max-md:h-11 max-md:w-auto max-md:min-w-0 max-md:flex-1">
         <InputGroupAddon>
           <Search />
         </InputGroupAddon>
@@ -130,50 +140,61 @@ export function DataTableToolbar<
       <SelectedCount>{(count) => (count > 0 ? props.bulk : idle)}</SelectedCount>
     );
 
+  const utilities = (
+    <>
+      {props.utilityLeading}
+      {props.onRefresh && (
+        <DataTableUtilityButton label={L("Table:Refresh")} onClick={props.onRefresh}>
+          <RefreshCw className={cn(props.refreshing && "animate-spin")} />
+        </DataTableUtilityButton>
+      )}
+      {props.onExport && (
+        <DataTableUtilityButton label={L("Table:Export")} onClick={props.onExport}>
+          <Download />
+        </DataTableUtilityButton>
+      )}
+      {props.children}
+    </>
+  );
+  const hasUtilities = Boolean(
+    props.utilityLeading || props.onRefresh || props.onExport || props.children,
+  );
+
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+    // 窄屏不折行：折成两行的工具栏把表格往下推一整行，而表格才是这一屏的正事。
+    // 改成搜索框吃掉剩余宽度、功能钮收进「更多」，点击区一并放到 44px。
+    <div className="flex items-center gap-2 border-b px-4 py-2 max-md:px-3 md:flex-wrap">
       {left}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         {props.actions}
-        {props.actions ? <Separator orientation="vertical" className="mx-1 !h-5" /> : null}
-        <div className="flex items-center gap-1">
-          {props.utilityLeading}
-          {props.onRefresh && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className={UTILITY_ICON_CLASS}
-                  aria-label={L("Table:Refresh")}
-                  onClick={props.onRefresh}
-                >
-                  <RefreshCw className={cn(props.refreshing && "animate-spin")} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{L("Table:Refresh")}</TooltipContent>
-            </Tooltip>
-          )}
-          {props.onExport && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className={UTILITY_ICON_CLASS}
-                  aria-label={L("Table:Export")}
-                  onClick={props.onExport}
-                >
-                  <Download />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{L("Table:Export")}</TooltipContent>
-            </Tooltip>
-          )}
-          {props.children}
-        </div>
+        {props.actions ? (
+          <Separator orientation="vertical" className="mx-1 !h-5 max-md:hidden" />
+        ) : null}
+        <div className="flex items-center gap-1 max-md:hidden">{utilities}</div>
+        {hasUtilities && (
+          <Popover open={moreOpen} onOpenChange={setMoreOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="relative size-11 text-muted-foreground md:hidden"
+                aria-label={L("Table:More")}
+              >
+                <EllipsisVertical />
+                {props.attention && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-2.5 right-2.5 size-1.5 rounded-full bg-primary"
+                  />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="grid w-48 p-1">
+              <UtilityMenuContext value={utilityMenu}>{utilities}</UtilityMenuContext>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
     </div>
   );

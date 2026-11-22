@@ -691,6 +691,8 @@ const bookService = createCrudService({
 
 顶部条右区（刷新 · 导出 · 视图设置）大半是内建能力，不用接线：刷新对当前查询发起 `refetch`，拉取中图标自转；视图设置是一个面板，装着密度（舒适 / 紧凑，行高见 DESIGN.md「Density」）、每页条数和显示哪些列——三样都只改表格外观、不改数据，所以合在一个入口，页脚不再有每页条数下拉。视图偏离默认时图标带圆点，面板底部出现「恢复默认视图」，一步回到默认密度、默认每页条数和全部列。只要用 `useAbpTable`/`t.Table` 就自动出现；每页条数的选项经 `<t.Table pageSizes={[...]}>` 改。
 
+窄屏（`md` 以下）工具栏不折行：搜索框占满剩余宽度，「新增」缩成图标钮，右区这几个功能钮收进「更多」面板、改画成带文字的一行；图标钮、搜索框和表格行的点击区都到 44px。筛选生效或视图改过时「更多」上带圆点。这些都不用接线。
+
 导出是唯一的插槽式能力——`useAbpTable(bookService, { onExport: () => exportCsv(t.getListParams()) })`：传了 `onExport` 顶部条才会渲染导出图标，不传就不出现；组件库不内置任何导出实现（CSV/XLSX 都不假设），点击只是把回调转发出去，`t.getListParams()` 返回当前已提交的完整请求参数（分页/排序/搜索 + 结构化筛选合并后的快照，不是表单草稿），业务方自己决定导出全部匹配行还是别的语义。
 
 `t.Toolbar` 把内容追加在内建「新建」按钮右侧，用于 `onExport` 覆盖不了的自定义工具条动作。本仓库现有页面都还没有这类追加操作，下面是等价于上面 `onExport` 示例的 `t.Toolbar` 写法，仅在需要自定义按钮外观（而非内建导出图标）时才用这条路：
@@ -710,7 +712,7 @@ const bookService = createCrudService({
 
 `onExport` 的回调还会收到一个上下文参数 `{ getListParams, getSelectedRows }`，不必回头引用 `t`：`onExport: ({ getListParams, getSelectedRows }) => …`。两个都是取值函数，点击时才读。
 
-**`t.Utility`** 把内容并入右侧的功能图标组，排在视图设置之前，用来挂图标钮。内建的多列排序菜单就这么接：
+**`t.Utility`** 把内容并入右侧的功能图标组，排在视图设置之前，用来挂图标钮。自己写的钮用 `DataTableUtilityButton`（`@/components/data-table/data-table-utility-button`）：给 `label` 和图标即可，宽屏是带 tooltip 的图标钮，窄屏收进「更多」时自动变成「图标 + 文字」的一行；要弹出菜单或面板的，把触发器组件传给它的 `trigger`（如 `trigger={PopoverTrigger}`），不要包在外面。内建的多列排序菜单就这么接：
 
 ```tsx
 import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";

@@ -3,6 +3,7 @@ import type { Column, RowData } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { resolveColumnLabel } from "@/components/data-table/column-label";
+import { DataTableUtilityButton } from "@/components/data-table/data-table-utility-button";
 import {
   asBaseTable,
   type ExtraFeatureMap,
@@ -19,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface DataTableSortMenuProps<
@@ -47,21 +47,13 @@ export function DataTableSortMenu<
 
   return (
     <DropdownMenu modal={false}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("size-8 text-muted-foreground", props.className)}
-              aria-label={L("Table:Sort")}
-            >
-              <ArrowUpDown />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{L("Table:Sort")}</TooltipContent>
-      </Tooltip>
+      <DataTableUtilityButton
+        label={L("Table:Sort")}
+        trigger={DropdownMenuTrigger}
+        className={props.className}
+      >
+        <ArrowUpDown />
+      </DataTableUtilityButton>
       <DropdownMenuContent align="end">
         {columns.map((column) => (
           <DropdownMenuItem

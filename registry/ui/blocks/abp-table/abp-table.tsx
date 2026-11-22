@@ -11,7 +11,7 @@ import {
 import type { AbpTableRowConfig, QuerySummaryItem } from "@/components/abp/table/use-abp-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { DataTableViewMenu } from "@/components/data-table/data-table-view-menu";
+import { DataTableViewMenu, isViewCustomized } from "@/components/data-table/data-table-view-menu";
 import type {
   ExtraFeatureMap,
   NoExtraFeatures,
@@ -128,6 +128,7 @@ export function AbpTableView<
       onRefresh={t.source.listQuery.refetch ? () => void t.source.listQuery.refetch?.() : undefined}
       refreshing={t.source.listQuery.isFetching}
       onExport={t.onExport}
+      attention={t.activeQueryCount > 0 || isViewCustomized(t)}
       utilityLeading={
         hasQuery ? (
           <AbpQueryPanelToggle
@@ -144,9 +145,15 @@ export function AbpTableView<
       actions={
         <>
           {t.source.can.create && t.onOpen && (
-            <Button type="button" size="sm" onClick={() => t.onOpen?.("create")}>
+            // 窄屏缩成只剩图标的 44px 方钮；文字留给读屏，名字不变。
+            <Button
+              type="button"
+              size="sm"
+              className="max-md:size-11 max-md:px-0"
+              onClick={() => t.onOpen?.("create")}
+            >
               <Plus />
-              {L("Crud:Create")}
+              <span className="max-md:sr-only">{L("Crud:Create")}</span>
             </Button>
           )}
           {slots.toolbar}
