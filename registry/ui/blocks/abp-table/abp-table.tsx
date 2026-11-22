@@ -245,7 +245,8 @@ export function AbpTableView<
       key={key}
       className="inline-flex h-6 items-center gap-1 rounded-md bg-muted pr-0.5 pl-2 text-foreground text-xs"
     >
-      <span className="text-muted-foreground">{label}</span>
+      {label}
+      {L("Table:LabelSeparator")}
       {value}
       <button
         type="button"
@@ -258,7 +259,7 @@ export function AbpTableView<
     </span>
   );
   // 面板展开时字段本身就在眼前，摘要是重复信息；收起后它是唯一说明「筛了什么」的地方。
-  // 有摘要行时把关键字也列进去，这样行尾的「清除筛选」清掉的正是这一行列出来的全部。
+  // 有摘要行时把关键字也列进去，这样行尾的「全部清除」清掉的正是这一行列出来的全部。
   const summaryStrip =
     !expanded && t.querySummary.length > 0 ? (
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2 text-muted-foreground text-sm">
@@ -275,7 +276,7 @@ export function AbpTableView<
           className={linkButtonClass}
           onClick={t.clearFilters}
         >
-          {L("Table:ClearFilters")}
+          {L("Table:ClearAll")}
         </Button>
       </div>
     ) : null;

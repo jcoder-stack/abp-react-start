@@ -382,7 +382,7 @@ The query area is not a separate card — `t.QueryForm`'s fields render into the
 
 ### Filter summary row (optional)
 
-With the panel collapsed, the filter button only carries a dot — it doesn't say what is being filtered. Declare how fields read in `query.summary` and a read-only summary row appears above the table; each item can be removed on its own, and "Clear filters" at the end clears them all:
+With the panel collapsed, the filter button only carries a dot — it doesn't say what is being filtered. Declare how fields read in `query.summary` and a read-only summary row appears above the table; each item can be removed on its own, and "Clear all" at the end clears them all:
 
 ```tsx
 const t = useAbpTable(bookService, {
@@ -399,7 +399,7 @@ const t = useAbpTable(bookService, {
 
 - Only declared fields are listed, and only while their committed value differs from `defaults`; when none does, there is no row.
 - `format` turns the raw value into readable text — needed for enums and date ranges; without it, `String(value)`.
-- When the row is shown, the search keyword is listed too, so "Clear filters" clears exactly what the row lists.
+- When the row is shown, the search keyword is listed too, so "Clear all" clears exactly what the row lists.
 - Hidden while the panel is open: the fields themselves are in view.
 
 ### `QueryDateRange`: one control for a range

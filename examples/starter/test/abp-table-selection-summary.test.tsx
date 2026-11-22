@@ -158,19 +158,19 @@ describe("filter summary row", () => {
     fireEvent.click(screen.getByRole("button", { name: "apply" }));
 
     expect(await screen.findByText("Filtered by")).toBeDefined();
-    expect(screen.getByText("orwell")).toBeDefined();
-    expect(screen.getByText("#7")).toBeDefined();
+    expect(screen.getByText("Title: orwell")).toBeDefined();
+    expect(screen.getByText("Kind: #7")).toBeDefined();
   });
 
   it("removes one filter and leaves the others in force", async () => {
     renderWithProviders(<Harness withSummary />, { messages });
     fireEvent.click(await screen.findByRole("button", { name: "apply" }));
-    expect(await screen.findByText("orwell")).toBeDefined();
+    expect(await screen.findByText("Title: orwell")).toBeDefined();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Remove filter" })[0]);
 
-    await waitFor(() => expect(screen.queryByText("orwell")).toBeNull());
-    expect(screen.getByText("#7")).toBeDefined();
+    await waitFor(() => expect(screen.queryByText("Title: orwell")).toBeNull());
+    expect(screen.getByText("Kind: #7")).toBeDefined();
   });
 
   it("stays out of the way on tables that did not declare a summary", async () => {
