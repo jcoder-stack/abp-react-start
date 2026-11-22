@@ -811,6 +811,40 @@ const t = useAbpTable(bookService, {
 - 名字按表取并保持稳定：改名等于丢掉所有用户已存的偏好，两张表共用一个名字会互相覆盖。
 - 两者都开时，链接里的每页条数优先于个人偏好——分享出去的「第 3 页」得是同一个第 3 页。
 - 存下来的偏好由视图设置面板里的「恢复默认视图」清掉，不用另外提供入口。
+
+**筛选条件也进 URL**：查询表单提交后的参数默认只存在组件里，刷新就丢。和 `list` 配成一对交给路由：
+
+```tsx
+import { parseListSearch, parseQuerySearch, queryStore, searchListStore } from "@/components/data-table/list-search";
+
+const QUERY_DEFAULTS = { Name: "", MinPublishDate: "" };
+
+export const Route = createFileRoute("/books/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...parseListSearch(search),
+    ...parseQuerySearch(search, QUERY_DEFAULTS),
+  }),
+});
+
+const setSearch = (patch: Record<string, unknown>) =>
+  navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+const t = useAbpTable(bookService, {
+  columns,
+  query: { defaults: QUERY_DEFAULTS, store: queryStore(search, QUERY_DEFAULTS, setSearch) },
+  list: searchListStore(search, setSearch),
+});
+```
+
+- 进 URL 的是**已提交**的值，面板里还没点「查询」的草稿不进。等于默认值的字段不出现，默认状态仍是一条干净的 URL。
+- 带着条件的链接打开时，请求首帧就按它发，面板里的字段也会对齐到链接里的值。
+- 字段名别叫 `page` / `size` / `sort` / `q`，那四个归列表位置。
+- 默认值要是模块级常量：`validateSearch` 和 `useAbpTable` 得用同一份。
+
+**空态、吸顶、长文本**：
+
+- 空表默认给出下一步：有新建权限且接了 `onOpen` 时是「暂无数据 + 一句说明 + 新增按钮」，被筛没了时是「没有符合条件的结果 + 清除筛选」。一行都没有时页脚不渲染。要换成实体专属的文案（「还没有用户」）传 `<t.Table empty={...}>`。
+- `<t.Table stickyHeader>`：表格限在最高 640px 的区域内纵向滚动，列名留在顶上。给每页 50 条这类一屏装不下的表用。
+- `col.text("memo", "App::Memo", { truncate: true })`：备注、描述这类长短不定的文本超出列宽显示省略号，悬停看全文，不再把别的列挤出屏幕。
 - 要存到别处（如 ABP 的用户设置），照 `DataTablePreferenceStore` 的形状自己实现：`subscribe` / `get` / `set`，即 `useSyncExternalStore` 的契约。
 
 ## 选层指南

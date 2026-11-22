@@ -44,6 +44,14 @@ function NumberCell(props: { value: number | undefined; digits: number | undefin
   }).format(props.value);
 }
 
+function TruncatedText(props: { value: string }) {
+  return (
+    <span className="block max-w-48 truncate" title={props.value}>
+      {props.value}
+    </span>
+  );
+}
+
 function PrimaryCell(props: { title: string; secondary: string | undefined; avatar: boolean }) {
   // 按码点取首字符：`title[0]` 会把代理对（部分 emoji、生僻汉字）切成半个。
   const initial = Array.from(props.title.trim())[0] ?? "";
@@ -99,12 +107,24 @@ export function createAbpColumns<TData extends RowData>() {
   const text = (
     key: FieldsOf<TData, string>,
     label: ColumnLabel,
-    opts?: ColumnOverrides<TData>,
-  ): TableColumnDef<TData> => ({
-    accessorKey: key,
-    header: columnHeader(label),
-    ...opts,
-  });
+    opts?: {
+      /** 备注、描述这类长短不定的文本：超出列宽显示省略号，悬停看全文。不开时长文本会
+       *  把这一列撑宽，把别的列挤出屏幕。 */
+      truncate?: boolean;
+    } & ColumnOverrides<TData>,
+  ): TableColumnDef<TData> => {
+    const { truncate, ...overrides } = opts ?? {};
+    return {
+      accessorKey: key,
+      header: columnHeader(label),
+      ...(truncate && {
+        cell: ({ row }) => (
+          <TruncatedText value={(row.original[key] as string | undefined) ?? ""} />
+        ),
+      }),
+      ...overrides,
+    };
+  };
 
   const primary = (
     key: FieldsOf<TData, string>,

@@ -200,6 +200,10 @@ When rows are selected, the toolbar's left area **is replaced in place by a bulk
 
 **Loading**: skeleton rows are laid out one cell per column, so column widths don't jump when data arrives. There are five of them by default: lists shorter than a page are common in an admin, and a page-sized skeleton collapsing into two rows jumps more than five do. A table that normally fills its page can ask for a page-sized skeleton.
 
+**An empty table says what to do next.** A title, one sentence and one button: "New" when there is simply no data yet and the user may create, "Clear filters" when the filters hid everything. A user who can't create gets the plain line — no promise of a step they can't take. With zero rows the footer is dropped; "0 items · page 1 of 1" says nothing.
+
+**Long lists and long text.** A table that doesn't fit the screen can pin its header: it scrolls inside an area capped at 640px so column names stay visible (opt-in — on short tables it would only add a second scrollbar). Free-length text columns truncate with an ellipsis and show the full text on hover; left alone, one long note widens its column and pushes the rest off screen.
+
 **Refresh and errors**: while refetching, the table body fades to 60% (after a 100ms delay, so fast requests don't flash) and carries `aria-busy`. When the first load fails, the toolbar, query panel, search and **column headers** all stay, the body is replaced by an error message and a Retry button, and the footer is dropped (neither the total nor the page count can be trusted) — never rendered as an empty list. When a refresh fails with rows already on screen, **the rows stay**: they are still the last valid result, and replacing them with an error block throws away what the user was reading. A one-line destructive notice with Retry sits under the toolbar instead, and the body drops to 50% — fainter than a refetch, because these rows may no longer be true.
 
 **Empty states come in two kinds.** With nothing filtering, the table says "No data". With a keyword or query field in force, it says no results match and offers "Clear filters" — but only when clearing would change something (a table filtered solely by its query defaults has nothing to clear, and a button that does nothing is worse than none). A caller-supplied empty state replaces both.
@@ -208,7 +212,7 @@ When rows are selected, the toolbar's left area **is replaced in place by a bulk
 
 **The search box** carries a leading search icon and, once it has text, a clear button. Clearing commits at once instead of waiting for the typing debounce — a click that takes 400ms to show a result reads as a miss.
 
-**What a table remembers** is split by who it belongs to. *Position* — page, page size, sorting, keyword — belongs to the link: a page can put it in the URL so that returning from a detail page, reloading or sharing lands on the same rows; defaults stay out of the URL. *View preferences* — density, page size, column visibility — belong to the person and can be kept on the device. When both hold a page size, the link wins. Both are opt-in per page.
+**What a table remembers** is split by who it belongs to. *Position* — page, page size, sorting, keyword, and the committed query-form filters — belongs to the link: a page can put it in the URL so that returning from a detail page, reloading or sharing lands on the same rows; defaults stay out of the URL. *View preferences* — density, page size, column visibility — belong to the person and can be kept on the device. When both hold a page size, the link wins. Both are opt-in per page.
 
 **Deep-link filters**: when another page links into a list with a keyword, `initialFilter` pre-fills the search box; if the data source doesn't support search, a dev-time warning fires instead of silently ignoring it.
 

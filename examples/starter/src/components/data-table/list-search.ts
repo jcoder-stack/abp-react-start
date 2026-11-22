@@ -110,3 +110,92 @@ export function searchListStore(
     },
   };
 }
+
+function isEmptyValue(value: unknown): boolean {
+  return value === undefined || value === null || value === "";
+}
+
+/** 按默认值的类型把 URL 里的原始值收回来；对不上的当作没给。路由会把 `?Name=2024` 解析成
+ *  number，所以默认值是字符串的字段按字符串收。默认值为空（null/undefined）时类型无从判断，
+ *  原始值是标量就原样收下。 */
+function coerceLike(raw: unknown, sample: unknown): unknown {
+  if (typeof sample === "string") {
+    return typeof raw === "string" || typeof raw === "number" ? String(raw) : undefined;
+  }
+  if (typeof sample === "number") return typeof raw === "number" ? raw : undefined;
+  if (typeof sample === "boolean") return typeof raw === "boolean" ? raw : undefined;
+  if (Array.isArray(sample)) return Array.isArray(raw) ? raw : undefined;
+  if (sample === null || sample === undefined) {
+    return ["string", "number", "boolean"].includes(typeof raw) ? raw : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * 路由 `validateSearch` 里取查询表单字段的那一半，与 `parseListSearch` 并用：
+ *
+ * ```ts
+ * validateSearch: (search) => ({
+ *   ...parseListSearch(search),
+ *   ...parseQuerySearch(search, QUERY_DEFAULTS),
+ * }),
+ * ```
+ *
+ * 只认 `defaults` 里声明的键，按默认值的类型收窄，认不出的值当作没给、不抛错。
+ * 字段名别与 `page` / `size` / `sort` / `q` 重名，那四个归列表位置。
+ */
+export function parseQuerySearch<T extends Record<string, unknown>>(
+  search: Record<string, unknown>,
+  defaults: T,
+): Partial<T> {
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(defaults)) {
+    if (!(key in search)) continue;
+    const value = coerceLike(search[key], defaults[key]);
+    if (value !== undefined) result[key] = value;
+  }
+  return result as Partial<T>;
+}
+
+/**
+ * 把路由的 search 接成 `useAbpTable({ query: { store } })` 要的查询参数持有方，
+ * 与 `searchListStore` 是一对，筛选条件由此跟着链接走：
+ *
+ * ```tsx
+ * query: {
+ *   defaults: QUERY_DEFAULTS,
+ *   store: queryStore(search, QUERY_DEFAULTS, (patch) =>
+ *     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+ *   ),
+ * },
+ * ```
+ *
+ * `defaults` 里的每个键都会出现在 `setSearch` 收到的补丁里，等于默认值的给 `undefined`，
+ * 默认状态仍是一条干净的 URL。把有默认值的字段清空，写进 URL 的是空串，以区别于「没动过」。
+ */
+export function queryStore<T extends Record<string, unknown>>(
+  search: Partial<Record<keyof T, unknown>>,
+  defaults: T,
+  setSearch: (patch: Record<string, unknown>) => unknown,
+): { value: Record<string, unknown>; onChange: (next: Record<string, unknown>) => void } {
+  const value: Record<string, unknown> = {};
+  for (const key of Object.keys(defaults)) {
+    const held = (search as Record<string, unknown>)[key];
+    if (held !== undefined) value[key] = held;
+  }
+  return {
+    value,
+    onChange: (next) => {
+      const patch: Record<string, unknown> = {};
+      for (const key of Object.keys(defaults)) {
+        const committed = next[key];
+        const initial = defaults[key];
+        if (isEmptyValue(committed)) patch[key] = isEmptyValue(initial) ? undefined : "";
+        else
+          patch[key] =
+            JSON.stringify(committed) === JSON.stringify(initial) ? undefined : committed;
+      }
+      void setSearch(patch);
+    },
+  };
+}
