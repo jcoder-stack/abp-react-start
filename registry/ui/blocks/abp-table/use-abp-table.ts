@@ -154,6 +154,9 @@ export interface UseAbpTableOptions<
      *  只列这里声明了的字段，且只在它的已提交值偏离默认值时出现；不给则没有这一行。
      *  它是对已生效筛选的描述，不是输入方式——筛选仍然只在面板的字段里填。 */
     summary?: { [K in keyof TQueryDefaults]?: QuerySummaryField<TQueryDefaults[K]> };
+    /** 把已提交的查询参数交给外部持有（典型是 URL search params），和 `list` 是一对：筛选条件
+     *  也跟着链接走，刷新、返回、分享看到的是同一批结果。见 `list-search.ts` 的 `queryStore`。 */
+    store?: AbpQueryStore;
     validators?: {
       onMount?: FormValidateOrFn<TQueryDefaults>;
       onChange?: FormValidateOrFn<TQueryDefaults>;
@@ -185,6 +188,15 @@ export interface UseAbpTableOptions<
   /** 记住密度、每页条数和列显隐。传 `localStoragePreferences("<表的稳定名字>")`，
    *  或自己实现 `DataTablePreferenceStore`。引用必须稳定。 */
   preferences?: DataTablePreferenceStore;
+}
+
+/**
+ * 已提交查询参数的外部持有方。`value` 是偏离默认值的那部分（缺的键取 `query.defaults`），
+ * `onChange` 收到提交后的完整参数（已剔除空值）。两个成员都不需要引用稳定。
+ */
+export interface AbpQueryStore {
+  value: Record<string, unknown>;
+  onChange: (next: Record<string, unknown>) => void;
 }
 
 /** `onExport` 的上下文。两个都是取值函数：点击时才读，拿到的是那一刻的值。 */
@@ -389,14 +401,31 @@ export function useAbpTable<
 
   const [allMatching, setAllMatching] = useState(false);
   const queryDefaults: TQueryDefaults = opts.query?.defaults ?? ({} as TQueryDefaults);
-  const [params, setParams] = useState<Record<string, unknown>>(() => pruneEmpty(queryDefaults));
+  const [localParams, setLocalParams] = useState<Record<string, unknown>>(() =>
+    pruneEmpty(queryDefaults),
+  );
+  const queryStore = opts.query?.store;
+  const queryStoreRef = useRef(queryStore);
+  queryStoreRef.current = queryStore;
+  // 外部持有方每次渲染给的都是新对象；内容没变就沿用旧引用，下游的 memo 和请求键才稳。
+  const heldQuery = queryStore ? pruneEmpty({ ...queryDefaults, ...queryStore.value }) : undefined;
+  const heldQueryKey = heldQuery ? JSON.stringify(heldQuery) : undefined;
+  const heldQueryRef = useRef(heldQuery);
+  const heldQueryKeyRef = useRef(heldQueryKey);
+  if (heldQueryKeyRef.current !== heldQueryKey) {
+    heldQueryKeyRef.current = heldQueryKey;
+    heldQueryRef.current = heldQuery;
+  }
+  const params = heldQueryRef.current ?? localParams;
 
   const queryForm = useAppForm({
     defaultValues: queryDefaults,
     validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
     validators: opts.query?.validators,
     onSubmit: ({ value }) => {
-      setParams(pruneEmpty(value as Record<string, unknown>));
+      const next = pruneEmpty(value as Record<string, unknown>);
+      if (queryStoreRef.current) queryStoreRef.current.onChange(next);
+      else setLocalParams(next);
       // 筛选变化必回第 1 页并清选择。回第 1 页由 resetPaging 自己做；清选择由它递增的
       // scopeEpoch 触发，落在 useDataTable 的 scopeKey effect 里（选中态归表所有，
       // 状态机够不着）。用户本来就在第 1 页时 pageIndex 写回同值，全靠那个版本号发信号。
@@ -443,6 +472,26 @@ export function useAbpTable<
       );
     }
   }, []);
+
+  // 外部持有的参数变了而表单没跟上（深链进来、浏览器前进后退）时，把表单字段对齐过去，
+  // 否则展开面板看到的是默认值，实际却按链接里的条件筛着。自己提交引起的变化两边本就一致，
+  // 逐字段比过之后什么也不写。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: heldQueryKey 是触发源，体内读的是同一份数据的 ref
+  useEffect(() => {
+    const held = heldQueryRef.current;
+    if (held === undefined) return;
+    const form = queryFormRef.current as unknown as {
+      state: { values: Record<string, unknown> };
+      setFieldValue: (name: string, value: unknown) => void;
+    };
+    const defaults = queryDefaultsRef.current as Record<string, unknown>;
+    for (const key of Object.keys(defaults)) {
+      const target = key in held ? held[key] : defaults[key];
+      if (JSON.stringify(form.state.values[key]) !== JSON.stringify(target)) {
+        form.setFieldValue(key, target);
+      }
+    }
+  }, [heldQueryKey]);
 
   // 重置后要立即重新发请求，所以收进 hook 而不是把 reset() 丢给调用方。
   // 后者只要忘了跟一句 handleSubmit()，字段看着回到默认值，请求参数却纹丝不动。
@@ -746,7 +795,15 @@ export function useAbpTable<
             "useAbpTable: t.Table 只认 t.QueryForm/t.Toolbar/t.BulkBar/t.Utility 直接子元素，其余直接子元素会被忽略。",
           );
       });
-      const { empty, skeletonRows, rowProps, renderSubRow, pageSizes, searchPlaceholder } = p;
+      const {
+        empty,
+        skeletonRows,
+        rowProps,
+        renderSubRow,
+        pageSizes,
+        searchPlaceholder,
+        stickyHeader,
+      } = p;
       return createElement(AbpTableView<TDto, TExtra>, {
         t: read().self,
         slots,
@@ -756,6 +813,7 @@ export function useAbpTable<
         renderSubRow,
         pageSizes,
         searchPlaceholder,
+        stickyHeader,
       });
     };
     return { Table, QueryForm, Toolbar, BulkBar, Utility, BulkDelete, BulkAction };

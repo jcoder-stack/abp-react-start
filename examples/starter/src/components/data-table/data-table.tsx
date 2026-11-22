@@ -59,6 +59,10 @@ const STICKY_EDGE =
 /** 主列紧贴勾选列之后。勾选列声明的是 `w-10`，但自动布局的表格会把它压到内容宽度，
  *  所以固定时用 `min-w-10` 钉死，否则两者之间会露出一条缝，滚过去的列从缝里透出来。 */
 const STICKY_SELECT = "left-0 min-w-10";
+/** 吸顶的表头格。与固定列同理要不透明底色加一层 `::before`；底边线也画在那一层上，
+ *  border-collapse 下 `<tr>` 的边框不跟着 sticky 走，吸顶后表头和内容之间会没有分界。 */
+const STICKY_HEAD =
+  "sticky top-0 bg-card before:absolute before:inset-0 before:-z-10 before:border-b before:bg-muted/50";
 const STICKY_AFTER_SELECT = "left-10";
 
 interface DataTableRowProps<TData extends RowData>
@@ -140,6 +144,9 @@ export interface DataTableProps<
   /** 已有数据在位、正在取新数据 → 表体降透明度。与 `loading` 互斥，react-query 下传
    *  `isFetching && !isPending`。表头不降透明度，排序仍可点，它也是用户定位刚点了什么的锚点。 */
   fetching?: boolean;
+  /** 表头吸顶：表格限在一个最高 640px 的区域里纵向滚动，列名留在顶上。给每页条数大、一屏
+   *  装不下的表用；小表开了没有效果。不开时表格随页面滚动，表头会滚走。 */
+  stickyHeader?: boolean;
   /** 在位的数据是上一次成功的结果、最近一次刷新失败了 → 表体降到一半透明度。它比 `fetching`
    *  更淡：那边是「马上就新」，这边是「不知道还对不对」。提示文案与重试由调用方另行渲染。 */
   stale?: boolean;
@@ -201,6 +208,10 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
       : (props.skeletonRows ?? DEFAULT_SKELETON_ROWS);
   const hasError = props.error != null && props.error !== false;
 
+  // 只认第 1 页的空：翻到越界页也是零行，那时页脚是唯一回得去的路。
+  const emptyFirstPage =
+    !props.loading && table.getRowModel().rows.length === 0 && dt.state.pagination.pageIndex === 0;
+
   const visibleColumns = table.getVisibleLeafColumns();
   const stickyColumnId = visibleColumns.find((column) => column.columnDef.meta?.sticky)?.id;
   const hasSelectColumn = visibleColumns.some((column) => column.id === "select");
@@ -236,7 +247,10 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
       {/* 滚动的是原语内部那层容器，这里拿不到它的 ref；scroll 不冒泡但会经过捕获阶段。
           直接写属性而不进 state：整张表不必为「滚没滚过」重渲染，React 也不管这个属性。 */}
       <div
-        className="group/scroll"
+        className={cn(
+          "group/scroll",
+          props.stickyHeader && "[&_[data-slot=table-container]]:max-h-160",
+        )}
         onScrollCapture={(event) => {
           if (!(event.target instanceof HTMLElement)) return;
           if (event.target.dataset.slot !== "table-container") return;
@@ -280,6 +294,12 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
                         header.column.columnDef.meta?.className,
                         stickyClassOf(header.column.id) &&
                           cn(stickyClassOf(header.column.id), "before:bg-muted/50"),
+                        props.stickyHeader &&
+                          cn(
+                            STICKY_HEAD,
+                            // 左上角那一格两个方向都固定，得压在其余表头和固定列之上。
+                            stickyClassOf(header.column.id) ? "z-30" : "z-20",
+                          ),
                       )}
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
@@ -421,8 +441,9 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
         </Table>
       </div>
       {/* footer 返回 falsy（无限滚动这类不要页脚的接管）时连外壳一起不渲染，
-          否则卡片底部会留一条 1px 上边框加一段空白。 */}
-      {footerContent && !hasError ? (
+          否则卡片底部会留一条 1px 上边框加一段空白。一行都没有时也不渲染：
+          「共 0 条 · 第 1 / 1 页」对着空表什么也没说。 */}
+      {footerContent && !hasError && !emptyFirstPage ? (
         <div className="border-t px-4 py-2">{footerContent}</div>
       ) : null}
     </div>

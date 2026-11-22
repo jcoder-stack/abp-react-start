@@ -38,6 +38,15 @@ function renderRows(columns: TableColumnDef<Row>[], data: Row[]) {
 }
 
 describe("column presets", () => {
+  it("text 列开了 truncate 时，悬停能看到完整内容", async () => {
+    const memo = "负责华东区渠道的季度复盘与供应商对账，需要财务模块只读权限";
+    renderRows(
+      [col.text("code", "Table:Columns", { truncate: true })],
+      [{ id: "1", title: "锚点", code: memo }],
+    );
+    expect((await screen.findByText(memo)).getAttribute("title")).toBe(memo);
+  });
+
   it("primary 列渲染名称，并把次要标识跟在后面", async () => {
     renderRows(
       [col.primary("title", "Table:Columns", { secondary: "code" })],

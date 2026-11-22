@@ -814,6 +814,40 @@ const t = useAbpTable(bookService, {
 - Name it after the table and keep it stable: renaming discards every user's stored preferences, and two tables sharing a name overwrite each other.
 - With both enabled, the page size in the link wins over the personal preference — a shared "page 3" has to be the same page 3.
 - Stored preferences are cleared by "Restore default view" in the view settings panel; no separate entry is needed.
+
+**Filters in the URL too**: committed query-form params live in the component by default and are lost on reload. Hand them to the router alongside `list`:
+
+```tsx
+import { parseListSearch, parseQuerySearch, queryStore, searchListStore } from "@/components/data-table/list-search";
+
+const QUERY_DEFAULTS = { Name: "", MinPublishDate: "" };
+
+export const Route = createFileRoute("/books/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...parseListSearch(search),
+    ...parseQuerySearch(search, QUERY_DEFAULTS),
+  }),
+});
+
+const setSearch = (patch: Record<string, unknown>) =>
+  navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+const t = useAbpTable(bookService, {
+  columns,
+  query: { defaults: QUERY_DEFAULTS, store: queryStore(search, QUERY_DEFAULTS, setSearch) },
+  list: searchListStore(search, setSearch),
+});
+```
+
+- Only **committed** values go into the URL; a draft in the panel that hasn't been submitted does not. Fields equal to their default stay out, so the default state is still a clean URL.
+- Opening a link that carries filters requests with them on the first frame, and the panel's fields line up with the link.
+- Don't name a field `page` / `size` / `sort` / `q`; those four belong to the list position.
+- The defaults must be a module-level constant: `validateSearch` and `useAbpTable` need the same object.
+
+**Empty state, sticky header, long text**:
+
+- An empty table points at the next step by default: with create permission and `onOpen` wired it is "No data + one sentence + a New button"; when filters hid everything it is "No results + Clear filters". With zero rows the footer is not rendered. For entity-specific wording ("No users yet") pass `<t.Table empty={...}>`.
+- `<t.Table stickyHeader>`: the table scrolls vertically inside an area at most 640px tall and the column names stay on top. For tables that don't fit a screen, such as 50 rows per page.
+- `col.text("memo", "App::Memo", { truncate: true })`: free-length text such as notes is cut with an ellipsis at the column width and shown in full on hover, instead of pushing other columns off screen.
 - To store them elsewhere (ABP user settings, say), implement `DataTablePreferenceStore`: `subscribe` / `get` / `set`, the `useSyncExternalStore` contract.
 
 ## Choosing a tier

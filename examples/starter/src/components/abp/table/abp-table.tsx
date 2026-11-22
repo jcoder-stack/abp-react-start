@@ -33,6 +33,8 @@ export interface AbpTableViewOwnProps<
   renderSubRow?: (row: TableRowInstance<TDto, TExtra>) => ReactNode;
   pageSizes?: number[];
   searchPlaceholder?: string;
+  /** 表头吸顶，语义同 `DataTable` 的同名 prop。 */
+  stickyHeader?: boolean;
 }
 
 /** `AbpTableView` 消费的实例面：`useDataTable` 全量 + `useAbpTable` 的数据侧接线。
@@ -93,8 +95,17 @@ export function AbpTableView<
   TExtra extends ExtraFeatureMap = NoExtraFeatures,
 >(props: AbpTableViewProps<TDto, TExtra>) {
   const L = useLocalization();
-  const { t, slots, empty, skeletonRows, rowProps, renderSubRow, pageSizes, searchPlaceholder } =
-    props;
+  const {
+    t,
+    slots,
+    empty,
+    skeletonRows,
+    rowProps,
+    renderSubRow,
+    pageSizes,
+    searchPlaceholder,
+    stickyHeader,
+  } = props;
 
   const [expanded, setExpanded] = useState(false);
   // 面板展开会让出搜索框，但展开那一刻已有关键字在生效时不能让：藏起来它仍在筛选，
@@ -292,14 +303,33 @@ export function AbpTableView<
     ) : null;
 
   const filtered = t.activeQueryCount > 0 || t.state.params.filter !== "";
-  const filteredEmpty = filtered ? (
-    <div className="flex flex-col items-center gap-3 py-6">
-      <p>{L("Table:EmptyFiltered")}</p>
+  const canCreate = t.source.can.create && t.onOpen !== undefined;
+  // 空态说三件事：现在是什么情况、为什么、下一步点哪。「被筛没了」的下一步是清除筛选，
+  // 「本来就没有」的下一步是新建；没有新建权限时不许诺一个点不了的下一步，退回单行文案。
+  const emptyState = filtered ? (
+    <div className="flex flex-col items-center gap-1 py-10">
+      <p className="font-medium text-foreground">{L("Table:EmptyFiltered")}</p>
+      <p>{L("Table:EmptyFilteredHint")}</p>
       {t.canClearFilters && (
-        <Button type="button" variant="outline" size="sm" onClick={t.clearFilters}>
+        <Button type="button" variant="outline" size="sm" className="mt-3" onClick={t.clearFilters}>
           {L("Table:ClearFilters")}
         </Button>
       )}
+    </div>
+  ) : canCreate ? (
+    <div className="flex flex-col items-center gap-1 py-10">
+      <p className="font-medium text-foreground">{L("Table:Empty")}</p>
+      <p>{L("Table:EmptyHint")}</p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="mt-3"
+        onClick={() => t.onOpen?.("create")}
+      >
+        <Plus />
+        {L("Crud:Create")}
+      </Button>
     </div>
   ) : undefined;
 
@@ -315,9 +345,9 @@ export function AbpTableView<
       table={t}
       loading={t.source.listQuery.isPending}
       fetching={t.source.listQuery.isFetching && !t.source.listQuery.isPending}
-      // 调用方给了空状态就整个听它的；没给时，筛选中的空表换一句话并给出清除出口，
-      // 「本来就没数据」与「被筛没了」是两种处境。
-      empty={empty ?? filteredEmpty}
+      // 调用方给了空状态就整个听它的。
+      empty={empty ?? emptyState}
+      stickyHeader={stickyHeader}
       error={errorBody}
       skeletonRows={skeletonRows}
       rowProps={rowProps}

@@ -9,7 +9,12 @@ import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
 import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
 import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";
-import { parseListSearch, searchListStore } from "@/components/data-table/list-search";
+import {
+  parseListSearch,
+  parseQuerySearch,
+  queryStore,
+  searchListStore,
+} from "@/components/data-table/list-search";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -52,9 +57,14 @@ async function loadAuthorOptions(search: string): Promise<ComboboxOption[]> {
   return filtered.map((a) => ({ value: a.id ?? "", label: a.name ?? "" }));
 }
 
+const QUERY_DEFAULTS = { Name: "", MinPublishDate: "" };
+
 /** demo 后端未给 book 端点定义权限策略,故 service 描述符省略 `policy`、每个 `source.can.*` 门都为 true。 */
 export const Route = createFileRoute("/_layout/_authed/books/")({
-  validateSearch: parseListSearch,
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...parseListSearch(search),
+    ...parseQuerySearch(search, QUERY_DEFAULTS),
+  }),
   component: BooksPage,
 });
 
@@ -201,7 +211,10 @@ function BooksPage() {
     columns,
     selectable: true,
     query: {
-      defaults: { Name: "", MinPublishDate: "" },
+      defaults: QUERY_DEFAULTS,
+      store: queryStore(search, QUERY_DEFAULTS, (patch) =>
+        navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
+      ),
       summary: {
         Name: { label: L("App::BookName") },
         MinPublishDate: { label: L("App::BookPublishedAfter") },
