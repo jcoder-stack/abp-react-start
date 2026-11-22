@@ -358,7 +358,7 @@ describe("AbpTable bulk bar", () => {
 });
 
 describe("AbpTable default assembly", () => {
-  it("renders the search box, create button, and columns menu when t.Table has no children", async () => {
+  it("renders the search box, create button, and view settings when t.Table has no children", async () => {
     function DefaultHarness() {
       const t = useAbpTable(makeSource(), { columns, onOpen: vi.fn() });
       return <t.Table />;
@@ -368,7 +368,7 @@ describe("AbpTable default assembly", () => {
     expect(await screen.findByText("DDD")).toBeDefined();
     expect(screen.getByPlaceholderText("Search…")).toBeDefined();
     expect(screen.getByRole("button", { name: /create/i })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Columns" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "View settings" })).toBeDefined();
   });
 });
 

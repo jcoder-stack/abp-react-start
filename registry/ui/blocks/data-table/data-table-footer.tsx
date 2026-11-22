@@ -1,7 +1,7 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { PaginationState, RowData } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { type ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
 import type { TableInstance } from "@/components/data-table/table-core";
 import {
   Pagination,
@@ -10,16 +10,8 @@ import {
   PaginationItem,
   PaginationLink,
 } from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_PAGE_SIZES = [10, 20, 50];
 const PAGE_WINDOW_THRESHOLD = 7;
 
 /**
@@ -42,24 +34,19 @@ export function getPageItems(pageIndex: number, pageCount: number): (number | "e
   return [0, "ellipsis", current - 1, current, current + 1, "ellipsis", last];
 }
 
-/** 内建页脚：总条数 + 每页行数下拉 + 分页器。与表体正交，单独成文件降低 fork 进入成本。 */
+/** 内建页脚：总条数 + 分页器。每页条数是视图设置，在 `DataTableViewMenu` 里。
+ *  与表体正交，单独成文件降低 fork 进入成本。 */
 export function DataTableFooter<TData extends RowData>(props: {
   table: TableInstance<TData>;
   pagination: PaginationState;
   pageCount: number;
   rowCount?: number;
-  pageSizes?: number[];
 }): ReactNode {
   const L = useLocalization();
   const { table } = props;
   const canPrev = table.getCanPreviousPage();
   const canNext = table.getCanNextPage();
   const pageItems = getPageItems(props.pagination.pageIndex, props.pageCount);
-
-  const sizeOptions = useMemo(() => {
-    const merged = new Set([...(props.pageSizes ?? DEFAULT_PAGE_SIZES), props.pagination.pageSize]);
-    return [...merged].sort((a, b) => a - b);
-  }, [props.pageSizes, props.pagination.pageSize]);
 
   const prevItem = (
     <PaginationItem>
@@ -103,22 +90,6 @@ export function DataTableFooter<TData extends RowData>(props: {
         {props.rowCount !== undefined && props.rowCount > 0 && (
           <span>{L("Table:Total", props.rowCount)}</span>
         )}
-        <span>{L("Table:RowsPerPage")}</span>
-        <Select
-          value={String(props.pagination.pageSize)}
-          onValueChange={(v: string) => table.setPagination({ pageIndex: 0, pageSize: Number(v) })}
-        >
-          <SelectTrigger size="sm" className="tabular-nums">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="tabular-nums">
-            {sizeOptions.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm tabular-nums text-muted-foreground md:hidden">

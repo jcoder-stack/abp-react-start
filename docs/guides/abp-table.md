@@ -689,7 +689,7 @@ const bookService = createCrudService({
 
 ## ⑩ 工具条追加
 
-顶部条右区（刷新 · 导出 · 密度 · 列设置）大半是内建能力，不用接线：刷新对当前查询发起 `refetch`，拉取中图标自转；密度在舒适 / 紧凑两档间切换（行高见 DESIGN.md「Data tables」，随行内是否有操作按钮而不同），状态存内存；列显隐菜单同理。三者只要用 `useAbpTable`/`t.Table` 就自动出现。
+顶部条右区（刷新 · 导出 · 视图设置）大半是内建能力，不用接线：刷新对当前查询发起 `refetch`，拉取中图标自转；视图设置是一个面板，装着密度（舒适 / 紧凑，行高见 DESIGN.md「Density」）、每页条数和显示哪些列——三样都只改表格外观、不改数据，所以合在一个入口，页脚不再有每页条数下拉。视图偏离默认时图标带圆点，面板底部出现「恢复默认视图」，一步回到默认密度、默认每页条数和全部列。只要用 `useAbpTable`/`t.Table` 就自动出现；每页条数的选项经 `<t.Table pageSizes={[...]}>` 改。
 
 导出是唯一的插槽式能力——`useAbpTable(bookService, { onExport: () => exportCsv(t.getListParams()) })`：传了 `onExport` 顶部条才会渲染导出图标，不传就不出现；组件库不内置任何导出实现（CSV/XLSX 都不假设），点击只是把回调转发出去，`t.getListParams()` 返回当前已提交的完整请求参数（分页/排序/搜索 + 结构化筛选合并后的快照，不是表单草稿），业务方自己决定导出全部匹配行还是别的语义。
 
@@ -710,7 +710,7 @@ const bookService = createCrudService({
 
 `onExport` 的回调还会收到一个上下文参数 `{ getListParams, getSelectedRows }`，不必回头引用 `t`：`onExport: ({ getListParams, getSelectedRows }) => …`。两个都是取值函数，点击时才读。
 
-**`t.Utility`** 把内容并入右侧的功能图标组，排在列设置之前，用来挂图标钮。内建的多列排序菜单就这么接：
+**`t.Utility`** 把内容并入右侧的功能图标组，排在视图设置之前，用来挂图标钮。内建的多列排序菜单就这么接：
 
 ```tsx
 import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";
@@ -808,6 +808,7 @@ const t = useAbpTable(bookService, {
 
 - 名字按表取并保持稳定：改名等于丢掉所有用户已存的偏好，两张表共用一个名字会互相覆盖。
 - 两者都开时，链接里的每页条数优先于个人偏好——分享出去的「第 3 页」得是同一个第 3 页。
+- 存下来的偏好由视图设置面板里的「恢复默认视图」清掉，不用另外提供入口。
 - 要存到别处（如 ABP 的用户设置），照 `DataTablePreferenceStore` 的形状自己实现：`subscribe` / `get` / `set`，即 `useSyncExternalStore` 的契约。
 
 ## 选层指南
@@ -891,7 +892,7 @@ return (
 );
 ```
 
-L2 层刻意维持「显式传实例」的社区惯用形态（`table={dt}`）而不是绑定成员——逃生层受众本来就要拿实例自己拼，`DataTableToolbar`/`DataTableColumnsMenu`/`DataTableSortMenu` 等散件各自显式收 `table` prop。
+L2 层刻意维持「显式传实例」的社区惯用形态（`table={dt}`）而不是绑定成员——逃生层受众本来就要拿实例自己拼，`DataTableToolbar`/`DataTableViewMenu`/`DataTableSortMenu` 等散件各自显式收 `table` prop。
 
 ## 内建行为（不用你操心，但要知道存在）
 

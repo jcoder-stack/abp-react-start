@@ -1,5 +1,5 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
-import { Plus, X } from "lucide-react";
+import { CircleAlert, Plus, X } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import type { AbpTableSource } from "@/components/abp/crud/abp-table-source";
 import { AbpBulkBarView } from "@/components/abp/table/abp-bulk-bar";
@@ -10,8 +10,8 @@ import {
 } from "@/components/abp/table/abp-query-form";
 import type { AbpTableRowConfig, QuerySummaryItem } from "@/components/abp/table/use-abp-table";
 import { DataTable } from "@/components/data-table/data-table";
-import { DataTableColumnsMenu } from "@/components/data-table/data-table-columns-menu";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableViewMenu } from "@/components/data-table/data-table-view-menu";
 import type {
   ExtraFeatureMap,
   NoExtraFeatures,
@@ -71,7 +71,7 @@ export interface AbpTableViewSlots {
   toolbar?: ReactNode;
   /** `t.BulkBar` 的内容，经顶部条批量态渲染；仅有选中行时出现。 */
   bulkBar?: ReactNode;
-  /** `t.Utility` 的内容，并入顶部条右侧的功能图标组，排在列菜单之前。 */
+  /** `t.Utility` 的内容，并入顶部条右侧的功能图标组，排在视图设置之前。 */
   utility?: ReactNode;
 }
 
@@ -154,7 +154,7 @@ export function AbpTableView<
       }
     >
       {slots.utility}
-      <DataTableColumnsMenu table={t} />
+      <DataTableViewMenu table={t} pageSizes={pageSizes} />
     </DataTableToolbar>
   );
 
@@ -186,7 +186,7 @@ export function AbpTableView<
       </div>
     ) : undefined;
 
-  // 刷新失败但旧数据还在：旧数据仍是上一次的有效结果，留在原位，只加一条提示。
+  // 刷新失败但旧数据还在：旧数据仍是上一次的有效结果，留在原位并变淡，加一条提示。
   const staleBanner =
     isError && hasData ? (
       <div
@@ -194,7 +194,10 @@ export function AbpTableView<
         className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2 text-sm"
       >
         {/* 颜色挂在文字上而不是容器上：outline 按钮不自带前景色，会把容器的红继承过去。 */}
-        <span className="text-destructive">{L("Table:RefreshFailed")}</span>
+        <span className="inline-flex items-center gap-2 text-destructive">
+          <CircleAlert className="size-4 shrink-0" />
+          {L("Table:RefreshFailed")}
+        </span>
         {retryButton}
       </div>
     ) : null;
@@ -312,7 +315,7 @@ export function AbpTableView<
       skeletonRows={skeletonRows}
       rowProps={rowProps}
       renderSubRow={renderSubRow}
-      pageSizes={pageSizes}
+      stale={isError && hasData}
       onRowClick={rowClickHandler}
     >
       {toolbar}
