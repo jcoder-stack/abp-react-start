@@ -52,7 +52,7 @@ export function DataTableFooter<TData extends RowData>(props: {
     <PaginationItem>
       <PaginationLink
         size="icon"
-        className={cn("size-8", !canPrev && "pointer-events-none opacity-50")}
+        className={cn("size-8 max-md:size-11", !canPrev && "pointer-events-none opacity-50")}
         aria-label={L("Table:Previous")}
         aria-disabled={!canPrev}
         href={canPrev ? "#" : undefined}
@@ -70,7 +70,7 @@ export function DataTableFooter<TData extends RowData>(props: {
     <PaginationItem>
       <PaginationLink
         size="icon"
-        className={cn("size-8", !canNext && "pointer-events-none opacity-50")}
+        className={cn("size-8 max-md:size-11", !canNext && "pointer-events-none opacity-50")}
         aria-label={L("Table:Next")}
         aria-disabled={!canNext}
         href={canNext ? "#" : undefined}

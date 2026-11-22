@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { SortingState } from "@tanstack/react-table";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { act, type ReactNode, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DataTableProps } from "@/components/data-table/data-table";
@@ -695,6 +695,19 @@ describe("DataTableToolbar v2", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Refresh" }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
+  });
+
+  it("offers the same tools as labelled rows under More, and closes after one is used", async () => {
+    const onRefresh = vi.fn();
+    renderToolbarHarness({ onRefresh });
+    fireEvent.click(await screen.findByRole("button", { name: "More" }));
+    // jsdom 不认媒体查询，宽屏的图标钮和「更多」里的那一行同时在场；后者是新出现的那个。
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(2));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Refresh" })[1]);
+
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(1));
   });
 
   it("switches row density from the view settings", async () => {

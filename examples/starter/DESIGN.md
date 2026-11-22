@@ -281,7 +281,9 @@ The landing page is the only part of this system that **isn't an admin screen**,
 | Desktop | ≥1280px | Unchanged; the marketing page caps its measure at 1152px, the admin doesn't |
 | Laptop | ≥1024px | Card grids and the filter panel at 3 columns |
 | Tablet | ≥640px | Card grids and the filter panel at 2 columns; the sidebar stays expanded, users can collapse it to the icon rail |
-| Mobile | <768px | Sidebar becomes a drawer; tables scroll horizontally inside their card; pagination keeps only previous / next and "page X of Y"; grids drop to 1 column below 640px |
+| Mobile | <768px | Sidebar becomes a drawer; tables scroll horizontally inside their card; the table toolbar stays on one line (search fills the width, "New" becomes an icon, the tools collapse into "More"); pagination keeps only previous / next and "page X of Y"; table hit areas grow to 44px; grids drop to 1 column below 640px |
+
+**The table toolbar never wraps.** A toolbar folded onto two lines pushes the table down by a row on the screen that can least afford it. Below `md` the search box takes the remaining width, "New" keeps its place as an icon-only button, and filter / refresh / export / view settings move into one "More" panel as labelled rows — with a dot on "More" while a filter is in force or the view has been changed, so collapsing them doesn't hide that state. Icon buttons, the search box and rows are 44px there regardless of density: narrow means touch, and density is a pointer-precision setting.
 
 **Tables never turn into card lists.** They scroll horizontally inside the card — while scanning fields, the record's identity has to stay on screen (that is what the sticky primary column is for, see [Tables](#tables)).
 
