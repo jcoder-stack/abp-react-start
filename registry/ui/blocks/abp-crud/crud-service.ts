@@ -80,6 +80,10 @@ interface CrudServiceMeta {
   listKey: () => readonly unknown[];
   policy?: string;
   policies?: Partial<{ create: string; update: string; delete: string }>;
+  /** 列表端点的普通取数函数（orval 的 `getApiXxx`）。给了它，可勾选的表才提供「选择全部匹配结果」：
+   *  跨页全选后的批量动作要拿到没加载的那些行，hook 做不到，只能命令式地再取一遍。
+   *  参数写成 `never` 是为了让任何端点的取数函数都赋得进来；返回值按分页 DTO 在运行时归一。 */
+  fetchList?: (params: never) => Promise<unknown>;
 }
 
 declare const crudServiceCapabilities: unique symbol;

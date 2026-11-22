@@ -28,6 +28,9 @@ export interface AbpTableSource<TDto> {
      *  `reasons` 是失败各条的后端理由（按文本去重），取不到理由的失败不计入。 */
     many?: (ids: string[]) => Promise<{ failed: string[]; reasons?: string[] }>;
   };
+  /** 按给定的查询参数（不含分页）取回全部匹配行。跨页全选靠它把没加载的行也交给批量动作；
+   *  不提供则表格不出现「选择全部匹配结果」。实现方自己负责翻页取完。 */
+  listAll?: (params: Record<string, unknown>) => Promise<TDto[]>;
   can: { create: boolean; update: boolean; delete: boolean };
   supportsFilter: boolean;
 }

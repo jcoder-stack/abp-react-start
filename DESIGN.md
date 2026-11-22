@@ -192,6 +192,8 @@ The toolbar's right side is, in order: filter, refresh, export, density, page-su
 
 When rows are selected, the toolbar's left area **is replaced in place by a bulk-action row**: count, bulk actions (dangerous ones are destructive-colored ghost buttons with an icon), clear. The right-side tools stay put. In-place replacement keeps dangerous bulk actions visible without making them primary, and avoids a second toolbar.
 
+**Selecting across pages takes two steps.** Ticking the header selects the page. Only then does a line offer "Select all N matching", and only clicking it extends the selection beyond what is on screen — a header checkbox that silently meant every matching row would let people act on rows they never saw. The state survives paging and sorting, and ends when the user unticks a row, clears the selection or changes the query.
+
 **Every bulk action gives the same feedback as bulk delete**: rows run one at a time, the batch reports a single toast, failed rows stay selected, rows the action doesn't apply to are counted as skipped.
 
 **Bulk delete reports one toast and never reports a hollow success**: all deleted → success; some failed → warning, with the backend's reasons appended one per line; if rows were skipped as not deletable (the row-level check said no, or the row has no id), say how many were deleted, failed and skipped — a user who ticked N rows and sees "Deleted" after only some went will assume all of them did. Failed rows stay selected for a retry; skipped rows are deselected (a retry can't delete them either).
@@ -228,7 +230,9 @@ Current item = a surface one step up + a 2px indicator bar on the left (`sidebar
 
 Structured, endpoint-driven query forms (the ABP admin tables) **deliberately don't use the chip pattern**: fields sit in a labeled grid inside a filter panel, collapsed by default and opened by the filter icon (`ListFilter`) in the toolbar.
 
-Opening the panel **replaces** the scoped search box — the panel's precise fields supersede fuzzy matching, and two search inputs on one screen are redundant. **The exception is a keyword already in force**: hiding the box then would leave a filter the user can neither see nor clear, so the box stays for as long as that panel session lasts (decided at the moment the panel opens, so the box doesn't vanish under the cursor when the keyword is deleted). The panel has its own Reset / Query row; Query is a secondary button, because the toolbar's only primary button belongs to "New". When the panel is collapsed with filters still active, the filter icon keeps a dot (with an equivalent count for screen readers); otherwise a collapsed panel hides the fact that the table is being filtered.
+Opening the panel **replaces** the scoped search box — the panel's precise fields supersede fuzzy matching, and two search inputs on one screen are redundant. **The exception is a keyword already in force**: hiding the box then would leave a filter the user can neither see nor clear, so the box stays for as long as that panel session lasts (decided at the moment the panel opens, so the box doesn't vanish under the cursor when the keyword is deleted). **Chips describe, they don't input.** A page may add a read-only summary row above the table that lists the query fields in force, each shown as "label: value" and removable, with "Clear all" at the end. That is not the chip pattern rejected above: filters are still entered only in the panel's fields, and the row exists because a collapsed panel otherwise says nothing but "something is filtered". It is hidden while the panel is open.
+
+The panel has its own Reset / Query row; Query is a secondary button, because the toolbar's only primary button belongs to "New". When the panel is collapsed with filters still active, the filter icon keeps a dot (with an equivalent count for screen readers); otherwise a collapsed panel hides the fact that the table is being filtered.
 
 ## Icons
 

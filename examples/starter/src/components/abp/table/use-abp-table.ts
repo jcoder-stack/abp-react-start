@@ -52,6 +52,23 @@ import {
 } from "@/components/data-table/use-data-table-state";
 import { useAppForm } from "@/components/form/form-hook";
 
+/** 跨页全选取回全部匹配行时每次请求的条数。ABP 的 `MaxResultCount` 上限默认是 1000。 */
+const LIST_ALL_PAGE_SIZE = 1000;
+
+/** 查询表单某个字段在筛选摘要行里怎么显示。 */
+export interface QuerySummaryField<TValue> {
+  /** 字段名，已翻译；通常与该字段在面板里的 label 相同。 */
+  label: ReactNode;
+  /** 把已提交的值转成给人看的文字；省略则 `String(value)`。枚举、日期区间这类值要给。 */
+  format?: (value: TValue) => ReactNode;
+}
+
+export interface QuerySummaryItem {
+  key: string;
+  label: ReactNode;
+  value: ReactNode;
+}
+
 /** 留白字段不该变成 `Name=` 空串发给后端，`""` 和 `undefined` 都不进请求。 */
 function pruneEmpty(value: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== "" && v !== undefined));
@@ -133,6 +150,10 @@ export interface UseAbpTableOptions<
      *  塞进同一个 `useAppForm` 调用，会让 `TFormData` 的推断整体塌成 unknown，
      *  `t.queryForm` 的字段名收窄跟着失效。
      *  `onDynamic` 在这里不是保留位，查询表单没走 `abpFormOptions()` 预设，调用方可以自己传。 */
+    /** 筛选摘要行：面板收起后，在表格上方用一行只读文字说明「正按什么筛着」，每项可单独移除。
+     *  只列这里声明了的字段，且只在它的已提交值偏离默认值时出现；不给则没有这一行。
+     *  它是对已生效筛选的描述，不是输入方式——筛选仍然只在面板的字段里填。 */
+    summary?: { [K in keyof TQueryDefaults]?: QuerySummaryField<TQueryDefaults[K]> };
     validators?: {
       onMount?: FormValidateOrFn<TQueryDefaults>;
       onChange?: FormValidateOrFn<TQueryDefaults>;
@@ -236,6 +257,31 @@ function useServiceSource<
     warnIfUnpaged(listQuery.data?.items?.length ?? 0, listParams.MaxResultCount, service.listKey);
   }
 
+  const fetchList = service.fetchList as
+    | ((params: Record<string, unknown>) => Promise<unknown>)
+    | undefined;
+  const listAll = useMemo(
+    () =>
+      fetchList === undefined
+        ? undefined
+        : async (params: Record<string, unknown>) => {
+            const all: TDto[] = [];
+            for (;;) {
+              const page = toPagedResult(
+                (await fetchList({
+                  ...params,
+                  SkipCount: all.length,
+                  MaxResultCount: LIST_ALL_PAGE_SIZE,
+                })) as { items?: TDto[] | null; totalCount?: number },
+              );
+              all.push(...page.items);
+              // 空页也要停：totalCount 在取数途中被别人删小了时，光比总数会永远取不满。
+              if (page.items.length === 0 || all.length >= page.totalCount) return all;
+            }
+          },
+    [fetchList],
+  );
+
   const invalidate = () => queryClient.invalidateQueries({ queryKey: service.listKey() });
   const deleted = () => {
     toast.success(L("Crud:Deleted"));
@@ -292,6 +338,7 @@ function useServiceSource<
     pageCount,
     totalCount,
     delete: service.useDelete !== undefined ? deleteMutation : undefined,
+    listAll,
     can: {
       create: service.useCreate !== undefined && allow(service.resolvedPolicies.create),
       update: service.useUpdate !== undefined && allow(service.resolvedPolicies.update),
@@ -340,6 +387,7 @@ export function useAbpTable<
     preferences: opts.preferences,
   });
 
+  const [allMatching, setAllMatching] = useState(false);
   const queryDefaults: TQueryDefaults = opts.query?.defaults ?? ({} as TQueryDefaults);
   const [params, setParams] = useState<Record<string, unknown>>(() => pruneEmpty(queryDefaults));
 
@@ -383,6 +431,8 @@ export function useAbpTable<
   // 「实例引用跨渲染稳定」。AbpTable 内建的「查询」按钮走这里。
   const queryFormRef = useRef(queryForm);
   queryFormRef.current = queryForm;
+  const queryDefaultsRef = useRef(queryDefaults);
+  queryDefaultsRef.current = queryDefaults;
   const submitQuery = useCallback(async () => {
     await queryFormRef.current.handleSubmit();
     if (hasUnroutedCrossFieldError(queryFormRef.current.state.errorMap)) {
@@ -417,6 +467,36 @@ export function useAbpTable<
     () => ({ ...paramsRef.current, ...toAbpListParams(listStateRef.current) }),
     [],
   );
+
+  // 逐项移除摘要行里的一个筛选：该字段回默认值并立即重查，其余字段不动。
+  const resetQueryField = useCallback(
+    (key: string) => {
+      const form = queryFormRef.current as unknown as {
+        setFieldValue: (name: string, value: unknown) => void;
+      };
+      form.setFieldValue(key, (queryDefaultsRef.current as Record<string, unknown>)[key]);
+      void submitQuery();
+    },
+    [submitQuery],
+  );
+
+  const defaultParams = pruneEmpty(queryDefaults);
+  const summaryFields = (opts.query?.summary ?? {}) as Record<
+    string,
+    QuerySummaryField<never> | undefined
+  >;
+  const querySummary: QuerySummaryItem[] = Object.entries(summaryFields).flatMap(([key, field]) => {
+    const value = safeParams[key];
+    if (field === undefined || value === undefined) return [];
+    if (JSON.stringify(value) === JSON.stringify(defaultParams[key])) return [];
+    return [
+      {
+        key,
+        label: field.label,
+        value: field.format ? field.format(value as never) : String(value),
+      },
+    ];
+  });
 
   const row: AbpTableRowConfig<TDto> = opts.row ?? {};
   const showView = row.view ?? (row.click === false && opts.onOpen !== undefined);
@@ -519,10 +599,81 @@ export function useAbpTable<
     getRowId: (r, i) => r.id ?? String(i),
     features: opts.features,
     tableOptions: opts.tableOptions,
+    // 用户亲手改了勾选，就不再是「全部匹配」了：留下当前页剩下的勾选，退回页内选择。
+    onSelectionInput: () => setAllMatching(false),
   });
+
+  // 「全部匹配」是叠在页内选择之上的一个标记：行选中态仍只装当前页的 id，标记为真时
+  // 批量动作改去数据源取回全部匹配行。翻页、排序不退出，换查询语境才退出。
+  const listAll = src.listAll;
+  const items = src.listQuery.data?.items;
+  const { keepSelected: keepPageSelected, clearSelection: clearPageSelection } = dt;
+  const { scopeEpoch } = state;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scopeEpoch 是触发源——查询语境一换，「全部匹配」指的就不是同一批行了
+  useEffect(() => {
+    setAllMatching(false);
+  }, [scopeEpoch]);
+  // 标记为真时让每一页到场的行都显示为已勾。必须声明在 useDataTable 之后：它那边的
+  // 「翻页清空」「离场剪枝」两个 effect 先跑，这里再把当前页补勾上。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 分页与排序是触发源——翻页那一刻数据还没换，但选中态已被清空，得立刻补回
+  useEffect(() => {
+    if (!allMatching || items === undefined) return;
+    keepPageSelected(items.flatMap((item) => (item.id === undefined ? [] : [item.id])));
+  }, [allMatching, items, keepPageSelected, state.pagination, state.sorting]);
+
+  const clearSelection = useCallback(() => {
+    setAllMatching(false);
+    clearPageSelection();
+  }, [clearPageSelection]);
+  const keepSelected = useCallback(
+    (ids: string[]) => {
+      // 批量动作结束后回填失败行：全部匹配那批已经处理过了，剩下的就是这几条。
+      setAllMatching(false);
+      keepPageSelected(ids);
+    },
+    [keepPageSelected],
+  );
+  const getPageSelectedRows = dt.getSelectedRows;
+  const resolveSelectedRows = useCallback(async () => {
+    if (!allMatchingRef.current || listAllRef.current === undefined) return getPageSelectedRows();
+    const { SkipCount: _skip, MaxResultCount: _max, ...criteria } = getListParams();
+    return listAllRef.current(criteria);
+  }, [getPageSelectedRows, getListParams]);
+  const allMatchingRef = useRef(allMatching);
+  allMatchingRef.current = allMatching;
+  const listAllRef = useRef(listAll);
+  listAllRef.current = listAll;
+
+  // 页面自己用 `t.SelectedCount` 写的文案（「导出 N 项」）也得跟着「全部匹配」走，否则批量条说
+  // 已选 128 项、旁边的按钮却说导出 10 项。身份必须稳定，理由同 `useDataTable` 的那一个。
+  const PageSelectedCount = dt.SelectedCount;
+  const totalCountRef = useRef(src.totalCount);
+  totalCountRef.current = src.totalCount;
+  const SelectedCount = useMemo(
+    () =>
+      function SelectedCount(p: { children: (count: number) => ReactNode }) {
+        return createElement(PageSelectedCount, {
+          // biome-ignore lint/correctness/noChildrenProp: children 是 render prop，createElement 的可变子参数只收 ReactNode
+          children: (count: number) =>
+            p.children(allMatchingRef.current && count > 0 ? totalCountRef.current : count),
+        });
+      },
+    [PageSelectedCount],
+  );
 
   const instanceWithoutComponents = {
     ...(dt as unknown as DataTableInstance<TDto, TExtra>),
+    clearSelection,
+    keepSelected,
+    SelectedCount,
+    /** 批量动作该处理的行：页内选择时是选中行，「全部匹配」时去数据源取回全部。 */
+    resolveSelectedRows,
+    allMatching,
+    selectAllMatching: () => setAllMatching(true),
+    /** 数据源给了 `listAll` 且表可勾选时，才提供「选择全部匹配结果」。 */
+    canSelectAllMatching: listAll !== undefined && (opts.selectable ?? false),
+    querySummary,
+    resetQueryField,
     source: src,
     queryForm,
     submitQuery,
@@ -560,7 +711,7 @@ export function useAbpTable<
     const BulkAction = (p: AbpBulkActionProps<TDto>) =>
       createElement(AbpBulkActionView<TDto>, {
         ...p,
-        getSelectedRows: read().self.getSelectedRows,
+        getSelectedRows: read().self.resolveSelectedRows,
         keepSelected: read().self.keepSelected,
         refetch: read().self.source.listQuery.refetch,
       });
@@ -569,7 +720,7 @@ export function useAbpTable<
     const BulkDelete = () =>
       createElement(AbpBulkDeleteView<TDto>, {
         source: read().self.source,
-        getSelectedRows: read().self.getSelectedRows,
+        getSelectedRows: read().self.resolveSelectedRows,
         keepSelected: read().self.keepSelected,
         canDelete: read().self.rowConfig?.canDelete,
       });

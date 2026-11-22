@@ -246,6 +246,8 @@ function unwrap(result: WriteResult): AbpSwaggerBooksBookDto {
 export const getGetApiAppBookQueryKey = (params?: GetApiAppBookParams) =>
   ["/api/app/book", ...(params ? [params] : [])] as const;
 
+export const getApiAppBook = (params: GetApiAppBookParams) => listBooksFn({ data: params });
+
 export function useGetApiAppBook<TData = { items: AbpSwaggerBooksBookDto[]; totalCount: number }>(
   params: GetApiAppBookParams,
   options?: {

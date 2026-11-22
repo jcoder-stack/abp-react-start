@@ -378,6 +378,28 @@ const t = useAbpTable(bookService, {
 
 查询区不是独立卡片——`t.QueryForm` 的字段整体渲染进表格卡片内的**高级筛选面板**：带正常标签、三列网格，底部是面板自己的「重置 / 查询」按钮行。面板默认收起，由顶部条右侧功能组里的漏斗钮开合（与刷新/密度/列设置同组，勾选行进入批量态时也不会消失）。面板展开时左区的快速搜索框会让位——面板里是精确的字段筛选，同屏再摆一个模糊搜索是重复入口；收起后若仍有筛选生效，漏斗钮带一个圆点提示（读屏另有「已应用 N 个筛选条件」）。
 
+### 筛选摘要行（可选）
+
+面板收起后，筛选钮上只有一个圆点，看不出筛的是什么。给 `query.summary` 声明字段的显示方式，表格上方就多一行只读摘要，每项可单独移除，行尾「全部清除」一次清空：
+
+```tsx
+const t = useAbpTable(bookService, {
+  columns,
+  query: {
+    defaults: { Name: "", Type: "" },
+    summary: {
+      Name: { label: L("App::BookName") },
+      Type: { label: L("App::BookType"), format: (value) => L(BOOK_TYPE_KEYS[Number(value)]) },
+    },
+  },
+});
+```
+
+- 只列声明了的字段，且只在它的已提交值偏离 `defaults` 时出现；一个都不偏离就没有这一行。
+- `format` 把原始值转成给人看的文字，枚举和日期区间这类值要给；省略则 `String(value)`。
+- 有摘要行时搜索关键字也会列进去，行尾的「全部清除」清掉的就是这一行列出来的全部。
+- 面板展开时不显示：字段本身就在眼前。
+
 ### `QueryDateRange`：区间字段的单控件写法
 
 两端字段（如「起止日期」）要放进查询区时用 `QueryDateRange`——一个 `DateRangePicker` 同时读写两个扁平查询参数（`from`/`to` 仍与后端 DTO 一一对应），不需要像旧版双字段拼接写法那样手动拼两个 `t.queryForm.AppField`。**本仓库现有端点（book/users/roles/tenants）都只有单侧下界参数,没有一个真的有对应的上界字段,端点只有下界参数时用上面那份 `MinPublishDate` 单 `f.DateField` 写法**（即 `books` 页实际用的写法）——下面是一个假想端点确实带上下界两个日期参数时的写法,你的端点需要真有这两个参数才能照抄:
@@ -619,6 +641,25 @@ const t = useAbpTable(userService, {
 - **结果按三分支汇总**：全成功 `Crud:Deleted`；全失败 `Crud:OperationFailed`；部分失败 `Crud:BulkDeletePartialFailure`（`{0}` 成功数 `{1}` 失败数）——不能只报「失败」而把成功了几条丢掉。
 - **失败的行留在勾选里**：成功的行随失效重取从列表消失、天然退出选中；失败的行经 `keepSelected` 留在选中态，用户不用重新勾选，直接再点一次就是重试。
 - **自实现数据源要支持批删**，得在 `AbpTableSource.delete` 上给出可选的 `many(ids) => Promise<{ failed: string[] }>`；没给则 `t.BulkDelete` 不渲染并在 DEV 告警（`createCrudService` 的产物自带）。
+
+### 跨页全选
+
+勾选是页内的：翻页即清空。要对「全部匹配结果」做批量动作，给 service 一个普通的取数函数：
+
+```ts
+const bookService = createCrudService({
+  useList: useGetApiAppBook,
+  fetchList: getApiAppBook, // orval 生成的同名普通函数
+  // …
+});
+```
+
+之后把当前页全部勾上，表格上方会出现「已选本页 10 项。选择全部 128 项匹配结果」；点了之后进入全部匹配状态，翻页、排序都不丢，`t.BulkDelete` 与 `t.BulkAction` 处理的是全部匹配行（没加载的那些会按当前查询条件取回，每次 1000 条）。
+
+- **两步是刻意的**：把「全选」直接做成全部匹配，用户会在不知情时对没看过的行执行批量动作。
+- 用户亲手取消任意一行的勾选、清除选择、或换了查询条件，都会退回页内选择。
+- 没给 `fetchList` 就没有这个入口，其余行为不变。自定义数据源对应的是 `AbpTableSource.listAll`。
+- `onExport` 上下文里的 `getSelectedRows()` 仍是页内已加载的选中行；全部匹配时按 `getListParams()` 导出。
 
 ### 通用批量动作：`t.BulkAction`
 

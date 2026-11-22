@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 export interface AbpBulkDeleteViewProps<TDto extends { id?: string }> {
   source: AbpTableSource<TDto>;
   /** 确认时才取选中行：选中态归表所有，渲染期读到的快照会陈旧。 */
-  getSelectedRows: () => TDto[];
+  getSelectedRows: () => TDto[] | Promise<TDto[]>;
   keepSelected: (ids: string[]) => void;
   /** 同 `row.canDelete`：返回 false 的选中行不发删除请求，计入跳过。 */
   canDelete?: (row: TDto) => boolean;
@@ -154,8 +154,11 @@ export function AbpBulkDeleteView<TDto extends { id?: string }>(
           <AlertDialogCancel>{L("Form:Cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={async () => {
-              const { ids, skipped } = partitionDeletable(props.getSelectedRows(), props.canDelete);
               try {
+                const { ids, skipped } = partitionDeletable(
+                  await props.getSelectedRows(),
+                  props.canDelete,
+                );
                 const { failed, reasons } = ids.length > 0 ? await many(ids) : { failed: [] };
                 const notice = bulkDeleteNotice(ids.length, failed.length, skipped, reasons);
                 const message = L(notice.key, ...notice.args);
