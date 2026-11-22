@@ -2,9 +2,9 @@
 import { act, fireEvent, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DataTable } from "@/components/data-table/data-table";
-import { DataTableColumnsMenu } from "@/components/data-table/data-table-columns-menu";
 import { localStoragePreferences } from "@/components/data-table/data-table-preferences";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableViewMenu } from "@/components/data-table/data-table-view-menu";
 import {
   listStateFromSearch,
   listStateToSearch,
@@ -179,7 +179,7 @@ function PersistedTable() {
   return (
     <DataTable table={dt}>
       <DataTableToolbar table={dt}>
-        <DataTableColumnsMenu table={dt} />
+        <DataTableViewMenu table={dt} />
       </DataTableToolbar>
     </DataTable>
   );
@@ -189,14 +189,30 @@ describe("column visibility with a preference store", () => {
   it("keeps a hidden column hidden after the table is mounted again", async () => {
     const first = renderWithProviders(<PersistedTable />, { messages });
     expect(await screen.findByRole("columnheader", { name: "ID" })).toBeDefined();
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Columns" }));
-    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "ID" }));
     expect(screen.queryByRole("columnheader", { name: "ID" })).toBeNull();
     first.unmount();
 
     renderWithProviders(<PersistedTable />, { messages });
     expect(await screen.findByRole("columnheader", { name: "Name" })).toBeDefined();
     expect(screen.queryByRole("columnheader", { name: "ID" })).toBeNull();
+  });
+
+  it("forgets the remembered view when the default is restored", async () => {
+    const first = renderWithProviders(<PersistedTable />, { messages });
+    fireEvent.click(await screen.findByRole("button", { name: "View settings" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "Compact" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore default view" }));
+    first.unmount();
+
+    renderWithProviders(<PersistedTable />, { messages });
+    expect(await screen.findByRole("columnheader", { name: "ID" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+    expect(
+      (await screen.findByRole("button", { name: "Comfortable" })).getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 });
 

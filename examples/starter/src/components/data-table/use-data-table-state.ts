@@ -194,6 +194,20 @@ export function useDataTableState(opts: UseDataTableStateOptions = {}) {
     [preferenceStore],
   );
 
+  /** 密度与每页条数回默认值。列显隐不在这里：那一片归表实例，调用方另行
+   *  `table.resetColumnVisibility()`（见 `DataTableViewMenu`）。 */
+  const resetViewDefaults = useCallback(() => {
+    if (preferenceStore) {
+      const { columnVisibility } = preferenceStore.get();
+      preferenceStore.set(columnVisibility ? { columnVisibility } : {});
+    } else setLocalDensity("comfortable");
+    update((previous) =>
+      previous.pageSize === defaultPageSize
+        ? previous
+        : { ...previous, pageSize: defaultPageSize, pageIndex: 0 },
+    );
+  }, [preferenceStore, update, defaultPageSize]);
+
   /** 只在接了偏好存储时有值；没接时列显隐留给表实例自管，这里不插手。 */
   const setColumnVisibility = useMemo(
     () =>
@@ -215,6 +229,8 @@ export function useDataTableState(opts: UseDataTableStateOptions = {}) {
     onSortingChange,
     density: preferences.density ?? localDensity,
     setDensity,
+    defaultPageSize,
+    resetViewDefaults,
     /** 已存下来的列显隐；用户没动过任何列时为 undefined。 */
     columnVisibility: preferences.columnVisibility,
     setColumnVisibility,

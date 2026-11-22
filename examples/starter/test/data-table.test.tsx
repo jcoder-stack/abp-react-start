@@ -6,13 +6,13 @@ import { act, type ReactNode, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DataTableProps } from "@/components/data-table/data-table";
 import { DataTable } from "@/components/data-table/data-table";
-import { DataTableColumnsMenu } from "@/components/data-table/data-table-columns-menu";
 import { getPageItems } from "@/components/data-table/data-table-footer";
 import {
   DataTableClearSortButton,
   DataTableSortMenu,
 } from "@/components/data-table/data-table-sort-menu";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableViewMenu } from "@/components/data-table/data-table-view-menu";
 import type { TableColumnDef } from "@/components/data-table/table-core";
 import tableMessages from "@/components/data-table/table-messages.json";
 import { useDataTable } from "@/components/data-table/use-data-table";
@@ -68,7 +68,7 @@ function Harness({
   columns: cols = columns,
   selectable,
   onRowClick,
-  withColumnsMenu,
+  withViewMenu,
   withSortMenu,
   defaultPageSize,
   pageSizes,
@@ -86,7 +86,7 @@ function Harness({
   columns?: TableColumnDef<Row>[];
   selectable?: boolean;
   onRowClick?: (row: Row) => void;
-  withColumnsMenu?: boolean;
+  withViewMenu?: boolean;
   withSortMenu?: boolean;
   defaultPageSize?: number;
   pageSizes?: number[];
@@ -108,7 +108,6 @@ function Harness({
       <DataTable
         table={dt}
         onRowClick={onRowClick}
-        pageSizes={pageSizes}
         fetching={fetching}
         empty={empty}
         skeletonRows={skeletonRows}
@@ -118,7 +117,7 @@ function Harness({
         footer={footer}
       >
         <DataTableToolbar table={dt}>
-          {withColumnsMenu && <DataTableColumnsMenu table={dt} />}
+          {withViewMenu && <DataTableViewMenu table={dt} pageSizes={pageSizes} />}
           {withSortMenu && <DataTableSortMenu table={dt} />}
         </DataTableToolbar>
       </DataTable>
@@ -218,24 +217,24 @@ describe("DataTable", () => {
     expect(await screen.findByText("248 items")).toBeDefined();
     unmount();
 
-    // rowCount 缺席（调用方拿不到总数）时页脚不编一个出来，只剩每页行数与分页器。
+    // rowCount 缺席（调用方拿不到总数）时页脚不编一个出来，只剩分页器。
     renderWithProviders(<Harness data={[{ id: "1", name: "Alpha" }]} pageCount={25} />, {
       messages,
     });
-    expect(await screen.findByText("Rows per page")).toBeDefined();
+    expect(await screen.findByRole("link", { name: "25" })).toBeDefined();
     expect(screen.queryByText(/items/)).toBeNull();
   });
 
   it("resets to the first page when the page size changes", async () => {
-    renderWithProviders(<Harness data={[{ id: "1", name: "Alpha" }]} pageCount={5} />, {
-      messages,
-    });
+    renderWithProviders(
+      <Harness data={[{ id: "1", name: "Alpha" }]} pageCount={5} withViewMenu />,
+      { messages },
+    );
     // 先翻到第 4 页（pageIndex 3）
     fireEvent.click(await screen.findByRole("link", { name: "4" }));
     expect((await screen.findByTestId("page")).textContent).toBe("3");
-    // 打开每页行数 Select 并选 20
-    fireEvent.click(screen.getByRole("combobox"));
-    fireEvent.click(await screen.findByRole("option", { name: "20" }));
+    fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+    fireEvent.click(await screen.findByRole("button", { name: "20" }));
     // 页码应回到第一页
     expect((await screen.findByTestId("page")).textContent).toBe("0");
   });
@@ -337,36 +336,58 @@ describe("DataTable", () => {
     expect((await screen.findByTestId("selected")).textContent).toBe("0");
   });
 
-  it("hides a column through the columns menu", async () => {
-    renderWithProviders(<Harness data={[{ id: "1", name: "Alpha" }]} withColumnsMenu />, {
+  it("hides a column through the view settings", async () => {
+    renderWithProviders(<Harness data={[{ id: "1", name: "Alpha" }]} withViewMenu />, {
       messages,
     });
     expect(await screen.findByRole("columnheader", { name: "Name" })).toBeDefined();
-    // Radix DropdownMenuTrigger 只在 onPointerDown 上开合，不监听 onClick
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Columns" }));
-    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Name" }));
+    fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Name" }));
     expect(screen.queryByRole("columnheader", { name: "Name" })).toBeNull();
 
     // 隐藏后该列没有表头对象（getHeaderGroups 只收可见叶列），菜单标签必须仍走 header 兜底显示
     // 「Name」；去掉兜底、退回 `return columnId` 就会显示 accessor id「name」，下面的 findByRole
     // 因大小写不匹配而超时失败。
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Columns" }));
-    expect(await screen.findByRole("menuitemcheckbox", { name: "Name" })).toBeDefined();
+    expect(await screen.findByRole("checkbox", { name: "Name" })).toBeDefined();
+  });
+
+  it("restores the default view in one step, and only offers to when something was changed", async () => {
+    renderWithProviders(
+      <Harness
+        data={[{ id: "1", name: "Alpha" }]}
+        columns={[...columns, { accessorKey: "id", header: "ID" }]}
+        withViewMenu
+      />,
+      { messages },
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "View settings" }));
+    expect(await screen.findByRole("button", { name: "Compact" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Restore default view" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Compact" }));
+    fireEvent.click(screen.getByRole("button", { name: "50" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "ID" }));
+    expect(screen.queryByRole("columnheader", { name: "ID" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Restore default view" }));
+
+    expect(await screen.findByRole("columnheader", { name: "ID" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Comfortable" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "10" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByRole("button", { name: "Restore default view" })).toBeNull();
   });
 
   it("labels menu items with the same text as the header", async () => {
     renderWithProviders(
-      <Harness
-        data={[{ id: "1", name: "Alpha" }]}
-        columns={localizedHeaderColumns}
-        withColumnsMenu
-      />,
+      <Harness data={[{ id: "1", name: "Alpha" }]} columns={localizedHeaderColumns} withViewMenu />,
       { messages },
     );
     // 表头由函数组件渲染出真实词条文案 "Search…"（而非 accessor id "name"）。
     expect(await screen.findByRole("columnheader", { name: "Search…" })).toBeDefined();
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Columns" }));
-    expect(await screen.findByRole("menuitemcheckbox", { name: "Search…" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+    expect(await screen.findByRole("checkbox", { name: "Search…" })).toBeDefined();
   });
 
   it("sorts through the sort menu and clears it", async () => {
@@ -413,26 +434,32 @@ describe("DataTable", () => {
     expect(screen.queryByRole("button", { name: "Clear sort" })).toBeNull();
   });
 
-  it("keeps the page-size trigger populated when defaultPageSize is outside the default options", async () => {
-    renderWithProviders(<Harness data={[{ id: "1", name: "Alpha" }]} defaultPageSize={25} />, {
-      messages,
-    });
-    const trigger = await screen.findByRole("combobox");
-    expect(trigger.textContent).toBe("25");
-    fireEvent.click(trigger);
-    // 25 被并入选项集，所以它既显示在触发器上、也能在下拉里选回来
-    expect(await screen.findByRole("option", { name: "25" })).toBeDefined();
+  it("offers the default page size as an option even when it is outside the default list", async () => {
+    renderWithProviders(
+      <Harness data={[{ id: "1", name: "Alpha" }]} defaultPageSize={25} withViewMenu />,
+      { messages },
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "View settings" }));
+    // 25 被并入选项集，所以总有一档是选中的，改走之后也能选回来
+    expect((await screen.findByRole("button", { name: "25" })).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
   });
 
   it("renders the caller's pageSizes instead of the defaults", async () => {
     renderWithProviders(
-      <Harness data={[{ id: "1", name: "Alpha" }]} pageSizes={[15, 30]} defaultPageSize={15} />,
+      <Harness
+        data={[{ id: "1", name: "Alpha" }]}
+        pageSizes={[15, 30]}
+        defaultPageSize={15}
+        withViewMenu
+      />,
       { messages },
     );
-    fireEvent.click(await screen.findByRole("combobox"));
-    expect(await screen.findByRole("option", { name: "15" })).toBeDefined();
-    expect(screen.getByRole("option", { name: "30" })).toBeDefined();
-    expect(screen.queryByRole("option", { name: "20" })).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: "View settings" }));
+    expect(await screen.findByRole("button", { name: "15" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "30" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "20" })).toBeNull();
   });
 
   it("marks the table busy while refetching with stale rows still on screen", async () => {
@@ -525,10 +552,8 @@ describe("DataTable", () => {
       { messages },
     );
     expect(await screen.findByRole("button", { name: /加载更多（共 3 页）/ })).toBeDefined();
-    // 三样内建件都必须让位，否则「加载更多」形态下会残留无意义的页码与每页行数
-    expect(screen.queryByRole("combobox")).toBeNull();
+    // 内建件必须让位，否则「加载更多」形态下会残留无意义的页码
     expect(screen.queryByRole("link", { name: "2" })).toBeNull();
-    expect(screen.queryByText("Rows per page")).toBeNull();
   });
 
   it("advances the page through the caller's footer", async () => {
@@ -648,7 +673,9 @@ describe("DataTableToolbar v2", () => {
     });
     return (
       <DataTable table={dt}>
-        <DataTableToolbar table={dt} onRefresh={onRefresh} bulk={bulk} />
+        <DataTableToolbar table={dt} onRefresh={onRefresh} bulk={bulk}>
+          <DataTableViewMenu table={dt} />
+        </DataTableToolbar>
       </DataTable>
     );
   }
@@ -670,10 +697,10 @@ describe("DataTableToolbar v2", () => {
     expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
   });
 
-  it("switches row density from the density menu", async () => {
+  it("switches row density from the view settings", async () => {
     renderToolbarHarness({});
-    fireEvent.pointerDown(await screen.findByRole("button", { name: "Density" }));
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Compact" }));
+    fireEvent.click(await screen.findByRole("button", { name: "View settings" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Compact" }));
     // jsdom 测不了真实行高，只能断言组件切到了紧凑档的行高类作为行为代理
     const cell = screen.getAllByRole("cell")[0];
     expect(cell.closest("table")?.className).toContain("[&_td]:h-8");

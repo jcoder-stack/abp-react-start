@@ -52,8 +52,10 @@ function justifyClass(align?: "left" | "right" | "center") {
  *  半透明的，所以拆成两层：单元格自己铺 `bg-card`，状态色画在 `::before` 上叠在它之上、
  *  内容之下（sticky 自成层叠上下文，`-z-10` 出不去）。 */
 const STICKY_CELL = "sticky z-10 bg-card before:absolute before:inset-0 before:-z-10";
-/** 固定区右缘的分隔线。画在 `::after` 上：表格是 border-collapse，单元格自己的边框不跟着 sticky 走。 */
-const STICKY_EDGE = "after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border";
+/** 固定区右缘的投影，只在横向滚动过之后出现：没滚动时固定列与其余列并排，没有东西被它盖住，
+ *  常驻的边线只是多一条竖线。画在 `::after` 上并伸到单元格右侧之外，盖在滚过去的内容上。 */
+const STICKY_EDGE =
+  "after:pointer-events-none after:absolute after:inset-y-0 after:left-full after:w-2 after:bg-linear-to-r after:from-border after:to-transparent after:opacity-0 after:transition-opacity group-data-[scrolled]/scroll:after:opacity-100";
 /** 主列紧贴勾选列之后。勾选列声明的是 `w-10`，但自动布局的表格会把它压到内容宽度，
  *  所以固定时用 `min-w-10` 钉死，否则两者之间会露出一条缝，滚过去的列从缝里透出来。 */
 const STICKY_SELECT = "left-0 min-w-10";
@@ -138,6 +140,9 @@ export interface DataTableProps<
   /** 已有数据在位、正在取新数据 → 表体降透明度。与 `loading` 互斥，react-query 下传
    *  `isFetching && !isPending`。表头不降透明度，排序仍可点，它也是用户定位刚点了什么的锚点。 */
   fetching?: boolean;
+  /** 在位的数据是上一次成功的结果、最近一次刷新失败了 → 表体降到一半透明度。它比 `fetching`
+   *  更淡：那边是「马上就新」，这边是「不知道还对不对」。提示文案与重试由调用方另行渲染。 */
+  stale?: boolean;
   /** 空状态。缺省是 `L("Table:Empty")` 的居中单行。传了只替换 `<td>` 内的内容，外层
    *  `<tr><td colSpan>` 仍由组件提供，不用自己算 colSpan。注意那个 `<td>` 带着
    *  `h-24 text-center text-muted-foreground`，插图 + 标题 + 按钮这类空状态会被强制居中、
@@ -168,14 +173,9 @@ export interface DataTableProps<
    *
    *  通栏行不吃 `onRowClick`、没有悬停底色，也不参与选中；`<td>` 无内边距，留白由内容自定。 */
   renderSubRow?: (row: TableRowInstance<TData, TExtra>) => ReactNode;
-  /** 每页条数选项，缺省 `[10, 20, 50]`。当前 `pagination.pageSize` 总会被并入去重升序，
-   *  所以传了 `useDataTable({ defaultPageSize })` 忘了同步这里，触发器也不会空白。
-   *  传了 `footer` 则本项不生效。 */
-  pageSizes?: number[];
-  /** 接管整个页脚区：总条数文字、每页行数下拉、分页器三者全部。缺省渲染内建页脚。
-   *  做「加载更多」或无限滚动的调用方本就不要页码和每页行数，拆开接管只会让他们分别关
-   *  三个开关；要保留哪部分自己从 ctx 拼，分页动作走 `ctx.table.nextPage()` 这些。
-   *  传了它之后 `pageSizes` 不生效，内建的每页行数下拉不再渲染。 */
+  /** 接管整个页脚区：总条数文字和分页器。缺省渲染内建页脚。做「加载更多」或无限滚动的
+   *  调用方本就不要页码，拆开接管只会让他们分别关两个开关；要保留哪部分自己从 ctx 拼，
+   *  分页动作走 `ctx.table.nextPage()` 这些。每页条数不在页脚，见 `DataTableViewMenu`。 */
   footer?: (ctx: {
     table: TableInstance<TData, TExtra>;
     pagination: PaginationState;
@@ -227,184 +227,195 @@ export function DataTable<TData extends RowData, TExtra extends ExtraFeatureMap 
       pagination={dt.state.pagination}
       pageCount={dt.pageCount}
       rowCount={dt.rowCount}
-      pageSizes={props.pageSizes}
     />
   );
 
   return (
     <div className="overflow-hidden rounded-md border bg-card">
       {props.children}
-      <Table
-        // 行高是声明出来的，不是内容撑出来的：此前两档都靠单元格内距，于是同一档里
-        // "有行尾菜单的行"比"纯文本行"高 12px，密度实际由那个按钮决定。
-        className={cn(dt.state.density === "compact" ? "[&_td]:h-8" : "[&_td]:h-10")}
-        aria-busy={props.loading || props.fetching ? true : undefined}
+      {/* 滚动的是原语内部那层容器，这里拿不到它的 ref；scroll 不冒泡但会经过捕获阶段。
+          直接写属性而不进 state：整张表不必为「滚没滚过」重渲染，React 也不管这个属性。 */}
+      <div
+        className="group/scroll"
+        onScrollCapture={(event) => {
+          if (!(event.target instanceof HTMLElement)) return;
+          if (event.target.dataset.slot !== "table-container") return;
+          event.currentTarget.toggleAttribute("data-scrolled", event.target.scrollLeft > 0);
+        }}
       >
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                const showSortIndex =
-                  table.state.sorting.length > 1 && Boolean(header.column.getIsSorted());
-                const sortPriorityId = `${tableId}-sortpri-${header.id}`;
-                return (
-                  <TableHead
-                    key={header.id}
-                    aria-sort={
-                      header.column.getIsSorted() === "asc"
-                        ? "ascending"
-                        : header.column.getIsSorted() === "desc"
-                          ? "descending"
-                          : header.column.getCanSort()
-                            ? "none"
-                            : undefined
-                    }
-                    className={cn(
-                      // label-caps：正字距的大写小字把表头标记为"分类"而非内容，
-                      // 是这套系统里唯一用正字距的地方（DESIGN.md「Typography」）。
-                      "bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground",
-                      alignClass(header.column.columnDef.meta?.align),
-                      header.column.columnDef.meta?.className,
-                      stickyClassOf(header.column.id) &&
-                        cn(stickyClassOf(header.column.id), "before:bg-muted/50"),
-                    )}
-                  >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
-                        type="button"
-                        onClick={header.column.getToggleSortingHandler()}
-                        aria-describedby={showSortIndex ? sortPriorityId : undefined}
-                        className={cn(
-                          "inline-flex w-full items-center gap-1.5 select-none hover:text-foreground",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                          justifyClass(header.column.columnDef.meta?.align),
-                        )}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === "asc" ? (
-                          <ChevronUp className="size-3 text-primary" />
-                        ) : header.column.getIsSorted() === "desc" ? (
-                          <ChevronDown className="size-3 text-primary" />
-                        ) : (
-                          <ChevronsUpDown className="size-3 opacity-50" />
-                        )}
-                        {showSortIndex && (
-                          // 优先级本就不可用 ARIA 表达（aria-sort 只有方向），裸数字留在可访问名里
-                          // 会污染读屏播报与语音控制的匹配目标（按钮会变成「Name1」而非「Name」）。
-                          <span
-                            aria-hidden="true"
-                            className="text-2xs font-normal tabular-nums text-muted-foreground"
-                          >
-                            {header.column.getSortIndex() + 1}
-                          </span>
-                        )}
-                      </button>
-                    ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
-                    )}
-                    {showSortIndex && (
-                      // 描述得放 button 外面，进 button 会并入可访问名、污染语音控制的匹配目标，
-                      // 而 aria-describedby 只影响描述不影响名称。但 th 自己也是 "name from
-                      // content" 的角色，不加 aria-hidden 这段文字照样会并进表头的可访问名。
-                      // aria-hidden 把它逐出常规内容遍历，aria-describedby 的直接引用不受影响，
-                      // 读屏仍读得到。
-                      <span id={sortPriorityId} aria-hidden="true" className="sr-only">
-                        {L("Table:SortPriority", header.column.getSortIndex() + 1)}
-                      </span>
-                    )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody
-          className={cn(
-            // delay-100 吃掉快请求的闪烁，100ms 内返回的几乎看不出变化，且不用 JS 定时器。
-            // 没加 pointer-events-none：它只挡鼠标不挡键盘，两类用户会拿到不同能力；
-            // keepPreviousData 期间在位的又正是上一次的有效数据，点它并不危险（行操作打的是
-            // id，行真没了服务端会 404）。「正在刷新」靠降透明度 + aria-busy 表达，不禁用交互。
-            props.fetching && "opacity-60 transition-opacity duration-150 delay-100",
-          )}
+        <Table
+          // 行高是声明出来的，不是内容撑出来的：此前两档都靠单元格内距，于是同一档里
+          // "有行尾菜单的行"比"纯文本行"高 12px，密度实际由那个按钮决定。
+          className={cn(dt.state.density === "compact" ? "[&_td]:h-8" : "[&_td]:h-10")}
+          aria-busy={props.loading || props.fetching ? true : undefined}
         >
-          {hasError ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={table.getVisibleLeafColumns().length}
-                className="h-24 text-center"
-              >
-                {props.error}
-              </TableCell>
-            </TableRow>
-          ) : props.loading ? (
-            Array.from({ length: skeletonCount }, (_, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: 骨架占位行数固定且从不重排
-              <TableRow key={`skeleton-${i}`} className="hover:bg-transparent">
-                {table.getVisibleLeafColumns().map((column, columnIndex) => {
-                  const meta = column.columnDef.meta;
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  const showSortIndex =
+                    table.state.sorting.length > 1 && Boolean(header.column.getIsSorted());
+                  const sortPriorityId = `${tableId}-sortpri-${header.id}`;
                   return (
-                    // 每列一格而不是整行一条：列宽在骨架期就由表头和 meta.className 定下，
-                    // 数据到达时列不横向跳动。
-                    <TableCell
-                      key={column.id}
+                    <TableHead
+                      key={header.id}
+                      aria-sort={
+                        header.column.getIsSorted() === "asc"
+                          ? "ascending"
+                          : header.column.getIsSorted() === "desc"
+                            ? "descending"
+                            : header.column.getCanSort()
+                              ? "none"
+                              : undefined
+                      }
                       className={cn(
-                        alignClass(meta?.align),
-                        meta?.className,
-                        stickyClassOf(column.id),
+                        // label-caps：正字距的大写小字把表头标记为"分类"而非内容，
+                        // 是这套系统里唯一用正字距的地方（DESIGN.md「Typography」）。
+                        "bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground",
+                        alignClass(header.column.columnDef.meta?.align),
+                        header.column.columnDef.meta?.className,
+                        stickyClassOf(header.column.id) &&
+                          cn(stickyClassOf(header.column.id), "before:bg-muted/50"),
                       )}
                     >
-                      <Skeleton
-                        className={cn(
-                          // 没有取值器的是展示列（勾选框、行操作），内容本就是个小图标位。
-                          column.accessorFn
-                            ? ["h-4", SKELETON_WIDTHS[columnIndex % SKELETON_WIDTHS.length]]
-                            : "size-4",
-                          meta?.align === "right" && "ml-auto",
-                          meta?.align === "center" && "mx-auto",
-                        )}
-                      />
-                    </TableCell>
+                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          aria-describedby={showSortIndex ? sortPriorityId : undefined}
+                          className={cn(
+                            "inline-flex w-full items-center gap-1.5 select-none hover:text-foreground",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            justifyClass(header.column.columnDef.meta?.align),
+                          )}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getIsSorted() === "asc" ? (
+                            <ChevronUp className="size-3 text-primary" />
+                          ) : header.column.getIsSorted() === "desc" ? (
+                            <ChevronDown className="size-3 text-primary" />
+                          ) : (
+                            <ChevronsUpDown className="size-3 opacity-50" />
+                          )}
+                          {showSortIndex && (
+                            // 优先级本就不可用 ARIA 表达（aria-sort 只有方向），裸数字留在可访问名里
+                            // 会污染读屏播报与语音控制的匹配目标（按钮会变成「Name1」而非「Name」）。
+                            <span
+                              aria-hidden="true"
+                              className="text-2xs font-normal tabular-nums text-muted-foreground"
+                            >
+                              {header.column.getSortIndex() + 1}
+                            </span>
+                          )}
+                        </button>
+                      ) : (
+                        flexRender(header.column.columnDef.header, header.getContext())
+                      )}
+                      {showSortIndex && (
+                        // 描述得放 button 外面，进 button 会并入可访问名、污染语音控制的匹配目标，
+                        // 而 aria-describedby 只影响描述不影响名称。但 th 自己也是 "name from
+                        // content" 的角色，不加 aria-hidden 这段文字照样会并进表头的可访问名。
+                        // aria-hidden 把它逐出常规内容遍历，aria-describedby 的直接引用不受影响，
+                        // 读屏仍读得到。
+                        <span id={sortPriorityId} aria-hidden="true" className="sr-only">
+                          {L("Table:SortPriority", header.column.getSortIndex() + 1)}
+                        </span>
+                      )}
+                    </TableHead>
                   );
                 })}
               </TableRow>
-            ))
-          ) : table.getRowModel().rows.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={table.getVisibleLeafColumns().length}
-                className="h-24 text-center text-muted-foreground"
-              >
-                {props.empty ?? L("Table:Empty")}
-              </TableCell>
-            </TableRow>
-          ) : (
-            table.getRowModel().rows.map((row) => {
-              // 行对象运行时就是带着追加特性的那一个，这里只是把类型放宽回调用方声明的特性集。
-              const subRow = props.renderSubRow?.(
-                row as unknown as TableRowInstance<TData, TExtra>,
-              );
-              return (
-                <Fragment key={row.id}>
-                  <DataTableRow
-                    row={row}
-                    selectionAtom={table.atoms.rowSelection}
-                    rowProps={props.rowProps}
-                    onRowClick={props.onRowClick}
-                    stickyClassOf={stickyClassOf}
-                  />
-                  {subRow != null && subRow !== false && (
-                    <TableRow data-slot="data-table-sub-row" className="hover:bg-transparent">
-                      <TableCell colSpan={table.getVisibleLeafColumns().length} className="p-0">
-                        {subRow}
+            ))}
+          </TableHeader>
+          <TableBody
+            className={cn(
+              // delay-100 吃掉快请求的闪烁，100ms 内返回的几乎看不出变化，且不用 JS 定时器。
+              // 没加 pointer-events-none：它只挡鼠标不挡键盘，两类用户会拿到不同能力；
+              // keepPreviousData 期间在位的又正是上一次的有效数据，点它并不危险（行操作打的是
+              // id，行真没了服务端会 404）。「正在刷新」靠降透明度 + aria-busy 表达，不禁用交互。
+              props.fetching && "opacity-60 transition-opacity duration-150 delay-100",
+              props.stale && "opacity-50",
+            )}
+          >
+            {hasError ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={table.getVisibleLeafColumns().length}
+                  className="h-24 text-center"
+                >
+                  {props.error}
+                </TableCell>
+              </TableRow>
+            ) : props.loading ? (
+              Array.from({ length: skeletonCount }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: 骨架占位行数固定且从不重排
+                <TableRow key={`skeleton-${i}`} className="hover:bg-transparent">
+                  {table.getVisibleLeafColumns().map((column, columnIndex) => {
+                    const meta = column.columnDef.meta;
+                    return (
+                      // 每列一格而不是整行一条：列宽在骨架期就由表头和 meta.className 定下，
+                      // 数据到达时列不横向跳动。
+                      <TableCell
+                        key={column.id}
+                        className={cn(
+                          alignClass(meta?.align),
+                          meta?.className,
+                          stickyClassOf(column.id),
+                        )}
+                      >
+                        <Skeleton
+                          className={cn(
+                            // 没有取值器的是展示列（勾选框、行操作），内容本就是个小图标位。
+                            column.accessorFn
+                              ? ["h-4", SKELETON_WIDTHS[columnIndex % SKELETON_WIDTHS.length]]
+                              : "size-4",
+                            meta?.align === "right" && "ml-auto",
+                            meta?.align === "center" && "mx-auto",
+                          )}
+                        />
                       </TableCell>
-                    </TableRow>
-                  )}
-                </Fragment>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                    );
+                  })}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={table.getVisibleLeafColumns().length}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {props.empty ?? L("Table:Empty")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => {
+                // 行对象运行时就是带着追加特性的那一个，这里只是把类型放宽回调用方声明的特性集。
+                const subRow = props.renderSubRow?.(
+                  row as unknown as TableRowInstance<TData, TExtra>,
+                );
+                return (
+                  <Fragment key={row.id}>
+                    <DataTableRow
+                      row={row}
+                      selectionAtom={table.atoms.rowSelection}
+                      rowProps={props.rowProps}
+                      onRowClick={props.onRowClick}
+                      stickyClassOf={stickyClassOf}
+                    />
+                    {subRow != null && subRow !== false && (
+                      <TableRow data-slot="data-table-sub-row" className="hover:bg-transparent">
+                        <TableCell colSpan={table.getVisibleLeafColumns().length} className="p-0">
+                          {subRow}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
       {/* footer 返回 falsy（无限滚动这类不要页脚的接管）时连外壳一起不渲染，
           否则卡片底部会留一条 1px 上边框加一段空白。 */}
       {footerContent && !hasError ? (

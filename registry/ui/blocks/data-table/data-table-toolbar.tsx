@@ -1,18 +1,11 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import type { RowData } from "@tanstack/react-table";
-import { Download, RefreshCw, Rows3, Search, X } from "lucide-react";
+import { Download, RefreshCw, Search, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { ExtraFeatureMap, NoExtraFeatures } from "@/components/data-table/table-core";
 import type { DataTableInstance } from "@/components/data-table/use-data-table";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   InputGroup,
   InputGroupAddon,
@@ -48,12 +41,12 @@ export interface DataTableToolbarProps<
   actions?: ReactNode;
   /** 功能区最前的散件（如查询面板开合钮），排在刷新之前，与「改表格外观」的那几个分开。 */
   utilityLeading?: ReactNode;
-  /** trailing 区：列显隐菜单等散件，并入右侧功能图标组。 */
+  /** trailing 区：视图设置（`DataTableViewMenu`）等散件，并入右侧功能图标组。 */
   children?: ReactNode;
 }
 
 /** 表格卡片顶部条：左区三态（自定义内容/搜索框 ⇄ 批量操作），右区恒定
- * （actions │ utilityLeading · 刷新 · 导出 · 密度 · trailing）。Enter 立即提交搜索。 */
+ * （actions │ utilityLeading · 刷新 · 导出 · trailing）。Enter 立即提交搜索。 */
 export function DataTableToolbar<
   TData extends RowData,
   TExtra extends ExtraFeatureMap = NoExtraFeatures,
@@ -179,41 +172,6 @@ export function DataTableToolbar<
               <TooltipContent>{L("Table:Export")}</TooltipContent>
             </Tooltip>
           )}
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={UTILITY_ICON_CLASS}
-                    aria-label={L("Table:Density")}
-                  >
-                    <Rows3 />
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent>{L("Table:Density")}</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent align="end">
-              <DropdownMenuRadioGroup
-                value={state.density}
-                onValueChange={(value) => {
-                  // 收窄而非断言：菜单项之外的值（将来加档位忘了同步这里）宁可无声忽略，
-                  // 也不要把非法字符串塞进状态机。
-                  if (value === "comfortable" || value === "compact") state.setDensity(value);
-                }}
-              >
-                <DropdownMenuRadioItem value="comfortable">
-                  {L("Table:DensityComfortable")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="compact">
-                  {L("Table:DensityCompact")}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
           {props.children}
         </div>
       </div>

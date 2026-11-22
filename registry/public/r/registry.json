@@ -262,7 +262,7 @@
       "description": "Generic paginated/sortable/searchable data table with debounced search, driven by @tanstack/react-table state.",
       "registryDependencies": [
         "table",
-        "select",
+        "popover",
         "button",
         "input-group",
         "skeleton",
@@ -330,9 +330,9 @@
           "target": "components/data-table/column-label.ts"
         },
         {
-          "path": "ui/blocks/data-table/data-table-columns-menu.tsx",
+          "path": "ui/blocks/data-table/data-table-view-menu.tsx",
           "type": "registry:component",
-          "target": "components/data-table/data-table-columns-menu.tsx"
+          "target": "components/data-table/data-table-view-menu.tsx"
         },
         {
           "path": "ui/blocks/data-table/data-table-sort-menu.tsx",

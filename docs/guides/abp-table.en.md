@@ -692,7 +692,7 @@ The mutation handed to `run` should not carry `onSuccess` / `onError` toast call
 
 ## ⑩ Toolbar additions
 
-The top bar's right area (refresh · export · density · columns) is mostly built-in, no wiring: refresh refetches the current query with a spinning icon; density toggles comfortable/compact (row heights in DESIGN.md "Data tables", varying with inline action buttons), state in memory; the column visibility menu likewise. All three appear just by using `useAbpTable`/`t.Table`.
+The top bar's right area (refresh · export · view settings) is mostly built-in, no wiring: refresh refetches the current query with a spinning icon; view settings is one panel holding density (comfortable / compact, row heights in DESIGN.md "Density"), page size and which columns are shown — all three change how the table looks, not what it holds, so they share one entry and the footer no longer has a page-size dropdown. When the view differs from the default the icon carries a dot and the panel offers "Restore default view", which goes back to the default density, the default page size and all columns in one step. It appears just by using `useAbpTable`/`t.Table`; change the page-size options with `<t.Table pageSizes={[...]}>`.
 
 Export is the one slot-style capability — `useAbpTable(bookService, { onExport: () => exportCsv(t.getListParams()) })`: the export icon renders only when `onExport` is passed; the component library ships no export implementation (neither CSV nor XLSX is assumed). The click just forwards to your callback, and `t.getListParams()` returns the full currently-submitted request params (a snapshot of paging/sorting/search + structured filters — not the form draft); your code decides whether "export" means all matching rows or something else.
 
@@ -713,7 +713,7 @@ Export is the one slot-style capability — `useAbpTable(bookService, { onExport
 
 The `onExport` callback also receives a context argument `{ getListParams, getSelectedRows }`, so it doesn't need to reach back for `t`: `onExport: ({ getListParams, getSelectedRows }) => …`. Both are getters, read at click time.
 
-**`t.Utility`** puts content into the utility icon group on the right, before the columns menu. The built-in multi-sort menu is attached this way:
+**`t.Utility`** puts content into the utility icon group on the right, before view settings. The built-in multi-sort menu is attached this way:
 
 ```tsx
 import { DataTableSortMenu } from "@/components/data-table/data-table-sort-menu";
@@ -811,6 +811,7 @@ const t = useAbpTable(bookService, {
 
 - Name it after the table and keep it stable: renaming discards every user's stored preferences, and two tables sharing a name overwrite each other.
 - With both enabled, the page size in the link wins over the personal preference — a shared "page 3" has to be the same page 3.
+- Stored preferences are cleared by "Restore default view" in the view settings panel; no separate entry is needed.
 - To store them elsewhere (ABP user settings, say), implement `DataTablePreferenceStore`: `subscribe` / `get` / `set`, the `useSyncExternalStore` contract.
 
 ## Choosing a tier
@@ -894,7 +895,7 @@ return (
 );
 ```
 
-L2 deliberately keeps the community-idiomatic "pass the instance explicitly" shape (`table={dt}`) instead of bound members — the escape tier's audience assembles from the instance anyway, and the loose parts (`DataTableToolbar`/`DataTableColumnsMenu`/`DataTableSortMenu`) each take an explicit `table` prop.
+L2 deliberately keeps the community-idiomatic "pass the instance explicitly" shape (`table={dt}`) instead of bound members — the escape tier's audience assembles from the instance anyway, and the loose parts (`DataTableToolbar`/`DataTableViewMenu`/`DataTableSortMenu`) each take an explicit `table` prop.
 
 ## Built-in behavior (not your concern, but know it exists)
 
