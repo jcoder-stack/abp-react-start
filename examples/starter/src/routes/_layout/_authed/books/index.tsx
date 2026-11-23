@@ -49,6 +49,7 @@ import {
 } from "@/routes/_layout/_authed/books/-book-form";
 import type { AbpSwaggerBooksBookDto } from "@/routes/_layout/_authed/books/-book-models";
 import { type BookScenario, BookScenarioBar } from "@/routes/_layout/_authed/books/-book-scenarios";
+import { BookDeleteButton } from "@/routes/_layout/_authed/books/-book-sheet-actions";
 import { BooksL1Demo } from "@/routes/_layout/_authed/books/-tiers/books-l1-demo";
 import { BooksL2Demo } from "@/routes/_layout/_authed/books/-tiers/books-l2-demo";
 
@@ -150,6 +151,7 @@ function BooksPage() {
     toCreate: toBookInput,
     toUpdate: toBookInput,
     schema: () => bookSchema(L),
+    continueCreate: true,
     title: (mode, record) => (mode === "create" ? L("App::BookCreateTitle") : (record?.name ?? "")),
     subtitle: (mode, record) =>
       mode === "create" || record === undefined
@@ -369,7 +371,35 @@ function BooksPage() {
           <BooksL2Demo />
         </TabsContent>
       </Tabs>
-      <sheet.Sheet size="md">
+      <sheet.Sheet
+        size="md"
+        footerStart={
+          record?.id && t.source.can.delete && t.source.delete && canDeleteBook(record) ? (
+            <BookDeleteButton
+              id={record.id}
+              remove={t.source.delete.mutate}
+              onDeleted={() => sheet.close({ force: true })}
+            />
+          ) : undefined
+        }
+        footerEnd={
+          record && t.source.can.create ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                void sheet.open("create", {
+                  ...record,
+                  name: L("App::BookCopyName", record.name ?? ""),
+                })
+              }
+            >
+              <CopyPlus />
+              {L("App::BookDuplicate")}
+            </Button>
+          ) : undefined
+        }
+      >
         <sheet.form.AppForm>
           <sheet.form.FormErrors />
         </sheet.form.AppForm>

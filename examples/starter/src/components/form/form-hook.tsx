@@ -1,7 +1,7 @@
 import { useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import type { ReactNode } from "react";
-import { createContext, lazy, Suspense, useContext } from "react";
+import { createContext, lazy, Suspense, useContext, useState } from "react";
 import { Combobox } from "@/components/combobox/combobox";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
 import {
@@ -125,7 +125,12 @@ export function useReadOnly(): boolean {
  * 条竖线上。`display` 为 `null`/空串/NaN 时渲染成「未填写」；只在 `ReadOnlyFields` 的 `<dl>`
  * 里使用，它输出的是 `<dt>/<dd>`。
  */
-export function FieldRow(props: { label: string; display: ReactNode }) {
+export function FieldRow(props: {
+  label: string;
+  display: ReactNode;
+  /** 键在上、值在下并左对齐。给多行长文本用：右对齐的段落每行参差，读起来很别扭。 */
+  stacked?: boolean;
+}) {
   const L = useLocalization();
   const empty =
     props.display === undefined ||
@@ -133,9 +138,20 @@ export function FieldRow(props: { label: string; display: ReactNode }) {
     props.display === "" ||
     (typeof props.display === "number" && Number.isNaN(props.display));
   return (
-    <div className="flex min-h-10 items-center justify-between gap-4 px-3 py-2">
+    <div
+      className={cn(
+        "flex min-h-10 gap-4 px-3 py-2",
+        props.stacked === true ? "flex-col gap-1 py-2.5" : "items-center justify-between",
+      )}
+    >
       <dt className="shrink-0 text-sm text-muted-foreground">{props.label}</dt>
-      <dd className={cn("text-right text-sm", empty && "text-muted-foreground")}>
+      <dd
+        className={cn(
+          "text-sm",
+          props.stacked !== true && "text-right",
+          empty && "text-muted-foreground",
+        )}
+      >
         {empty ? L("Form:Empty") : props.display}
       </dd>
     </div>
@@ -166,7 +182,12 @@ function FieldShell(props: {
    * undefined，就会在只读的键值卡里冒出一个控件，把整张卡的排版撑坏。
    */
   display?: ReactNode;
+  /** 只读行改成键在上、值在下，见 `FieldRow` 的 `stacked`。 */
+  stacked?: boolean;
+  /** 不标「选填」：开关这类永远有值的字段不存在「没填」，标了只是噪音。 */
+  alwaysFilled?: boolean;
   orientation?: "vertical" | "horizontal";
+  className?: string;
   children: ReactNode;
 }) {
   const field = useFieldContext();
@@ -174,12 +195,12 @@ function FieldShell(props: {
   const marksOptional = useContext(OptionalMarksContext);
   const readOnly = useContext(ReadOnlyContext);
   if (readOnly && props.display !== undefined) {
-    return <FieldRow label={props.label} display={props.display} />;
+    return <FieldRow label={props.label} display={props.display} stacked={props.stacked} />;
   }
   const label = (
     <FieldLabel htmlFor={field.name}>
       {props.label}
-      {marksOptional && props.required !== true && <OptionalMark />}
+      {marksOptional && props.required !== true && props.alwaysFilled !== true && <OptionalMark />}
     </FieldLabel>
   );
   const description = props.description !== undefined && (
@@ -189,7 +210,11 @@ function FieldShell(props: {
   if (props.orientation === "horizontal") {
     // 横排时说明与错误都归到标签那一列，控件留在行尾——否则它们会挤进同一行把开关推走。
     return (
-      <Field orientation="horizontal" data-invalid={invalid ? true : undefined}>
+      <Field
+        orientation="horizontal"
+        data-invalid={invalid ? true : undefined}
+        className={props.className}
+      >
         <FieldContent>
           {label}
           {description}
@@ -258,6 +283,7 @@ export function TextareaField(props: {
       label={props.label}
       required={props.required}
       description={props.description}
+      stacked
       display={
         field.state.value ? <span className="whitespace-pre-wrap">{field.state.value}</span> : null
       }
@@ -322,14 +348,20 @@ export function NumberField(props: {
    * 不能被 `z.number()` 判失败态吞掉。schema 要配 `z.number().nullable()`，否则清空后会被判失败。
    */
   nullable?: boolean;
-  /** 查看态固定显示几位小数，与表格 `col.money` 的 `digits` 对齐；缺省按值本身的位数。
-   *  只管查看态：输入框里补零会和用户正在敲的内容打架。 */
+  /** 固定显示几位小数，与表格 `col.money` 的 `digits` 对齐；缺省按值本身的位数。
+   *  输入框只在失焦时补零：正在输入时补零会和用户敲的内容打架。 */
   digits?: number;
 }) {
   const culture = useCulture();
   const field = useFieldContext<number | null>();
+  const [focused, setFocused] = useState(false);
   const value = field.state.value;
   const isEmpty = value === null || Number.isNaN(value);
+  const text = isEmpty
+    ? ""
+    : !focused && props.digits !== undefined
+      ? value.toFixed(props.digits)
+      : String(value);
   return (
     <FieldShell
       label={props.label}
@@ -354,9 +386,15 @@ export function NumberField(props: {
         placeholder={props.placeholder}
         aria-required={props.required === true || undefined}
         aria-invalid={field.state.meta.errors.length > 0 || undefined}
-        value={isEmpty ? "" : String(value)}
+        // 数字右对齐、等宽，与表格的数字列一致，小数点上下对得齐。
+        className="text-right tabular-nums"
+        value={text}
         disabled={props.disabled}
-        onBlur={field.handleBlur}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false);
+          field.handleBlur();
+        }}
         onChange={(event) => {
           // 空串裸转 Number 是 0,会把「清空了」写成「改成 0」;非 nullable 映射 NaN 让 z.number() 判失败,
           // nullable 映射 null 原样提交给后端的可空字段。
@@ -386,6 +424,9 @@ export function SwitchField(props: {
       required={props.required}
       description={props.description}
       orientation="horizontal"
+      alwaysFilled
+      // 带框的一行：标签和说明在左、开关在右，两端隔得再远也看得出是一组。
+      className="rounded-md border px-3 py-2.5"
       display={L(field.state.value ? "Form:Yes" : "Form:No")}
     >
       <Switch

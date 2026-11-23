@@ -72,7 +72,8 @@ export function DateRangePicker(props: DateRangePickerProps) {
           // 故文本自己 truncate，完整区间走 title。占位文案没有「完整值」可揭示，不给 title。
           title={value?.from !== undefined ? label : undefined}
           className={cn(
-            "w-full justify-start text-left font-normal",
+            // 与输入框同一套底色与描边：outline 按钮自带 bg-background，放在白卡上像一块灰色补丁。
+            "w-full justify-start border-input bg-transparent text-left font-normal hover:bg-transparent",
             value?.from === undefined && "text-muted-foreground",
           )}
         >

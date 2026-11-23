@@ -11,7 +11,11 @@ import { useReadOnly } from "@/components/form/form-hook";
 export function FieldLayout(props: { className: string; children: ReactNode }) {
   const readOnly = useReadOnly();
   if (readOnly) return <>{props.children}</>;
-  return <div className={props.className}>{props.children}</div>;
+  return (
+    <div data-slot="field-layout" className={props.className}>
+      {props.children}
+    </div>
+  );
 }
 
 /**
