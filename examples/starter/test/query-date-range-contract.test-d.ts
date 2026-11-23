@@ -1,5 +1,5 @@
 import { test } from "vitest";
-import { QueryDateRange } from "@/components/abp/table/query-date-range";
+import { QueryDateRange } from "@/components/date-picker/query-date-range";
 import { useAppForm } from "@/components/form/form-hook";
 
 /**

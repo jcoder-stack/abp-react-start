@@ -40,7 +40,7 @@ The snippets below omit imports for focus. Listed once, take as needed:
 import { createCrudService } from "@/components/abp/crud/crud-service"
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet"
 import { useAbpTable } from "@/components/abp/table/use-abp-table"
-import { QueryDateRange } from "@/components/abp/table/query-date-range"
+import { QueryDateRange } from "@/components/date-picker/query-date-range"
 import { createAbpColumns, columnHeader } from "@/components/abp/table/column-presets"
 import type { TableColumnDef } from "@/components/data-table/table-core"
 ```
@@ -859,7 +859,7 @@ The table/CRUD capability comes in four tiers, each narrower in applicability an
 | Standard ABP backend CRUD page (including pure list pages and route-jump pages) | `useAbpTable` (+ `useAbpSheet` when create/edit is needed) |
 | Data source outside `createCrudService`, but still wanting ABP-style assembly (permission gating/row actions/error states/page clamping) | `useAbpTable` with a `(params) => AbpTableSource` callback; reference at [`books/-tiers/books-l1-demo.tsx`](../../examples/starter/src/routes/_layout/_authed/books/-tiers/books-l1-demo.tsx) |
 | A generic non-ABP table (no paging protocol assumptions) | L2: `useDataTableState` + `useDataTable` + `<DataTable table={dt}>`; reference at [`books/-tiers/books-l2-demo.tsx`](../../examples/starter/src/routes/_layout/_authed/books/-tiers/books-l2-demo.tsx) |
-| Changing the assembly itself (rearranging the "···" menu chrome, the bulk bar layout, the toolbar structure) | Fork the corresponding assembly file (`abp-table.tsx`/`abp-query-form.tsx`/`abp-bulk-bar.tsx`/`row-actions-menu.tsx`…) — under copy-in distribution that is legitimate use |
+| Changing the assembly itself (rearranging the "···" menu chrome, the bulk bar layout, the toolbar structure) | Fork the corresponding assembly file (`abp-table.tsx`/`data-table-filter.tsx`/`abp-bulk-bar.tsx`/`row-actions-menu.tsx`…) — under copy-in distribution that is legitimate use |
 
 The `useAbpPage`/`useAbpCrud`/`useCrud`/`QueryField`/`QueryRange`/`tableRef`/`render*` callback families are all retired and no longer appear in page code. The `books` page lays the first three tiers side by side as tabs (`Tabs` in `index.tsx`) for direct comparison.
 
@@ -932,6 +932,38 @@ return (
 ```
 
 L2 deliberately keeps the community-idiomatic "pass the instance explicitly" shape (`table={dt}`) instead of bound members — the escape tier's audience assembles from the instance anyway, and the loose parts (`DataTableToolbar`/`DataTableViewMenu`/`DataTableSortMenu`) each take an explicit `table` prop.
+
+When L2 needs an advanced filter, use the data-table block's filter shell in `data-table-filter.tsx`: `DataTableFilterToggle` (the open/close button, goes in the toolbar's `utilityLeading`), `DataTableFilterPanel` (field grid + Reset/Query) and `DataTableFilterChips` (the applied-filters row shown while the panel is closed). They own layout and interaction only; how fields bind and how values become request params is yours. L0's `t.QueryForm` is exactly the ABP wiring on top of these three:
+
+```tsx
+const [expanded, setExpanded] = useState(false);
+const panelId = useId();
+
+<DataTable table={dt}>
+  <DataTableToolbar
+    table={dt}
+    search={!expanded}
+    utilityLeading={
+      <DataTableFilterToggle
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        panelId={panelId}
+        activeCount={chips.length}
+      />
+    }
+  >
+    <DataTableViewMenu table={dt} />
+  </DataTableToolbar>
+  {!expanded && <DataTableFilterChips chips={chips} onClearAll={clearFilters} />}
+  {expanded && (
+    <DataTableFilterPanel panelId={panelId} onSubmit={applyFilters} onReset={resetFilters}>
+      {/* labelled fields, one child per field */}
+    </DataTableFilterPanel>
+  )}
+</DataTable>
+```
+
+Range fields use the date-picker block's `QueryDateRange`. The abp-table block's `AbpQueryPanelToggle`/`AbpQueryPanelView` and `@/components/abp/table/query-date-range` still work but are marked `@deprecated` and will be removed in the next major version.
 
 ## Built-in behavior (not your concern, but know it exists)
 
