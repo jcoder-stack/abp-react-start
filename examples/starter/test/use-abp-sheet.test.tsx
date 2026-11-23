@@ -357,6 +357,187 @@ describe("useAbpSheet", () => {
   });
 });
 
+type SheetApi = ReturnType<typeof useAbpSheet<Dto, Values, { name: string }, UpdateInput>>;
+
+/** 把整个返回值交给测试：close / open 的返回值 / onSaved 都要从外面断言。 */
+function ApiHarness(props: {
+  service: Service;
+  apiRef: { current: SheetApi | null };
+  toValues?: (record: Dto, mode: SheetFormMode) => Values | Promise<Values | null>;
+  onSaved?: (saved: Dto | undefined, mode: "create" | "edit") => void;
+}) {
+  const sheet = useAbpSheet<Dto, Values, { name: string }, UpdateInput>(props.service, {
+    emptyValues: { name: "" },
+    toValues: props.toValues ?? ((record) => ({ name: record.name ?? "" })),
+    toCreate: (value) => ({ name: value.name }),
+    toUpdate: (value) => ({ name: value.name }),
+    onSaved: props.onSaved,
+  });
+  props.apiRef.current = sheet;
+  return (
+    <sheet.Sheet>
+      <sheet.form.AppField name="name">
+        {(field) => <field.TextField label="Name" disabled={sheet.readOnly} />}
+      </sheet.form.AppField>
+    </sheet.Sheet>
+  );
+}
+
+async function ready(apiRef: { current: SheetApi | null }): Promise<SheetApi> {
+  await waitFor(() => expect(apiRef.current).not.toBeNull());
+  return apiRef.current as SheetApi;
+}
+
+describe("useAbpSheet 打开与关闭的边界", () => {
+  it("连点两条记录、先点的预取更慢：抽屉里是后点的那一条", async () => {
+    let releaseSlow: () => void = () => {};
+    const slow = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(
+      <ApiHarness
+        service={makeService()}
+        apiRef={apiRef}
+        toValues={async (record) => {
+          if (record.id === "slow") await slow;
+          return { name: record.name ?? "" };
+        }}
+      />,
+      { messages },
+    );
+    const api = await ready(apiRef);
+    let first: Promise<boolean> = Promise.resolve(true);
+    await act(async () => {
+      first = api.open("view", { id: "slow", name: "Slow" });
+      await api.open("view", { id: "fast", name: "Fast" });
+    });
+    await act(async () => {
+      releaseSlow();
+      expect(await first).toBe(false);
+    });
+    expect(screen.getByText("Fast")).toBeTruthy();
+    expect(screen.queryByText("Slow")).toBeNull();
+  });
+
+  it("toValues 抛错：不打开，open 返回 false 而不是抛出", async () => {
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(
+      <ApiHarness
+        service={makeService()}
+        apiRef={apiRef}
+        toValues={async () => {
+          throw new Error("network");
+        }}
+      />,
+      { messages },
+    );
+    const api = await ready(apiRef);
+    let opened = true;
+    await act(async () => {
+      opened = await api.open("view", { id: "1", name: "X" });
+    });
+    expect(opened).toBe(false);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("从查看态切到编辑会按 edit 重算表单值", async () => {
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(
+      <ApiHarness
+        service={makeService()}
+        apiRef={apiRef}
+        toValues={(record, mode) => ({ name: mode === "edit" ? "" : (record.name ?? "") })}
+      />,
+      { messages },
+    );
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("view", { id: "1", name: "Secret" });
+    });
+    expect(screen.getByText("Secret")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const input = (await screen.findByLabelText(/Name/)) as HTMLInputElement;
+    expect(input.value).toBe("");
+  });
+
+  it("从查看态进入编辑后按 Esc：回到查看态而不是关掉抽屉", async () => {
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={makeService()} apiRef={apiRef} />, { messages });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("view", { id: "1", name: "Kept" });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByLabelText(/Name/);
+    // 只走 Radix 在 document 捕获阶段的那条路径，不经抽屉自己的 onKeyDown 兜底。
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(await screen.findByText("Kept")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("close() 遇到未保存改动先确认；force 直接关", async () => {
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={makeService()} apiRef={apiRef} />, { messages });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("create");
+    });
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "typed" } });
+    act(() => apiRef.current?.close());
+    expect(await screen.findByRole("button", { name: "Discard" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
+    expect((screen.getByLabelText(/Name/) as HTMLInputElement).value).toBe("typed");
+    act(() => apiRef.current?.close({ force: true }));
+    await waitFor(() => expect(screen.queryByLabelText(/Name/)).toBeNull());
+  });
+
+  it("没有新建权限时 create 打不开；没有编辑权限时 edit 降级为查看", async () => {
+    const service = {
+      ...makeService(),
+      resolvedPolicies: { create: "Books.Create", update: "Books.Edit" },
+    };
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={service} apiRef={apiRef} />, { messages });
+    const api = await ready(apiRef);
+    let created = true;
+    await act(async () => {
+      created = await api.open("create");
+    });
+    expect(created).toBe(false);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => {
+      await api.open("edit", { id: "1", name: "Locked" });
+    });
+    expect(screen.getByText("Locked")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("保存成功后把服务端记录交给 onSaved", async () => {
+    const onSaved = vi.fn();
+    const service = makeService({
+      update: async ({ id, data }) => ({ id, name: data.name, concurrencyStamp: "S2" }),
+    });
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={service} apiRef={apiRef} onSaved={onSaved} />, {
+      messages,
+    });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("edit", { id: "1", name: "Old" });
+    });
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "New" } });
+    submitSheetForm();
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith(
+        { id: "1", name: "New", concurrencyStamp: "S2" },
+        "edit",
+      ),
+    );
+  });
+});
+
 /** 编译期护栏(文档性质,非本文件运行时断言)：`useAbpSheet` 要求可写 service,只读 service
  * (未传 useCreate/useUpdate)必须编译期报错，`examples/starter/tsconfig.json` 的 include 只覆盖
  * `src/**`,`test/` 下的类型错误不进 `npm run typecheck`,真正的强制闸门是 use-abp-sheet.tsx 里

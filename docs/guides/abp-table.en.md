@@ -976,6 +976,10 @@ These invariants are maintained inside the framework; page code neither needs to
 - **Filter/sort/search changes reset to page 1 and clear the selection.**
 - **`concurrencyStamp` round-trips automatically**: the sheet reads it off the row record and attaches it to update requests; your `toUpdate` never assembles it.
 - **Server validation errors land on their fields automatically**: via `abpSubmitValidator`, rendered through the same chain as client zod validation.
+- **`sheet.open` honors only the latest call**: when `toValues` waits on the network, clicking two rows quickly never shows the wrong record because the first request came back late; if `toValues` throws, the sheet shows a single "Operation failed" toast and stays closed, so pages don't need their own try/catch. It resolves to whether the sheet actually opened.
+- **`sheet.open` checks permissions**: without the create permission `open("create")` doesn't open; without the update permission `open("edit")` falls back to view. Entry points outside the row menu (deep links, shortcuts) can't bypass permissions either.
+- **Switching between view and edit re-runs `toValues` for the target mode**, so pages that return different values per mode (such as clearing a password in edit) get the right ones on this path too.
+- **`sheet.close()` goes through the same unsaved-changes confirmation as the sheet's × and Esc**; pass `{ force: true }` to close unconditionally. Follow-up work after a save (navigating to a detail page, updating another cache) goes in `onSaved(saved, mode)` without changing the block.
 
 ## Menu items + messages
 

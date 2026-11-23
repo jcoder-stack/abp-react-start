@@ -3,7 +3,6 @@ import { useCulture, useLocalization, usePermissionChecker } from "@jcoder-stack
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { lazy, Suspense, useCallback, useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 import {
   getApiIdentityUsersIdRoles,
@@ -166,20 +165,14 @@ function UsersPage() {
 
   const sheet = useAbpSheet(userService, {
     emptyValues: EMPTY_VALUES,
-    // 用户 DTO 不带 roleNames，view/edit 打开前先取一次当前角色再开 sheet；AbpTable 的 onOpen
-    // 是 fire-and-forget，GET 失败必须在这里兜住提示并取消打开，否则用户只看到点击无响应。
+    // 用户 DTO 不带 roleNames，view/edit 打开前先取一次当前角色再开 sheet；取失败由 useAbpSheet 统一提示。
     toValues: async (record, mode) => {
       let roleNames: string[] = [];
       if (record.id && mode !== "create") {
-        try {
-          const roles = await getApiIdentityUsersIdRoles(record.id);
-          roleNames = (roles.items ?? [])
-            .map((role) => role.name ?? "")
-            .filter((name) => name.length > 0);
-        } catch {
-          toast.error(L("Crud:OperationFailed"));
-          return null;
-        }
+        const roles = await getApiIdentityUsersIdRoles(record.id);
+        roleNames = (roles.items ?? [])
+          .map((role) => role.name ?? "")
+          .filter((name) => name.length > 0);
       }
       return toRecordValues(record, roleNames);
     },

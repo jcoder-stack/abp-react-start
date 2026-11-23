@@ -1,6 +1,6 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { Pencil } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, type Ref, useImperativeHandle, useRef, useState } from "react";
 import { OptionalMarks, ReadOnlyFields } from "@/components/form/form-hook";
 import { SubmitButton } from "@/components/form/submit-button";
 import {
@@ -41,6 +41,11 @@ export const SHEET_SIZE_CLASS: Record<SheetFormSize, string> = {
   xl: "sm:max-w-5xl",
 };
 
+/** `SheetForm` 的命令式出口：让抽屉之外的代码（如 `useAbpSheet().close()`）也走同一道未保存确认。 */
+export interface SheetFormHandle {
+  requestClose: () => void;
+}
+
 export interface SheetFormProps {
   mode: SheetFormMode;
   open: boolean;
@@ -62,6 +67,7 @@ export interface SheetFormProps {
   onCloseAutoFocus?: (event: Event) => void;
   /** 抽屉宽度，默认 `sm`。见 `SheetFormSize`。 */
   size?: SheetFormSize;
+  ref?: Ref<SheetFormHandle>;
   children: ReactNode;
 }
 
@@ -84,6 +90,8 @@ export function SheetForm(props: SheetFormProps) {
   const requestClose = () => guard(() => props.onOpenChange(false));
   const onBack = props.onBack;
   const requestBack = onBack ? () => guard(onBack) : requestClose;
+  useImperativeHandle(props.ref, () => ({ requestClose }));
+  const escHandled = useRef<KeyboardEvent | null>(null);
 
   return (
     <Sheet
@@ -93,12 +101,19 @@ export function SheetForm(props: SheetFormProps) {
       <SheetContent
         className={cn("flex w-full flex-col gap-0 p-0", SHEET_SIZE_CLASS[props.size ?? "sm"])}
         onCloseAutoFocus={props.onCloseAutoFocus}
-        // Esc 自己兜一层，不依赖 Radix 的默认路径：焦点落在文本框里时浏览器会先消费掉这个键
-        // （事件到达 document 时已 defaultPrevented），而表单一打开就自动聚焦第一个字段——
-        // 于是模态最标准的退出键在实际使用中从来没生效过。
+        // Radix 在 document 捕获阶段先处理 Esc，默认走关闭；这里接管成「退一步」，
+        // 从查看态进来的编辑才能按 Esc 回到查看态，而不是整个抽屉被关掉。
+        onEscapeKeyDown={(event) => {
+          event.preventDefault();
+          escHandled.current = event;
+          requestBack();
+        }}
+        // 再兜一层：焦点落在文本框里时 Radix 那条路径可能收不到这个键，而表单一打开就自动聚焦
+        // 第一个字段——没有兜底，模态最标准的退出键在实际使用中就不生效。同一次按键只处理一次。
         onKeyDown={(event) => {
           if (event.key !== "Escape") return;
           event.stopPropagation();
+          if (escHandled.current === event.nativeEvent) return;
           requestBack();
         }}
       >

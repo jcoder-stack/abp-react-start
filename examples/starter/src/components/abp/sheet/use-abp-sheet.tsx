@@ -9,6 +9,7 @@ import type { WritableCrudService } from "@/components/abp/crud/crud-service";
 import { useAppForm } from "@/components/form/form-hook";
 import {
   SheetForm,
+  type SheetFormHandle,
   type SheetFormMode,
   type SheetFormProps,
   type SheetFormSize,
@@ -33,6 +34,9 @@ export type AbpSheetOptions<
   title?: (mode: SheetFormMode, record: TDto | undefined) => string;
   /** 标题下的记录标识，例如「刘慈欣 · 2008-01-01」。返回 undefined 则不占那一行。 */
   subtitle?: (mode: SheetFormMode, record: TDto | undefined) => string | undefined;
+  /** 保存成功后调用，此时列表已失效、抽屉已按规则关闭或回到查看态。`saved` 是服务端返回的记录，
+   *  没回（或回的不是对象）时为 undefined。用来接「创建后跳详情」这类页面自己的后续动作。 */
+  onSaved?: (saved: TDto | undefined, mode: "create" | "edit") => void;
 } & (TValues extends TCreate
   ? { toCreate?: (value: TValues) => TCreate }
   : { toCreate: (value: TValues) => TCreate }) &
@@ -56,6 +60,10 @@ function resolveOpener(active: Element | null): HTMLElement | null {
 
 function isRecordOf<TDto extends { id?: string }>(value: unknown, id: string): value is TDto {
   return typeof value === "object" && value !== null && (value as { id?: unknown }).id === id;
+}
+
+function isRecord<TDto>(value: unknown): value is TDto {
+  return typeof value === "object" && value !== null;
 }
 
 /** service → sheet 三态状态机 + create/update mutation。直接吃 `WritableCrudService`，
@@ -86,6 +94,11 @@ export function useAbpSheet<
   isOpen.current = sheet !== null;
   // 保存成功后要回到查看态的那条新记录；由 submit 写、onSuccess 读，两者之间隔着表单库。
   const reopenWith = useRef<TDto | null>(null);
+  const savedWith = useRef<{ record: TDto | undefined; mode: "create" | "edit" } | null>(null);
+  // 每次 open / close 递增。toValues 可能要等网络，连点两行时后发的请求可能先回来；
+  // 只认最后一次，晚到的旧结果直接丢掉，抽屉里才不会显示错的那一条。
+  const openSeq = useRef(0);
+  const sheetForm = useRef<SheetFormHandle>(null);
   // defaultValues 必须由 state 驱动:useForm 每渲染 formApi.update(opts) 会把稳定常量
   // defaultValues 拍回刚 reset 的记录值。
   const [formDefaults, setFormDefaults] = useState<TValues>(opts.emptyValues);
@@ -125,18 +138,26 @@ export function useAbpSheet<
           const updated = await rawUpdate.mutateAsync({ id: sheet.record.id, data });
           // 只有服务端回了这条记录才回查看态：拿旧记录充数，下一次编辑会带着过期的
           // concurrencyStamp 撞并发冲突。
-          reopenWith.current =
-            sheet.fromView === true && isRecordOf<TDto>(updated, sheet.record.id) ? updated : null;
+          const fresh = isRecordOf<TDto>(updated, sheet.record.id) ? updated : undefined;
+          reopenWith.current = sheet.fromView === true && fresh ? fresh : null;
+          savedWith.current = { record: fresh, mode: "edit" };
         } else {
           const toCreate = opts.toCreate ?? ((v: TValues) => v as unknown as TCreate);
-          await rawCreate.mutateAsync({ data: toCreate(value) });
+          const created = await rawCreate.mutateAsync({ data: toCreate(value) });
+          savedWith.current = {
+            record: isRecord<TDto>(created) ? created : undefined,
+            mode: "create",
+          };
         }
       },
       onSuccess: () => {
         const next = reopenWith.current;
+        const saved = savedWith.current;
         reopenWith.current = null;
-        if (next) void open("view", next);
-        else setSheet(null);
+        savedWith.current = null;
+        if (next) void open("view", next, { fromView: false });
+        else dismiss();
+        if (saved) optsRef.current.onSaved?.(saved.record, saved.mode);
       },
     }),
   );
@@ -149,6 +170,9 @@ export function useAbpSheet<
   // 还会触发 data-table 的 columns churn 告警去误指调用方。
   const optsRef = useRef(opts);
   optsRef.current = opts;
+  // open 的身份必须稳定（理由同上），L 与权限检查也经 ref 读最新值。
+  const envRef = useRef({ L, can, policies: service.resolvedPolicies });
+  envRef.current = { L, can, policies: service.resolvedPolicies };
 
   // 默认 toValues：按 emptyValues 的键从记录 pick，null/undefined 回退成空值，够 roles 这类
   // 「表单形状 ≡ DTO 子集」的页用；密码不回显这种 mode 语义仍要显式传 toValues。
@@ -163,26 +187,53 @@ export function useAbpSheet<
     return next as TValues;
   }, []);
 
+  /** 打开（或在已开的抽屉里切换）到某一态。返回是否真的打开了：没有新建权限、toValues 返回 null
+   *  或抛错、被更晚的一次 open/close 取代，都返回 false 且不动当前抽屉。没有编辑权限时 edit 降级为
+   *  view——行菜单之外的入口（深链、快捷键）也不该绕过权限。 */
   const open = useCallback(
-    async (nextMode: SheetFormMode, nextRecord?: TDto) => {
+    async (
+      requestedMode: SheetFormMode,
+      nextRecord?: TDto,
+      options?: { fromView?: boolean },
+    ): Promise<boolean> => {
+      const env = envRef.current;
+      const allowed = (policy: string | undefined) => policy === undefined || env.can(policy);
+      if (requestedMode === "create" && !allowed(env.policies.create)) return false;
+      const nextMode =
+        requestedMode === "edit" && !allowed(env.policies.update) ? "view" : requestedMode;
+      const seq = ++openSeq.current;
       // 必须在 await 之前取：toValues 预取期间菜单已经关掉、活动元素早换了。抽屉已开着时
-      // （保存后回查看态）不覆盖，焦点仍该回到最初的打开者。
+      // （保存后回查看态、查看切编辑）不覆盖，焦点仍该回到最初的打开者。
       if (!isOpen.current) opener.current = resolveOpener(document.activeElement);
       const o = optsRef.current;
       let values = o.emptyValues;
       if (nextRecord) {
-        const resolved = o.toValues
-          ? await o.toValues(nextRecord, nextMode)
-          : defaultToValues(nextRecord);
-        if (resolved === null) return;
+        let resolved: TValues | null;
+        try {
+          resolved = o.toValues
+            ? await o.toValues(nextRecord, nextMode)
+            : defaultToValues(nextRecord);
+        } catch {
+          // 行点击是 fire-and-forget，这里不兜住，用户只看到「点了没反应」外加一条未处理的 rejection。
+          if (seq === openSeq.current) toast.error(env.L("Crud:OperationFailed"));
+          return false;
+        }
+        if (seq !== openSeq.current || resolved === null) return false;
         values = resolved;
       }
       setFormDefaults(values);
       form.reset(values);
-      setSheet({ mode: nextMode, record: nextRecord });
+      setSheet({ mode: nextMode, record: nextRecord, fromView: options?.fromView });
+      return true;
     },
     [form, defaultToValues],
   );
+
+  // 只用于已经过了未保存确认（或本就无需确认）的路径；同时作废还在路上的 open。
+  const dismiss = () => {
+    openSeq.current++;
+    setSheet(null);
+  };
 
   const allow = (policy: string | undefined) => (policy === undefined ? true : can(policy));
 
@@ -190,7 +241,7 @@ export function useAbpSheet<
     mode: shownMode,
     open: sheet !== null,
     onOpenChange: (nextOpen: boolean) => {
-      if (!nextOpen) setSheet(null);
+      if (!nextOpen) dismiss();
     },
     title:
       opts.title?.(shownMode, shown?.record) ??
@@ -208,14 +259,14 @@ export function useAbpSheet<
     pending: isSubmitting,
     dirty: isDirty && mode !== "view",
     canEdit: allow(service.resolvedPolicies.update),
+    // 两个方向都重跑 toValues：它按 mode 给值（比如编辑态清空密码），只切 mode 会沿用另一态的值。
     onEdit: () => {
-      if (sheet) setSheet({ ...sheet, mode: "edit", fromView: true });
+      if (sheet?.record) void open("edit", sheet.record, { fromView: true });
     },
     onBack:
-      sheet?.mode === "edit" && sheet.fromView === true
+      sheet?.mode === "edit" && sheet.fromView === true && sheet.record
         ? () => {
-            form.reset(formDefaults);
-            setSheet({ ...sheet, mode: "view", fromView: false });
+            if (sheet.record) void open("view", sheet.record);
           }
         : undefined,
     onCloseAutoFocus: (event: Event) => {
@@ -227,6 +278,7 @@ export function useAbpSheet<
         target.focus();
       }
     },
+    ref: sheetForm,
   } satisfies Omit<SheetFormProps, "children">;
 
   const bound = useBoundComponents({ sheetProps }, (read) => ({
@@ -245,7 +297,11 @@ export function useAbpSheet<
   return {
     form,
     open,
-    close: () => setSheet(null),
+    /** 关闭抽屉。有未保存改动时先过确认，与抽屉里的 × / Esc 同一道闸；`force` 跳过确认直接关。 */
+    close: (options?: { force?: boolean }) => {
+      if (options?.force !== true && sheetForm.current) sheetForm.current.requestClose();
+      else dismiss();
+    },
     record,
     readOnly: shownMode === "view",
     mode,
