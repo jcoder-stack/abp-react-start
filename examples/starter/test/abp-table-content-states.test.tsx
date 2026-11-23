@@ -160,6 +160,14 @@ describe("query search params", () => {
     ).toEqual({ Name: "2024", Active: true });
   });
 
+  it("turns a hand-typed boolean back into the string a select field expects", () => {
+    // `?InStock=true` arrives as a boolean; the field's option values are strings.
+    expect(parseQuerySearch({ InStock: true, Type: 7 }, { InStock: "", Type: "" })).toEqual({
+      InStock: "true",
+      Type: "7",
+    });
+  });
+
   it("keeps defaults out of the URL and marks a cleared default as empty", () => {
     const setSearch = vi.fn();
     const store = queryStore({}, { Name: "", Status: "open" }, setSearch);
