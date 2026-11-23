@@ -361,6 +361,26 @@ describe("NumberField nullable", () => {
   });
 });
 
+function PriceHarness() {
+  const form = useAppForm({ defaultValues: { price: 1234.5 } });
+  return (
+    <ReadOnlyFields>
+      <dl>
+        <form.AppField name="price">
+          {(f) => <f.NumberField label="Price" digits={2} />}
+        </form.AppField>
+      </dl>
+    </ReadOnlyFields>
+  );
+}
+
+describe("NumberField 查看态", () => {
+  it("与表格同一套格式：千分位分组，digits 补齐小数位", async () => {
+    renderWithProviders(<PriceHarness />, { messages });
+    expect(await screen.findByText("1,234.50")).toBeTruthy();
+  });
+});
+
 function EmptyOptionHarness() {
   const form = useAppForm({ defaultValues: { status: "" } });
   return (

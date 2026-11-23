@@ -40,6 +40,24 @@ export type AbpSheetOptions<
     ? { toUpdate?: (value: TValues) => TUpdate }
     : { toUpdate: (value: TValues) => TUpdate });
 
+/** 打开抽屉的那个元素，关闭后焦点要回到它。从行操作菜单打开时活动元素是菜单项，菜单一关
+ *  它就卸载了，所以换成菜单的触发钮（Radix 用 `aria-controls` 指向菜单内容）。 */
+function resolveOpener(active: Element | null): HTMLElement | null {
+  const menu = active?.closest('[role="menu"]');
+  if (menu?.id) {
+    // 逐个比属性而不拼选择器：Radix 的 id 来自 useId，带冒号，拼进选择器得转义。
+    const trigger = Array.from(document.querySelectorAll("[aria-controls]")).find(
+      (el) => el.getAttribute("aria-controls") === menu.id,
+    );
+    return trigger instanceof HTMLElement ? trigger : null;
+  }
+  return active instanceof HTMLElement && active !== document.body ? active : null;
+}
+
+function isRecordOf<TDto extends { id?: string }>(value: unknown, id: string): value is TDto {
+  return typeof value === "object" && value !== null && (value as { id?: unknown }).id === id;
+}
+
 /** service → sheet 三态状态机 + create/update mutation。直接吃 `WritableCrudService`，
  *  调用方不用另建一份 mutation 自己接线。sheet 状态机、concurrencyStamp 注入、保存 toast
  *  与列表失效都收在这里。绑定成员 `Sheet` 经 `useBoundComponents` 挂出稳定身份。 */
@@ -56,13 +74,30 @@ export function useAbpSheet<
   const can = usePermissionChecker();
   const queryClient = useQueryClient();
 
-  const [sheet, setSheet] = useState<{ mode: SheetFormMode; record?: TDto } | null>(null);
+  // fromView：编辑是从查看态点进来的。这时取消回到查看、保存后也回到查看并换上新记录——
+  // 用户是来看这一条的，改完一处不该被整个踢回列表。
+  const [sheet, setSheet] = useState<{
+    mode: SheetFormMode;
+    record?: TDto;
+    fromView?: boolean;
+  } | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const isOpen = useRef(false);
+  isOpen.current = sheet !== null;
+  // 保存成功后要回到查看态的那条新记录；由 submit 写、onSuccess 读，两者之间隔着表单库。
+  const reopenWith = useRef<TDto | null>(null);
   // defaultValues 必须由 state 驱动:useForm 每渲染 formApi.update(opts) 会把稳定常量
   // defaultValues 拍回刚 reset 的记录值。
   const [formDefaults, setFormDefaults] = useState<TValues>(opts.emptyValues);
 
   const mode = sheet?.mode;
   const record = sheet?.record;
+  // 关闭后 sheet 立刻是 null，抽屉却还要淡出 200ms；标题和布局沿用最后一次打开时的状态，
+  // 否则退场那一下会闪成「新建」的标题和可编辑的表单。
+  const lastShown = useRef(sheet);
+  if (sheet) lastShown.current = sheet;
+  const shown = sheet ?? lastShown.current;
+  const shownMode = shown?.mode ?? "create";
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: service.listKey() });
   const saved = () => {
@@ -87,13 +122,22 @@ export function useAbpSheet<
           // 泛型上无法表达「附加可选键仍是 TUpdate」;运行时 ASP.NET 模型绑定忽略未知属性,
           // 对无该字段的 DTO(如 books)安全。
           const data = stamp != null ? ({ ...base, concurrencyStamp: stamp } as TUpdate) : base;
-          await rawUpdate.mutateAsync({ id: sheet.record.id, data });
+          const updated = await rawUpdate.mutateAsync({ id: sheet.record.id, data });
+          // 只有服务端回了这条记录才回查看态：拿旧记录充数，下一次编辑会带着过期的
+          // concurrencyStamp 撞并发冲突。
+          reopenWith.current =
+            sheet.fromView === true && isRecordOf<TDto>(updated, sheet.record.id) ? updated : null;
         } else {
           const toCreate = opts.toCreate ?? ((v: TValues) => v as unknown as TCreate);
           await rawCreate.mutateAsync({ data: toCreate(value) });
         }
       },
-      onSuccess: () => setSheet(null),
+      onSuccess: () => {
+        const next = reopenWith.current;
+        reopenWith.current = null;
+        if (next) void open("view", next);
+        else setSheet(null);
+      },
     }),
   );
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
@@ -121,6 +165,9 @@ export function useAbpSheet<
 
   const open = useCallback(
     async (nextMode: SheetFormMode, nextRecord?: TDto) => {
+      // 必须在 await 之前取：toValues 预取期间菜单已经关掉、活动元素早换了。抽屉已开着时
+      // （保存后回查看态）不覆盖，焦点仍该回到最初的打开者。
+      if (!isOpen.current) opener.current = resolveOpener(document.activeElement);
       const o = optsRef.current;
       let values = o.emptyValues;
       if (nextRecord) {
@@ -140,15 +187,21 @@ export function useAbpSheet<
   const allow = (policy: string | undefined) => (policy === undefined ? true : can(policy));
 
   const sheetProps = {
-    mode: mode ?? "create",
+    mode: shownMode,
     open: sheet !== null,
     onOpenChange: (nextOpen: boolean) => {
       if (!nextOpen) setSheet(null);
     },
     title:
-      opts.title?.(mode ?? "create", sheet?.record) ??
-      L(mode === "edit" ? "Crud:EditTitle" : mode === "view" ? "Crud:ViewTitle" : "Crud:Create"),
-    subtitle: opts.subtitle?.(mode ?? "create", sheet?.record),
+      opts.title?.(shownMode, shown?.record) ??
+      L(
+        shownMode === "edit"
+          ? "Crud:EditTitle"
+          : shownMode === "view"
+            ? "Crud:ViewTitle"
+            : "Crud:Create",
+      ),
+    subtitle: opts.subtitle?.(shownMode, shown?.record),
     onSubmit: () => {
       void form.handleSubmit();
     },
@@ -156,7 +209,23 @@ export function useAbpSheet<
     dirty: isDirty && mode !== "view",
     canEdit: allow(service.resolvedPolicies.update),
     onEdit: () => {
-      if (sheet) setSheet({ ...sheet, mode: "edit" });
+      if (sheet) setSheet({ ...sheet, mode: "edit", fromView: true });
+    },
+    onBack:
+      sheet?.mode === "edit" && sheet.fromView === true
+        ? () => {
+            form.reset(formDefaults);
+            setSheet({ ...sheet, mode: "view", fromView: false });
+          }
+        : undefined,
+    onCloseAutoFocus: (event: Event) => {
+      const target = opener.current;
+      opener.current = null;
+      // 打开者已不在页面上（比如那一行刚被删掉）时交还 Radix 的默认处理。
+      if (target?.isConnected) {
+        event.preventDefault();
+        target.focus();
+      }
     },
   } satisfies Omit<SheetFormProps, "children">;
 
@@ -178,7 +247,7 @@ export function useAbpSheet<
     open,
     close: () => setSheet(null),
     record,
-    readOnly: mode === "view",
+    readOnly: shownMode === "view",
     mode,
     Sheet: bound.Sheet,
   };

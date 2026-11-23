@@ -1,10 +1,16 @@
-import { useLocalization } from "@jcoder-stack/abp-react/react";
+import { useCulture, useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import type { ReactNode } from "react";
 import { createContext, lazy, Suspense, useContext } from "react";
 import { Combobox } from "@/components/combobox/combobox";
 import type { ComboboxOption } from "@/components/combobox/use-combobox-options";
-import { formatIso, ISO_DATE, ISO_DATE_TIME, parseIso } from "@/components/date-picker/date-io";
+import {
+  DISPLAY_DATE_TIME,
+  formatIso,
+  ISO_DATE,
+  ISO_DATE_TIME,
+  parseIso,
+} from "@/components/date-picker/date-io";
 import { TimeInput } from "@/components/date-picker/time-input";
 import { FormErrorSummary } from "@/components/form/form-error-summary";
 import { OptionalMark } from "@/components/form/optional-mark";
@@ -316,7 +322,11 @@ export function NumberField(props: {
    * 不能被 `z.number()` 判失败态吞掉。schema 要配 `z.number().nullable()`，否则清空后会被判失败。
    */
   nullable?: boolean;
+  /** 查看态固定显示几位小数，与表格 `col.money` 的 `digits` 对齐；缺省按值本身的位数。
+   *  只管查看态：输入框里补零会和用户正在敲的内容打架。 */
+  digits?: number;
 }) {
+  const culture = useCulture();
   const field = useFieldContext<number | null>();
   const value = field.state.value;
   const isEmpty = value === null || Number.isNaN(value);
@@ -325,7 +335,16 @@ export function NumberField(props: {
       label={props.label}
       required={props.required}
       description={props.description}
-      display={isEmpty ? null : <span className="tabular-nums">{String(value)}</span>}
+      display={
+        isEmpty ? null : (
+          <span className="tabular-nums">
+            {new Intl.NumberFormat(culture, {
+              minimumFractionDigits: props.digits,
+              maximumFractionDigits: props.digits,
+            }).format(value)}
+          </span>
+        )
+      }
     >
       <Input
         id={field.name}
@@ -473,12 +492,20 @@ export function DateTimeField(props: {
   endMonth?: Date;
 }) {
   const field = useFieldContext<string>();
+  // 存储值带 ISO 的 `T`，查看态换成全站统一的 `yyyy-MM-dd HH:mm`；解析不了的原样显示，不吞值。
+  const date = parseIso(field.state.value, ISO_DATE_TIME);
   return (
     <FieldShell
       label={props.label}
       required={props.required}
       description={props.description}
-      display={field.state.value ? <span className="tabular-nums">{field.state.value}</span> : null}
+      display={
+        field.state.value ? (
+          <span className="tabular-nums">
+            {date ? formatIso(date, DISPLAY_DATE_TIME) : field.state.value}
+          </span>
+        ) : null
+      }
     >
       <Suspense fallback={<Skeleton className="h-9 w-full" />}>
         <DateTimePicker

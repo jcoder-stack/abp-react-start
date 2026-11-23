@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { calendarFormatters, useCalendarBounds } from "@/components/date-picker/calendar-bounds";
+import { DISPLAY_DATE } from "@/components/date-picker/date-io";
 import { dateFnsLocale } from "@/components/date-picker/date-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -45,8 +46,8 @@ export function DateRangePicker(props: DateRangePickerProps) {
   const { value } = props;
   const label =
     value?.from !== undefined
-      ? `${format(value.from, "PP", { locale })} – ${
-          value.to !== undefined ? format(value.to, "PP", { locale }) : ""
+      ? `${format(value.from, DISPLAY_DATE)} – ${
+          value.to !== undefined ? format(value.to, DISPLAY_DATE) : ""
         }`
       : (props.placeholder ?? L("DatePicker:RangePlaceholder"));
   return (

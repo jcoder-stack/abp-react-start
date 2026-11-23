@@ -9,6 +9,12 @@ import type { WritableCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
 import formMessages from "@/components/form/form-messages.json";
 import type { SheetFormMode } from "@/components/form/sheet-form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { renderWithProviders } from "./test-utils";
 
 const messages = {
@@ -95,6 +101,36 @@ function DefaultMapperHarness(props: { service: Service; openRef: { current: Ope
   );
 }
 
+/** 带真实打开入口的挂具：一个直接打开的按钮、一个行操作式的下拉菜单，用来验证焦点归还。 */
+function OpenerHarness(props: { service: Service; record: Dto }) {
+  const sheet = useAbpSheet<Dto, Values, { name: string }, UpdateInput>(props.service, {
+    emptyValues: { name: "" },
+    toValues: (record) => ({ name: record.name ?? "" }),
+    toUpdate: (value) => ({ name: value.name }),
+    toCreate: (value) => ({ name: value.name }),
+  });
+  return (
+    <>
+      <button type="button" onClick={() => void sheet.open("view", props.record)}>
+        Open
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger>Actions</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onSelect={() => void sheet.open("view", props.record)}>
+            View
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <sheet.Sheet>
+        <sheet.form.AppField name="name">
+          {(field) => <field.TextField label="Name" disabled={sheet.readOnly} />}
+        </sheet.form.AppField>
+      </sheet.Sheet>
+    </>
+  );
+}
+
 function submitSheetForm() {
   fireEvent.submit(document.querySelector("form") as HTMLFormElement);
 }
@@ -170,6 +206,82 @@ describe("useAbpSheet", () => {
     expect(await screen.findByText("RO")).toBeTruthy();
     // 且不再有可聚焦的输入框——查看一条记录不该让人以为能改
     expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("从查看态进入编辑后取消：回到查看态而不是关掉抽屉，改动被丢弃", async () => {
+    const service = makeService();
+    const openRef: { current: OpenFn | null } = { current: null };
+    renderWithProviders(<Harness service={service} openRef={openRef} />, { messages });
+    await callOpen(openRef, "view", { id: "1", name: "Old" });
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "Typed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    // 有改动先确认；确认放弃后退回查看态，显示的仍是原值
+    fireEvent.click(await screen.findByRole("button", { name: "Discard" }));
+    expect(await screen.findByText("Old")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("从查看态进入编辑后保存：回到查看态并换上服务端返回的记录", async () => {
+    const service = makeService({
+      update: async ({ id, data }) => ({ id, name: data.name, concurrencyStamp: "S2" }),
+    });
+    const openRef: { current: OpenFn | null } = { current: null };
+    renderWithProviders(<Harness service={service} openRef={openRef} />, { messages });
+    await callOpen(openRef, "view", { id: "1", name: "Old", concurrencyStamp: "S1" });
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "New" } });
+    submitSheetForm();
+    expect(await screen.findByText("New")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    // 再改一次要带新的 stamp，旧的会撞并发冲突
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "Newer" } });
+    submitSheetForm();
+    await waitFor(() =>
+      expect(service.useUpdate().mutateAsync).toHaveBeenLastCalledWith({
+        id: "1",
+        data: { name: "Newer", concurrencyStamp: "S2" },
+      }),
+    );
+  });
+
+  it("从查看态保存但服务端没回记录：关闭抽屉，不拿旧记录充数", async () => {
+    const service = makeService();
+    const openRef: { current: OpenFn | null } = { current: null };
+    renderWithProviders(<Harness service={service} openRef={openRef} />, { messages });
+    await callOpen(openRef, "view", { id: "1", name: "Old", concurrencyStamp: "S1" });
+    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "New" } });
+    submitSheetForm();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("关闭后焦点回到打开它的按钮", async () => {
+    renderWithProviders(<OpenerHarness service={makeService()} record={{ id: "1", name: "R" }} />, {
+      messages,
+    });
+    const opener = await screen.findByRole("button", { name: "Open" });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+  });
+
+  it("从下拉菜单打开时，关闭后焦点回到菜单的触发钮", async () => {
+    renderWithProviders(<OpenerHarness service={makeService()} record={{ id: "1", name: "R" }} />, {
+      messages,
+    });
+    const trigger = await screen.findByRole("button", { name: "Actions" });
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "View" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
   it("服务端校验错误落字段,sheet 保持打开", async () => {
