@@ -2,21 +2,18 @@ import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import {
-  getGetApiMultiTenancyTenantsQueryKey,
-  useDeleteApiMultiTenancyTenantsId,
-  useGetApiMultiTenancyTenants,
-  usePostApiMultiTenancyTenants,
-  usePutApiMultiTenancyTenantsId,
+  getTenantGetListQueryKey,
+  useTenantCreate,
+  useTenantDelete,
+  useTenantGetList,
+  useTenantUpdate,
 } from "@/api/endpoints/tenant/tenant";
-import type {
-  VoloAbpTenantManagementTenantDto,
-  VoloAbpTenantManagementTenantUpdateDto,
-} from "@/api/models";
+import type { TenantDto, TenantUpdateDto } from "@/api/models";
 import {
-  PostApiMultiTenancyTenantsBody,
-  postApiMultiTenancyTenantsBodyAdminEmailAddressMax,
-  postApiMultiTenancyTenantsBodyAdminPasswordMax,
-  postApiMultiTenancyTenantsBodyNameMax,
+  TenantCreateBody,
+  tenantCreateBodyAdminEmailAddressMax,
+  tenantCreateBodyAdminPasswordMax,
+  tenantCreateBodyNameMax,
 } from "@/api/schemas/tenant/tenant";
 import { requirePermission } from "@/auth";
 import { createCrudService } from "@/components/abp/crud/crud-service";
@@ -37,15 +34,15 @@ export const Route = createFileRoute("/_layout/_authed/tenants/")({
 });
 
 // 列走词条 key，不依赖 L，故留在模块级：引用天然稳定，不必包 useMemo。
-const col = createAbpColumns<VoloAbpTenantManagementTenantDto>();
+const col = createAbpColumns<TenantDto>();
 const columns = [col.text("name", "AbpTenantManagement::TenantName")];
 
 const tenantService = createCrudService({
-  useList: useGetApiMultiTenancyTenants,
-  useCreate: usePostApiMultiTenancyTenants,
-  useUpdate: usePutApiMultiTenancyTenantsId,
-  useDelete: useDeleteApiMultiTenancyTenantsId,
-  listKey: getGetApiMultiTenancyTenantsQueryKey,
+  useList: useTenantGetList,
+  useCreate: useTenantCreate,
+  useUpdate: useTenantUpdate,
+  useDelete: useTenantDelete,
+  listKey: getTenantGetListQueryKey,
   policy: TenantManagementPermissions.Tenants.Default,
 });
 
@@ -60,7 +57,7 @@ const EMPTY_VALUES: TenantFormValues = { name: "", adminEmailAddress: "", adminP
 // toValues 显式保留（不用默认的 pick-and-coalesce）：密码是业务上刻意的单向字段，
 // 记录里从没有它，回填必须固定为空串，不能让默认实现的「按 emptyValues 键从记录 pick」
 // 悄悄从别的同名字段带出值。
-function toRecordValues(record: VoloAbpTenantManagementTenantDto): TenantFormValues {
+function toRecordValues(record: TenantDto): TenantFormValues {
   return { name: record.name ?? "", adminEmailAddress: "", adminPassword: "" };
 }
 
@@ -70,7 +67,7 @@ function toRecordValues(record: VoloAbpTenantManagementTenantDto): TenantFormVal
 // 字段只有 name，TenantFormValues 结构上仍满足 `extends` 关系，toUpdate 类型层其实可省。
 // 真正会被强制显式传的是「目标 DTO 存在 TValues 没有的必填字段」，见
 // abp-sheet-contract.test-d.ts 的负例。
-function toUpdateInput(value: TenantFormValues): VoloAbpTenantManagementTenantUpdateDto {
+function toUpdateInput(value: TenantFormValues): TenantUpdateDto {
   return { name: value.name };
 }
 
@@ -88,23 +85,20 @@ function TenantsPage() {
     // 因为 TenantUpdateDto 本就不带这两个字段），max 从生成常量取，消息在此覆盖。
     schema: (mode) => {
       const isCreate = mode === "create";
-      return PostApiMultiTenancyTenantsBody.extend({
+      return TenantCreateBody.extend({
         name: z
           .string()
           .trim()
           .min(1, L("Form:Required"))
-          .max(
-            postApiMultiTenancyTenantsBodyNameMax,
-            L("Form:MaxLength", postApiMultiTenancyTenantsBodyNameMax),
-          ),
+          .max(tenantCreateBodyNameMax, L("Form:MaxLength", tenantCreateBodyNameMax)),
         adminEmailAddress: isCreate
           ? z
               .string()
               .trim()
               .min(1, L("Form:Required"))
               .max(
-                postApiMultiTenancyTenantsBodyAdminEmailAddressMax,
-                L("Form:MaxLength", postApiMultiTenancyTenantsBodyAdminEmailAddressMax),
+                tenantCreateBodyAdminEmailAddressMax,
+                L("Form:MaxLength", tenantCreateBodyAdminEmailAddressMax),
               )
               .pipe(z.email(L("Form:InvalidEmail")))
           : z.string(),
@@ -114,8 +108,8 @@ function TenantsPage() {
               .trim()
               .min(1, L("Form:Required"))
               .max(
-                postApiMultiTenancyTenantsBodyAdminPasswordMax,
-                L("Form:MaxLength", postApiMultiTenancyTenantsBodyAdminPasswordMax),
+                tenantCreateBodyAdminPasswordMax,
+                L("Form:MaxLength", tenantCreateBodyAdminPasswordMax),
               )
           : z.string(),
       });

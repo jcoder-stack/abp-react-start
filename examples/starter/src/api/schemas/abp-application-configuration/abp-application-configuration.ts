@@ -7,11 +7,11 @@
 import * as zod from 'zod';
 
 
-export const GetApiAbpApplicationConfigurationQueryParams = zod.object({
+export const AbpApplicationConfigurationGetQueryParams = zod.object({
   "IncludeLocalizationResources": zod.boolean().optional()
 })
 
-export const GetApiAbpApplicationConfigurationResponse = zod.object({
+export const AbpApplicationConfigurationGetResponse = zod.object({
   "localization": zod.object({
   "values": zod.record(zod.string(), zod.record(zod.string(), zod.string())).nullish(),
   "resources": zod.record(zod.string(), zod.object({

@@ -5,19 +5,15 @@ import { KeyRound } from "lucide-react";
 import { lazy, Suspense, useCallback, useState } from "react";
 import { z } from "zod";
 import {
-  getApiIdentityUsersIdRoles,
-  getGetApiIdentityUsersQueryKey,
-  useDeleteApiIdentityUsersId,
-  useGetApiIdentityUsers,
-  useGetApiIdentityUsersAssignableRoles,
-  usePostApiIdentityUsers,
-  usePutApiIdentityUsersId,
+  getUserGetListQueryKey,
+  userGetRoles,
+  useUserCreate,
+  useUserDelete,
+  useUserGetAssignableRoles,
+  useUserGetList,
+  useUserUpdate,
 } from "@/api/endpoints/user/user";
-import type {
-  VoloAbpIdentityIdentityUserCreateDto,
-  VoloAbpIdentityIdentityUserDto,
-  VoloAbpIdentityIdentityUserUpdateDto,
-} from "@/api/models";
+import type { IdentityUserCreateDto, IdentityUserDto, IdentityUserUpdateDto } from "@/api/models";
 import { requirePermission } from "@/auth";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
@@ -44,11 +40,11 @@ export const Route = createFileRoute("/_layout/_authed/identity/users")({
 });
 
 const userService = createCrudService({
-  useList: useGetApiIdentityUsers,
-  useCreate: usePostApiIdentityUsers,
-  useUpdate: usePutApiIdentityUsersId,
-  useDelete: useDeleteApiIdentityUsersId,
-  listKey: getGetApiIdentityUsersQueryKey,
+  useList: useUserGetList,
+  useCreate: useUserCreate,
+  useUpdate: useUserUpdate,
+  useDelete: useUserDelete,
+  listKey: getUserGetListQueryKey,
   policy: IdentityPermissions.Users.Default,
 });
 
@@ -75,10 +71,7 @@ const EMPTY_VALUES: UserFormValues = {
 };
 
 /** 不能走默认 pick：roleNames 来自异步预取、password 必须回空（不回显）。 */
-function toRecordValues(
-  record: VoloAbpIdentityIdentityUserDto,
-  roleNames: string[],
-): UserFormValues {
+function toRecordValues(record: IdentityUserDto, roleNames: string[]): UserFormValues {
   return {
     userName: record.userName ?? "",
     email: record.email ?? "",
@@ -92,7 +85,7 @@ function toRecordValues(
 }
 
 /** 不能走默认 identity：可选字段空串归一为 undefined（不给后端发 `name: ""`）。 */
-function toCreateInput(value: UserFormValues): VoloAbpIdentityIdentityUserCreateDto {
+function toCreateInput(value: UserFormValues): IdentityUserCreateDto {
   return {
     userName: value.userName,
     email: value.email,
@@ -108,7 +101,7 @@ function toCreateInput(value: UserFormValues): VoloAbpIdentityIdentityUserCreate
 /** 不能走默认 identity：edit 不渲染 password 字段（留空=不改）；value.password 恒为初始空串，
  *  故 update body 里永远不带 password，后端保持原密码不变；其余可选字段同 toCreateInput，
  *  空串归一为 undefined（不给后端发 `name: ""`）。 */
-function toUpdateInput(value: UserFormValues): VoloAbpIdentityIdentityUserUpdateDto {
+function toUpdateInput(value: UserFormValues): IdentityUserUpdateDto {
   return {
     userName: value.userName,
     email: value.email,
@@ -127,7 +120,7 @@ function FullNameCell(props: { name?: string | null; surname?: string | null }) 
   return <>{formatPersonName({ name: props.name, surname: props.surname, culture })}</>;
 }
 
-const col = createAbpColumns<VoloAbpIdentityIdentityUserDto>();
+const col = createAbpColumns<IdentityUserDto>();
 const columns = [
   col.primary("userName", "AbpIdentity::UserName"),
   col.display({
@@ -149,11 +142,11 @@ function UsersPage() {
   const L = useLocalization();
   const can = usePermissionChecker();
   const canManagePermissions = can(IdentityPermissions.Users.ManagePermissions);
-  const [permissionsFor, setPermissionsFor] = useState<VoloAbpIdentityIdentityUserDto | null>(null);
+  const [permissionsFor, setPermissionsFor] = useState<IdentityUserDto | null>(null);
 
   // 引用必须稳定：进 AbpTable 的 columns memo 依赖，内联箭头会让列模型每渲染重建（DEV 有 churn 告警）。
   const permissionMenuItem = useCallback(
-    (row: VoloAbpIdentityIdentityUserDto) =>
+    (row: IdentityUserDto) =>
       canManagePermissions ? (
         <DropdownMenuItem onSelect={() => setPermissionsFor(row)}>
           <KeyRound />
@@ -169,7 +162,7 @@ function UsersPage() {
     toValues: async (record, mode) => {
       let roleNames: string[] = [];
       if (record.id && mode !== "create") {
-        const roles = await getApiIdentityUsersIdRoles(record.id);
+        const roles = await userGetRoles(record.id);
         roleNames = (roles.items ?? [])
           .map((role) => role.name ?? "")
           .filter((name) => name.length > 0);
@@ -213,7 +206,7 @@ function UsersPage() {
 
   // MultiCombobox 的角色候选项只在编辑态（create/edit）且有 Update 权限时才拉，防止 view 态
   // 或无权限用户触发一次注定被后端 403 的请求。
-  const assignableRolesQuery = useGetApiIdentityUsersAssignableRoles({
+  const assignableRolesQuery = useUserGetAssignableRoles({
     query: { enabled: t.source.can.update && sheet.mode !== undefined && sheet.mode !== "view" },
   });
   const roleOptions: ComboboxOption[] = (assignableRolesQuery.data?.items ?? []).map((role) => ({

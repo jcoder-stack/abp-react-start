@@ -134,6 +134,13 @@ export async function main(argv: string[]): Promise<number> {
         console.log(
           `generated ${target.name ? `${target.name} ` : ""}into ${target.outputDir}${target.mutatorWritten ? " (mutator.ts created)" : ""}`,
         );
+        if (target.operationNaming === "path") {
+          console.warn(
+            "note: the ABP api-definition was not available, so your own endpoints got path-derived " +
+              "names (useGetBookId) instead of method names (useBookGet); ABP's stock modules are " +
+              "unaffected. Set `apiDefinition` in abp.api.config.ts to its URL or a saved copy.",
+          );
+        }
       }
       return 0;
     }

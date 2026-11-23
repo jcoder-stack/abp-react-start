@@ -7,59 +7,60 @@
 import * as zod from 'zod';
 
 
-export const GetApiMultiTenancyTenantsIdParams = zod.object({
+export const TenantGetParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiMultiTenancyTenantsIdResponse = zod.object({
+export const TenantGetResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "name": zod.string().nullish(),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const PutApiMultiTenancyTenantsIdParams = zod.object({
+export const TenantUpdateParams = zod.object({
   "id": zod.uuid()
 })
 
-export const putApiMultiTenancyTenantsIdBodyNameMin = 0;
-export const putApiMultiTenancyTenantsIdBodyNameMax = 64;
+export const tenantUpdateBodyNameMin = 0;
+export const tenantUpdateBodyNameMax = 64;
 
 
 
-export const PutApiMultiTenancyTenantsIdBody = zod.object({
-  "name": zod.string().min(putApiMultiTenancyTenantsIdBodyNameMin).max(putApiMultiTenancyTenantsIdBodyNameMax),
+export const TenantUpdateBody = zod.object({
+  "name": zod.string().min(tenantUpdateBodyNameMin).max(tenantUpdateBodyNameMax),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const PutApiMultiTenancyTenantsIdResponse = zod.object({
+export const TenantUpdateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "name": zod.string().nullish(),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const DeleteApiMultiTenancyTenantsIdParams = zod.object({
+export const TenantDeleteParams = zod.object({
   "id": zod.uuid()
 })
 
-export const DeleteApiMultiTenancyTenantsIdResponse = zod.unknown()
+export const TenantDeleteResponse = zod.unknown()
 
-export const getApiMultiTenancyTenantsQuerySkipCountMin = 0;
-export const getApiMultiTenancyTenantsQuerySkipCountMax = 2147483647;
+export const tenantGetListQuerySkipCountMin = 0;
+export const tenantGetListQuerySkipCountMax = 2147483647;
 
-export const getApiMultiTenancyTenantsQueryMaxResultCountMax = 2147483647;
+export const tenantGetListQueryMaxResultCountMin = 1;
+export const tenantGetListQueryMaxResultCountMax = 2147483647;
 
 
 
-export const GetApiMultiTenancyTenantsQueryParams = zod.object({
+export const TenantGetListQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
-  "SkipCount": zod.int().min(getApiMultiTenancyTenantsQuerySkipCountMin).max(getApiMultiTenancyTenantsQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(1).max(getApiMultiTenancyTenantsQueryMaxResultCountMax).optional()
+  "SkipCount": zod.int().min(tenantGetListQuerySkipCountMin).max(tenantGetListQuerySkipCountMax).optional(),
+  "MaxResultCount": zod.int().min(tenantGetListQueryMaxResultCountMin).max(tenantGetListQueryMaxResultCountMax).optional()
 })
 
-export const GetApiMultiTenancyTenantsResponse = zod.object({
+export const TenantGetListResponse = zod.object({
   "items": zod.array(zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
@@ -69,47 +70,49 @@ export const GetApiMultiTenancyTenantsResponse = zod.object({
   "totalCount": zod.int().optional()
 })
 
-export const postApiMultiTenancyTenantsBodyNameMin = 0;
-export const postApiMultiTenancyTenantsBodyNameMax = 64;
+export const tenantCreateBodyNameMin = 0;
+export const tenantCreateBodyNameMax = 64;
 
-export const postApiMultiTenancyTenantsBodyAdminEmailAddressMax = 256;
+export const tenantCreateBodyAdminEmailAddressMin = 1;
+export const tenantCreateBodyAdminEmailAddressMax = 256;
 
-export const postApiMultiTenancyTenantsBodyAdminPasswordMax = 128;
+export const tenantCreateBodyAdminPasswordMin = 1;
+export const tenantCreateBodyAdminPasswordMax = 128;
 
 
 
-export const PostApiMultiTenancyTenantsBody = zod.object({
-  "name": zod.string().min(postApiMultiTenancyTenantsBodyNameMin).max(postApiMultiTenancyTenantsBodyNameMax),
-  "adminEmailAddress": zod.email().min(1).max(postApiMultiTenancyTenantsBodyAdminEmailAddressMax),
-  "adminPassword": zod.string().min(1).max(postApiMultiTenancyTenantsBodyAdminPasswordMax)
+export const TenantCreateBody = zod.object({
+  "name": zod.string().min(tenantCreateBodyNameMin).max(tenantCreateBodyNameMax),
+  "adminEmailAddress": zod.email().min(tenantCreateBodyAdminEmailAddressMin).max(tenantCreateBodyAdminEmailAddressMax),
+  "adminPassword": zod.string().min(tenantCreateBodyAdminPasswordMin).max(tenantCreateBodyAdminPasswordMax)
 })
 
-export const PostApiMultiTenancyTenantsResponse = zod.object({
+export const TenantCreateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "name": zod.string().nullish(),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const GetApiMultiTenancyTenantsIdDefaultConnectionStringParams = zod.object({
+export const TenantGetDefaultConnectionStringParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiMultiTenancyTenantsIdDefaultConnectionStringResponse = zod.string()
+export const TenantGetDefaultConnectionStringResponse = zod.string()
 
-export const PutApiMultiTenancyTenantsIdDefaultConnectionStringParams = zod.object({
+export const TenantUpdateDefaultConnectionStringParams = zod.object({
   "id": zod.uuid()
 })
 
-export const PutApiMultiTenancyTenantsIdDefaultConnectionStringQueryParams = zod.object({
+export const TenantUpdateDefaultConnectionStringQueryParams = zod.object({
   "defaultConnectionString": zod.string().optional()
 })
 
-export const PutApiMultiTenancyTenantsIdDefaultConnectionStringResponse = zod.unknown()
+export const TenantUpdateDefaultConnectionStringResponse = zod.unknown()
 
-export const DeleteApiMultiTenancyTenantsIdDefaultConnectionStringParams = zod.object({
+export const TenantDeleteDefaultConnectionStringParams = zod.object({
   "id": zod.uuid()
 })
 
-export const DeleteApiMultiTenancyTenantsIdDefaultConnectionStringResponse = zod.unknown()
+export const TenantDeleteDefaultConnectionStringResponse = zod.unknown()
 

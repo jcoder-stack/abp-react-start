@@ -1,13 +1,7 @@
 import type { Localize } from "@jcoder-stack/abp-react/react";
 import { z } from "zod";
-import type {
-  AbpSwaggerBooksBookDto,
-  AbpSwaggerBooksCreateUpdateBookDto,
-} from "@/routes/_layout/_authed/books/-book-models";
-import {
-  postApiAppBookBody,
-  postApiAppBookBodyNameMax,
-} from "@/routes/_layout/_authed/books/-book-models";
+import type { BookDto, CreateUpdateBookDto } from "@/routes/_layout/_authed/books/-book-models";
+import { BookCreateBody, bookCreateBodyNameMax } from "@/routes/_layout/_authed/books/-book-models";
 
 /** ABP demo BookStore 的图书类型枚举（0–8）；文案取自 App:: 词条桶。 */
 export const BOOK_TYPE_KEYS: Record<number, string> = {
@@ -66,7 +60,7 @@ export const EMPTY_BOOK_VALUES: BookFormValues = {
 
 /** 不能走默认映射：SelectField 是 string 值域（枚举 String/Number 往返），publishDate 要切成
  *  date-only，促销期在 DTO 里是两个扁平字段、表单里是一个区间。 */
-export function toBookValues(record: AbpSwaggerBooksBookDto): BookFormValues {
+export function toBookValues(record: BookDto): BookFormValues {
   return {
     name: record.name ?? "",
     authorId: record.authorId ?? "",
@@ -83,11 +77,11 @@ export function toBookValues(record: AbpSwaggerBooksBookDto): BookFormValues {
 }
 
 /** create/update 共用同一映射。空串一律换成 null：后端区分「没填」和「填了空串」。 */
-export function toBookInput(value: BookFormValues): AbpSwaggerBooksCreateUpdateBookDto {
+export function toBookInput(value: BookFormValues): CreateUpdateBookDto {
   const { promo, ...rest } = value;
   return {
     ...rest,
-    type: Number(value.type) as AbpSwaggerBooksCreateUpdateBookDto["type"],
+    type: Number(value.type) as CreateUpdateBookDto["type"],
     description: value.description.trim() || null,
     saleStartsAt: value.saleStartsAt || null,
     promoStartDate: promo.from || null,
@@ -98,22 +92,21 @@ export function toBookInput(value: BookFormValues): AbpSwaggerBooksCreateUpdateB
 /** 以生成的 body schema 为基底：max(128) 这类后端约束免费继承；与表单形状不同的键 omit 后重声明。
  *  `L` 由调用方传入，消息全部走词条。 */
 export function bookSchema(L: Localize) {
-  return postApiAppBookBody
-    .omit({
-      type: true,
-      stock: true,
-      description: true,
-      saleStartsAt: true,
-      promoStartDate: true,
-      promoEndDate: true,
-    })
+  return BookCreateBody.omit({
+    type: true,
+    stock: true,
+    description: true,
+    saleStartsAt: true,
+    promoStartDate: true,
+    promoEndDate: true,
+  })
     .extend({
       type: z.string(),
       name: z
         .string()
         .trim()
         .min(1, L("App::BookNameRequired"))
-        .max(postApiAppBookBodyNameMax, L("Form:MaxLength", postApiAppBookBodyNameMax)),
+        .max(bookCreateBodyNameMax, L("Form:MaxLength", bookCreateBodyNameMax)),
       authorId: z.string().min(1, L("App::BookAuthorRequired")),
       tags: z.array(z.string()),
       description: z.string().max(1000, L("Form:MaxLength", 1000)),

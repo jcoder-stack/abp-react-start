@@ -16,7 +16,7 @@ export {
   installFeature,
   patchRootForFeatures,
 } from "./feature";
-export { type GenResult, type GenTargetResult, runGen } from "./gen";
+export { type GenResult, type GenTargetResult, type OperationNaming, runGen } from "./gen";
 export { rewriteRelativeImports } from "./import-rewrite";
 export {
   type AddFeatureOptions,

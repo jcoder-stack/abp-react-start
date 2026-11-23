@@ -1,9 +1,6 @@
 import type { AbpTableExportContext } from "@/components/abp/table/use-abp-table";
-import { getApiAppBook } from "@/routes/_layout/_authed/books/-book-api";
-import type {
-  AbpSwaggerBooksBookDto,
-  GetApiAppBookParams,
-} from "@/routes/_layout/_authed/books/-book-models";
+import { bookGetList } from "@/routes/_layout/_authed/books/-book-api";
+import type { BookDto, BookGetListParams } from "@/routes/_layout/_authed/books/-book-models";
 
 const EXPORT_LIMIT = 1000;
 
@@ -17,7 +14,7 @@ function csvCell(value: unknown): string {
  * 组件库不内置导出——格式、列、上限都是业务决定，这里只示范 `onExport` 上下文怎么用。
  */
 export async function exportBooksCsv(
-  context: AbpTableExportContext<AbpSwaggerBooksBookDto>,
+  context: AbpTableExportContext<BookDto>,
   headers: string[],
 ): Promise<number> {
   const selected = context.getSelectedRows();
@@ -25,8 +22,8 @@ export async function exportBooksCsv(
   if (rows.length === 0) {
     // 去掉分页参数再发：要的是全部匹配，不是当前这一页。
     const { SkipCount: _skip, MaxResultCount: _max, ...params } = context.getListParams();
-    const result = await getApiAppBook({
-      ...(params as GetApiAppBookParams),
+    const result = await bookGetList({
+      ...(params as BookGetListParams),
       SkipCount: 0,
       MaxResultCount: EXPORT_LIMIT,
     });

@@ -15,7 +15,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  VoloAbpHttpRemoteServiceErrorResponse
+  RemoteServiceErrorResponse
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -30,7 +30,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export const getPostApiAccountDynamicClaimsRefreshUrl = () => {
+export const getDynamicClaimsRefreshUrl = () => {
 
 
 
@@ -38,9 +38,9 @@ export const getPostApiAccountDynamicClaimsRefreshUrl = () => {
   return `/api/account/dynamic-claims/refresh`
 }
 
-export const postApiAccountDynamicClaimsRefresh = async ( options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const dynamicClaimsRefresh = async ( options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getPostApiAccountDynamicClaimsRefreshUrl(),
+  return abpMutator<void>(getDynamicClaimsRefreshUrl(),
   {
     ...options,
     method: 'POST'
@@ -53,13 +53,13 @@ export const postApiAccountDynamicClaimsRefresh = async ( options?: Parameters<t
 
 
 
-export const getPostApiAccountDynamicClaimsRefreshMutationKey = () => ['postApiAccountDynamicClaimsRefresh'] as const;
+export const getDynamicClaimsRefreshMutationKey = () => ['dynamicClaimsRefresh'] as const;
 
-export const getPostApiAccountDynamicClaimsRefreshMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>, TError,void, TContext> => {
+export const getDynamicClaimsRefreshMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dynamicClaimsRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof dynamicClaimsRefresh>>, TError,void, TContext> => {
 
-const mutationKey = getPostApiAccountDynamicClaimsRefreshMutationKey();
+const mutationKey = getDynamicClaimsRefreshMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dynamicClaimsRefresh>>, void> = () => {
 
 
-          return  postApiAccountDynamicClaimsRefresh(requestOptions)
+          return  dynamicClaimsRefresh(requestOptions)
         }
 
 
@@ -82,18 +82,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiAccountDynamicClaimsRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>>
+    export type DynamicClaimsRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof dynamicClaimsRefresh>>>
 
-    export type PostApiAccountDynamicClaimsRefreshMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+    export type DynamicClaimsRefreshMutationError = ErrorType<RemoteServiceErrorResponse>
 
 
-    export const usePostApiAccountDynamicClaimsRefresh = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof abpMutator>}
+    export const useDynamicClaimsRefresh = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dynamicClaimsRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>,
+        Awaited<ReturnType<typeof dynamicClaimsRefresh>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostApiAccountDynamicClaimsRefreshMutationOptions(options), queryClient);
+      return useMutation(getDynamicClaimsRefreshMutationOptions(options), queryClient);
     }

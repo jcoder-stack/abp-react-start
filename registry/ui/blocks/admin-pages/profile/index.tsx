@@ -4,16 +4,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-  getGetApiAccountMyProfileQueryKey,
-  postApiAccountMyProfileChangePassword,
-  putApiAccountMyProfile,
-  useGetApiAccountMyProfile,
+  getProfileGetQueryKey,
+  profileChangePassword,
+  profileUpdate,
+  useProfileGet,
 } from "@/api/endpoints/profile/profile";
-import type {
-  VoloAbpAccountChangePasswordInput,
-  VoloAbpAccountProfileDto,
-  VoloAbpAccountUpdateProfileDto,
-} from "@/api/models";
+import type { ChangePasswordInput, ProfileDto, UpdateProfileDto } from "@/api/models";
 import { abpFormOptions } from "@/components/abp/crud/abp-form-options";
 import { FormErrorSummary } from "@/components/form/form-error-summary";
 import { useAppForm } from "@/components/form/form-hook";
@@ -22,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** /profile 个人中心。无 requiredPolicy（认证即可访问，非租户/角色资源）。两张独立 Card：
- * 资料卡直到 getApiAccountMyProfile 结算才挂载表单（用查到的值当 useForm 的 defaultValues，
+ * 资料卡直到 profileGet 结算才挂载表单（用查到的值当 useForm 的 defaultValues，
  * 而非先挂空表单再靠 effect 回填，省一次 reset 竞态）；改密码卡是纯空表单，成功后自己清空。 */
 export const Route = createFileRoute("/_layout/_authed/profile/")({
   component: ProfilePage,
@@ -30,7 +26,7 @@ export const Route = createFileRoute("/_layout/_authed/profile/")({
 
 function ProfilePage() {
   const L = useLocalization();
-  const profileQuery = useGetApiAccountMyProfile();
+  const profileQuery = useProfileGet();
 
   return (
     <section className="mx-auto w-full max-w-xl space-y-4">
@@ -65,7 +61,7 @@ interface ProfileFormValues {
   concurrencyStamp: string;
 }
 
-function toProfileValues(profile: VoloAbpAccountProfileDto): ProfileFormValues {
+function toProfileValues(profile: ProfileDto): ProfileFormValues {
   return {
     userName: profile.userName ?? "",
     email: profile.email ?? "",
@@ -78,7 +74,7 @@ function toProfileValues(profile: VoloAbpAccountProfileDto): ProfileFormValues {
 
 /** ABP 乐观并发：UpdateAsync 把 concurrencyStamp 赋给实体当 EF 拦截器 UPDATE 的 WHERE 条件，
  * 不带（空串→undefined）就匹配不到行，单人保存也会抛 AbpDbConcurrencyException。 */
-function toUpdateProfileInput(value: ProfileFormValues): VoloAbpAccountUpdateProfileDto {
+function toUpdateProfileInput(value: ProfileFormValues): UpdateProfileDto {
   return {
     userName: value.userName,
     email: value.email,
@@ -89,7 +85,7 @@ function toUpdateProfileInput(value: ProfileFormValues): VoloAbpAccountUpdatePro
   };
 }
 
-function ProfileInfoCard({ profile }: { profile: VoloAbpAccountProfileDto }) {
+function ProfileInfoCard({ profile }: { profile: ProfileDto }) {
   const L = useLocalization();
   const queryClient = useQueryClient();
 
@@ -111,8 +107,8 @@ function ProfileInfoCard({ profile }: { profile: VoloAbpAccountProfileDto }) {
       defaultValues: toProfileValues(profile),
       schema: profileSchema,
       submit: async (value: ProfileFormValues) => {
-        const updated = await putApiAccountMyProfile(toUpdateProfileInput(value));
-        queryClient.setQueryData(getGetApiAccountMyProfileQueryKey(), updated);
+        const updated = await profileUpdate(toUpdateProfileInput(value));
+        queryClient.setQueryData(getProfileGetQueryKey(), updated);
         form.reset(toProfileValues(updated));
       },
       onSuccess: () => toast.success(L("Crud:Saved")),
@@ -176,7 +172,7 @@ interface ChangePasswordFormValues {
 
 const EMPTY_PASSWORD_VALUES: ChangePasswordFormValues = { currentPassword: "", newPassword: "" };
 
-function toChangePasswordInput(value: ChangePasswordFormValues): VoloAbpAccountChangePasswordInput {
+function toChangePasswordInput(value: ChangePasswordFormValues): ChangePasswordInput {
   return { currentPassword: value.currentPassword, newPassword: value.newPassword };
 }
 
@@ -193,7 +189,7 @@ function ChangePasswordCard() {
       defaultValues: EMPTY_PASSWORD_VALUES,
       schema: passwordSchema,
       submit: async (value: ChangePasswordFormValues) => {
-        await postApiAccountMyProfileChangePassword(toChangePasswordInput(value));
+        await profileChangePassword(toChangePasswordInput(value));
       },
       onSuccess: () => {
         toast.success(L("Crud:Saved"));

@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import { defineConfig } from "orval";
-import { simplifyAbpGenericSchemaNames } from "./abp-schema-names";
 
 /**
  * orval 的 clean 只扫 `output.target` 与 `output.schemas` 各自的目录（endpoints/models/schemas），
@@ -14,6 +13,8 @@ export interface OrvalPresetOptions {
   input: string;
   outputDir: string;
   zod: boolean;
+  /** Applied to the parsed spec of every project, so types and zod schemas share one set of names. */
+  transformer: <T>(doc: T) => T;
 }
 
 /** Build the ABP orval preset: a react-query+fetch project routed through abpMutator, plus an optional zod-schemas project. */
@@ -22,7 +23,7 @@ export function createOrvalConfig(opts: OrvalPresetOptions): ReturnType<typeof d
     api: {
       input: {
         target: opts.input,
-        override: { transformer: simplifyAbpGenericSchemaNames },
+        override: { transformer: opts.transformer },
       },
       output: {
         client: "react-query",
@@ -43,7 +44,7 @@ export function createOrvalConfig(opts: OrvalPresetOptions): ReturnType<typeof d
           apiZod: {
             input: {
               target: opts.input,
-              override: { transformer: simplifyAbpGenericSchemaNames },
+              override: { transformer: opts.transformer },
             },
             output: {
               client: "zod",

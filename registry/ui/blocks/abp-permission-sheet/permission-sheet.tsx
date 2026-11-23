@@ -1,11 +1,8 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  useGetApiPermissionManagementPermissions,
-  usePutApiPermissionManagementPermissions,
-} from "@/api/endpoints/permissions/permissions";
-import type { VoloAbpPermissionManagementPermissionGroupDto } from "@/api/models";
+import { usePermissionsGet, usePermissionsUpdate } from "@/api/endpoints/permissions/permissions";
+import type { PermissionGroupDto } from "@/api/models";
 import {
   applyCheck,
   buildPermissionTree,
@@ -43,11 +40,8 @@ export function PermissionSheet(props: PermissionSheetProps) {
   const { providerName, providerKey, open, onOpenChange, title } = props;
   const L = useLocalization();
 
-  const query = useGetApiPermissionManagementPermissions(
-    { providerName, providerKey },
-    { query: { enabled: open } },
-  );
-  const mutation = usePutApiPermissionManagementPermissions();
+  const query = usePermissionsGet({ providerName, providerKey }, { query: { enabled: open } });
+  const mutation = usePermissionsUpdate();
 
   const groups = useMemo(() => query.data?.groups ?? [], [query.data]);
   const allPermissions = useMemo<PermissionLike[]>(
@@ -76,7 +70,7 @@ export function PermissionSheet(props: PermissionSheetProps) {
     setChecked((prev) => applyCheck(prev, allPermissions, name, value, locked));
   }
 
-  function handleGroupToggle(group: VoloAbpPermissionManagementPermissionGroupDto, value: boolean) {
+  function handleGroupToggle(group: PermissionGroupDto, value: boolean) {
     setChecked((prev) => toggleGroup(prev, group.permissions ?? [], value, locked));
   }
 

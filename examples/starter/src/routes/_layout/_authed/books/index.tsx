@@ -25,16 +25,16 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  getApiAppAuthor,
-  getApiAppBook,
-  getGetApiAppBookQueryKey,
-  putApiAppBookId,
+  authorGetList,
+  bookGetList,
+  bookUpdate,
+  getBookGetListQueryKey,
   setBookDemoScenario,
-  useDeleteApiAppBookId,
-  useGetApiAppAuthorId,
-  useGetApiAppBook,
-  usePostApiAppBook,
-  usePutApiAppBookId,
+  useAuthorGet,
+  useBookCreate,
+  useBookDelete,
+  useBookGetList,
+  useBookUpdate,
 } from "@/routes/_layout/_authed/books/-book-api";
 import { exportBooksCsv } from "@/routes/_layout/_authed/books/-book-export";
 import {
@@ -47,7 +47,7 @@ import {
   toBookInput,
   toBookValues,
 } from "@/routes/_layout/_authed/books/-book-form";
-import type { AbpSwaggerBooksBookDto } from "@/routes/_layout/_authed/books/-book-models";
+import type { BookDto } from "@/routes/_layout/_authed/books/-book-models";
 import { type BookScenario, BookScenarioBar } from "@/routes/_layout/_authed/books/-book-scenarios";
 import { BookDeleteButton } from "@/routes/_layout/_authed/books/-book-sheet-actions";
 import { BooksL1Demo } from "@/routes/_layout/_authed/books/-tiers/books-l1-demo";
@@ -57,13 +57,13 @@ import { BooksL2Demo } from "@/routes/_layout/_authed/books/-tiers/books-l2-demo
 const AUTHOR_PAGE_SIZE = 20;
 
 /**
- * 作者下拉的远程 loadOptions：`GetApiAppAuthorParams`（见 `-book-models.ts`）只有
+ * 作者下拉的远程 loadOptions：`AuthorGetListParams`（见 `-book-models.ts`）只有
  * Sorting/SkipCount/MaxResultCount，没有 Filter 字段，mock 后端照搬 ABP demo 的 author 端点，
  * 同样不支持服务端过滤。退化为固定取前 `AUTHOR_PAGE_SIZE` 条 + 客户端子串过滤（不区分大小写），
  * 而不是伪造一个服务端不支持的参数。
  */
 async function loadAuthorOptions(search: string): Promise<ComboboxOption[]> {
-  const result = await getApiAppAuthor({ SkipCount: 0, MaxResultCount: AUTHOR_PAGE_SIZE });
+  const result = await authorGetList({ SkipCount: 0, MaxResultCount: AUTHOR_PAGE_SIZE });
   const items = result.items ?? [];
   const query = search.trim().toLowerCase();
   const filtered = query
@@ -90,18 +90,18 @@ export const Route = createFileRoute("/_layout/_authed/books/")({
 });
 
 const bookService = createCrudService({
-  useList: useGetApiAppBook,
-  useCreate: usePostApiAppBook,
-  useUpdate: usePutApiAppBookId,
-  useDelete: useDeleteApiAppBookId,
-  listKey: getGetApiAppBookQueryKey,
-  fetchList: getApiAppBook,
+  useList: useBookGetList,
+  useCreate: useBookCreate,
+  useUpdate: useBookUpdate,
+  useDelete: useBookDelete,
+  listKey: getBookGetListQueryKey,
+  fetchList: bookGetList,
   supportsFilter: false,
 });
 
 // 列定义走词条 key 而非 L()，因此不依赖 hook，可以留在模块级：引用天然稳定，
 // 不必再包 useMemo，也就不存在「每渲染新数组重建列模型」那类退化。
-const col = createAbpColumns<AbpSwaggerBooksBookDto>();
+const col = createAbpColumns<BookDto>();
 const columns = [
   col.primary("name", "App::BookName", { avatar: false }),
   col.text("authorName", "App::BookAuthor", { enableSorting: false }),
@@ -127,15 +127,15 @@ const TABLE_OPTIONS = {
 const TAG_VALUES = Object.keys(BOOK_TAG_KEYS);
 
 /** 在售的书先下架才能删：行菜单里不出「删除」，批量删除也会跳过它并在提示里交代。 */
-function canDeleteBook(row: AbpSwaggerBooksBookDto): boolean {
+function canDeleteBook(row: BookDto): boolean {
   return row.inStock !== true;
 }
 
-function setInStock(row: AbpSwaggerBooksBookDto, inStock: boolean) {
+function setInStock(row: BookDto, inStock: boolean) {
   const values = toBookValues(row);
   // 上架却没有库存的书，库存补成 1：与表单里「在售必须有库存」的规则保持一致。
   const stock = inStock && (values.stock ?? 0) <= 0 ? 1 : values.stock;
-  return putApiAppBookId(row.id ?? "", toBookInput({ ...values, inStock, stock }));
+  return bookUpdate(row.id ?? "", toBookInput({ ...values, inStock, stock }));
 }
 
 function BooksPage() {
@@ -147,7 +147,7 @@ function BooksPage() {
     emptyValues: EMPTY_BOOK_VALUES,
     // TDto 在 sheet 块里只有回调参数（逆变）位，调用点推不出具体 DTO 类型；本页在回调外读
     // sheet.record.authorId/authorName，故必须在此显式标注。
-    toValues: (record: AbpSwaggerBooksBookDto) => toBookValues(record),
+    toValues: (record: BookDto) => toBookValues(record),
     toCreate: toBookInput,
     toUpdate: toBookInput,
     schema: () => bookSchema(L),
@@ -159,11 +159,11 @@ function BooksPage() {
         : [record.authorName, record.publishDate?.slice(0, 10)].filter(Boolean).join(" · "),
   });
 
-  // 编辑/详情态已选作者名回显：AbpSwaggerBooksBookDto 自带 authorName（列表/详情复用同一 DTO，
+  // 编辑/详情态已选作者名回显：BookDto 自带 authorName（列表/详情复用同一 DTO，
   // mock 后端照 ABP demo 的 BookAppService 一并带上），优先直接拿来当缓存 label 种子；只有它缺失时才
   // 按需 get 明细补一次（enabled 门控避免每次渲染都发请求）。
   const record = sheet.record;
-  const authorNameFallback = useGetApiAppAuthorId(record?.authorId ?? "", {
+  const authorNameFallback = useAuthorGet(record?.authorId ?? "", {
     query: { enabled: Boolean(record?.authorId) && !record?.authorName },
   });
   const authorSeed: ComboboxOption[] = record?.authorId
@@ -188,7 +188,7 @@ function BooksPage() {
   // 「复制为新书」用 create 模式打开、带上这条记录的值：保存走的是新建，不会改到原书。
   const { open } = sheet;
   const duplicateMenuItem = useCallback(
-    (row: AbpSwaggerBooksBookDto) => (
+    (row: BookDto) => (
       <DropdownMenuItem
         onSelect={() =>
           void open("create", { ...row, name: L("App::BookCopyName", row.name ?? "") })
@@ -270,7 +270,7 @@ function BooksPage() {
             : {};
     await navigate({ search: nextSearch, replace: true });
     pendingSelectAll.current = scenario === "selectAll";
-    await queryClient.resetQueries({ queryKey: getGetApiAppBookQueryKey() });
+    await queryClient.resetQueries({ queryKey: getBookGetListQueryKey() });
     if (scenario === "view") {
       t.state.setDensity("compact");
       table.getColumn("description")?.toggleVisibility(false);

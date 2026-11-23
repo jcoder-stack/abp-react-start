@@ -7,11 +7,11 @@
 import * as zod from 'zod';
 
 
-export const GetApiIdentityUsersIdParams = zod.object({
+export const UserGetParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiIdentityUsersIdResponse = zod.object({
+export const UserGetResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "creationTime": zod.iso.datetime({"offset":true}).optional(),
@@ -38,44 +38,44 @@ export const GetApiIdentityUsersIdResponse = zod.object({
   "lastPasswordChangeTime": zod.iso.datetime({"offset":true}).nullish()
 })
 
-export const PutApiIdentityUsersIdParams = zod.object({
+export const UserUpdateParams = zod.object({
   "id": zod.uuid()
 })
 
-export const putApiIdentityUsersIdBodyUserNameMin = 0;
-export const putApiIdentityUsersIdBodyUserNameMax = 256;
+export const userUpdateBodyUserNameMin = 0;
+export const userUpdateBodyUserNameMax = 256;
 
-export const putApiIdentityUsersIdBodyNameMin = 0;
-export const putApiIdentityUsersIdBodyNameMax = 64;
+export const userUpdateBodyNameMin = 0;
+export const userUpdateBodyNameMax = 64;
 
-export const putApiIdentityUsersIdBodySurnameMin = 0;
-export const putApiIdentityUsersIdBodySurnameMax = 64;
+export const userUpdateBodySurnameMin = 0;
+export const userUpdateBodySurnameMax = 64;
 
-export const putApiIdentityUsersIdBodyEmailMin = 0;
-export const putApiIdentityUsersIdBodyEmailMax = 256;
+export const userUpdateBodyEmailMin = 0;
+export const userUpdateBodyEmailMax = 256;
 
-export const putApiIdentityUsersIdBodyPhoneNumberMin = 0;
-export const putApiIdentityUsersIdBodyPhoneNumberMax = 16;
+export const userUpdateBodyPhoneNumberMin = 0;
+export const userUpdateBodyPhoneNumberMax = 16;
 
-export const putApiIdentityUsersIdBodyPasswordMin = 0;
-export const putApiIdentityUsersIdBodyPasswordMax = 128;
+export const userUpdateBodyPasswordMin = 0;
+export const userUpdateBodyPasswordMax = 128;
 
 
 
-export const PutApiIdentityUsersIdBody = zod.object({
-  "userName": zod.string().min(putApiIdentityUsersIdBodyUserNameMin).max(putApiIdentityUsersIdBodyUserNameMax),
-  "name": zod.string().min(putApiIdentityUsersIdBodyNameMin).max(putApiIdentityUsersIdBodyNameMax).nullish(),
-  "surname": zod.string().min(putApiIdentityUsersIdBodySurnameMin).max(putApiIdentityUsersIdBodySurnameMax).nullish(),
-  "email": zod.email().min(putApiIdentityUsersIdBodyEmailMin).max(putApiIdentityUsersIdBodyEmailMax),
-  "phoneNumber": zod.string().min(putApiIdentityUsersIdBodyPhoneNumberMin).max(putApiIdentityUsersIdBodyPhoneNumberMax).nullish(),
+export const UserUpdateBody = zod.object({
+  "userName": zod.string().min(userUpdateBodyUserNameMin).max(userUpdateBodyUserNameMax),
+  "name": zod.string().min(userUpdateBodyNameMin).max(userUpdateBodyNameMax).nullish(),
+  "surname": zod.string().min(userUpdateBodySurnameMin).max(userUpdateBodySurnameMax).nullish(),
+  "email": zod.email().min(userUpdateBodyEmailMin).max(userUpdateBodyEmailMax),
+  "phoneNumber": zod.string().min(userUpdateBodyPhoneNumberMin).max(userUpdateBodyPhoneNumberMax).nullish(),
   "isActive": zod.boolean().optional(),
   "lockoutEnabled": zod.boolean().optional(),
   "roleNames": zod.array(zod.string()).nullish(),
-  "password": zod.string().min(putApiIdentityUsersIdBodyPasswordMin).max(putApiIdentityUsersIdBodyPasswordMax).nullish(),
+  "password": zod.string().min(userUpdateBodyPasswordMin).max(userUpdateBodyPasswordMax).nullish(),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const PutApiIdentityUsersIdResponse = zod.object({
+export const UserUpdateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "creationTime": zod.iso.datetime({"offset":true}).optional(),
@@ -102,28 +102,29 @@ export const PutApiIdentityUsersIdResponse = zod.object({
   "lastPasswordChangeTime": zod.iso.datetime({"offset":true}).nullish()
 })
 
-export const DeleteApiIdentityUsersIdParams = zod.object({
+export const UserDeleteParams = zod.object({
   "id": zod.uuid()
 })
 
-export const DeleteApiIdentityUsersIdResponse = zod.unknown()
+export const UserDeleteResponse = zod.unknown()
 
-export const getApiIdentityUsersQuerySkipCountMin = 0;
-export const getApiIdentityUsersQuerySkipCountMax = 2147483647;
+export const userGetListQuerySkipCountMin = 0;
+export const userGetListQuerySkipCountMax = 2147483647;
 
-export const getApiIdentityUsersQueryMaxResultCountMax = 2147483647;
+export const userGetListQueryMaxResultCountMin = 1;
+export const userGetListQueryMaxResultCountMax = 2147483647;
 
 
 
-export const GetApiIdentityUsersQueryParams = zod.object({
+export const UserGetListQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
-  "SkipCount": zod.int().min(getApiIdentityUsersQuerySkipCountMin).max(getApiIdentityUsersQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(1).max(getApiIdentityUsersQueryMaxResultCountMax).optional(),
+  "SkipCount": zod.int().min(userGetListQuerySkipCountMin).max(userGetListQuerySkipCountMax).optional(),
+  "MaxResultCount": zod.int().min(userGetListQueryMaxResultCountMin).max(userGetListQueryMaxResultCountMax).optional(),
   "ExtraProperties": zod.record(zod.string(), zod.unknown()).optional()
 })
 
-export const GetApiIdentityUsersResponse = zod.object({
+export const UserGetListResponse = zod.object({
   "items": zod.array(zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
@@ -153,39 +154,39 @@ export const GetApiIdentityUsersResponse = zod.object({
   "totalCount": zod.int().optional()
 })
 
-export const postApiIdentityUsersBodyUserNameMin = 0;
-export const postApiIdentityUsersBodyUserNameMax = 256;
+export const userCreateBodyUserNameMin = 0;
+export const userCreateBodyUserNameMax = 256;
 
-export const postApiIdentityUsersBodyNameMin = 0;
-export const postApiIdentityUsersBodyNameMax = 64;
+export const userCreateBodyNameMin = 0;
+export const userCreateBodyNameMax = 64;
 
-export const postApiIdentityUsersBodySurnameMin = 0;
-export const postApiIdentityUsersBodySurnameMax = 64;
+export const userCreateBodySurnameMin = 0;
+export const userCreateBodySurnameMax = 64;
 
-export const postApiIdentityUsersBodyEmailMin = 0;
-export const postApiIdentityUsersBodyEmailMax = 256;
+export const userCreateBodyEmailMin = 0;
+export const userCreateBodyEmailMax = 256;
 
-export const postApiIdentityUsersBodyPhoneNumberMin = 0;
-export const postApiIdentityUsersBodyPhoneNumberMax = 16;
+export const userCreateBodyPhoneNumberMin = 0;
+export const userCreateBodyPhoneNumberMax = 16;
 
-export const postApiIdentityUsersBodyPasswordMin = 0;
-export const postApiIdentityUsersBodyPasswordMax = 128;
+export const userCreateBodyPasswordMin = 0;
+export const userCreateBodyPasswordMax = 128;
 
 
 
-export const PostApiIdentityUsersBody = zod.object({
-  "userName": zod.string().min(postApiIdentityUsersBodyUserNameMin).max(postApiIdentityUsersBodyUserNameMax),
-  "name": zod.string().min(postApiIdentityUsersBodyNameMin).max(postApiIdentityUsersBodyNameMax).nullish(),
-  "surname": zod.string().min(postApiIdentityUsersBodySurnameMin).max(postApiIdentityUsersBodySurnameMax).nullish(),
-  "email": zod.email().min(postApiIdentityUsersBodyEmailMin).max(postApiIdentityUsersBodyEmailMax),
-  "phoneNumber": zod.string().min(postApiIdentityUsersBodyPhoneNumberMin).max(postApiIdentityUsersBodyPhoneNumberMax).nullish(),
+export const UserCreateBody = zod.object({
+  "userName": zod.string().min(userCreateBodyUserNameMin).max(userCreateBodyUserNameMax),
+  "name": zod.string().min(userCreateBodyNameMin).max(userCreateBodyNameMax).nullish(),
+  "surname": zod.string().min(userCreateBodySurnameMin).max(userCreateBodySurnameMax).nullish(),
+  "email": zod.email().min(userCreateBodyEmailMin).max(userCreateBodyEmailMax),
+  "phoneNumber": zod.string().min(userCreateBodyPhoneNumberMin).max(userCreateBodyPhoneNumberMax).nullish(),
   "isActive": zod.boolean().optional(),
   "lockoutEnabled": zod.boolean().optional(),
   "roleNames": zod.array(zod.string()).nullish(),
-  "password": zod.string().min(postApiIdentityUsersBodyPasswordMin).max(postApiIdentityUsersBodyPasswordMax)
+  "password": zod.string().min(userCreateBodyPasswordMin).max(userCreateBodyPasswordMax)
 })
 
-export const PostApiIdentityUsersResponse = zod.object({
+export const UserCreateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "creationTime": zod.iso.datetime({"offset":true}).optional(),
@@ -212,11 +213,11 @@ export const PostApiIdentityUsersResponse = zod.object({
   "lastPasswordChangeTime": zod.iso.datetime({"offset":true}).nullish()
 })
 
-export const GetApiIdentityUsersByIdIdParams = zod.object({
+export const UserFindByIdParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiIdentityUsersByIdIdResponse = zod.object({
+export const UserFindByIdResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "creationTime": zod.iso.datetime({"offset":true}).optional(),
@@ -243,11 +244,11 @@ export const GetApiIdentityUsersByIdIdResponse = zod.object({
   "lastPasswordChangeTime": zod.iso.datetime({"offset":true}).nullish()
 })
 
-export const GetApiIdentityUsersIdRolesParams = zod.object({
+export const UserGetRolesParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiIdentityUsersIdRolesResponse = zod.object({
+export const UserGetRolesResponse = zod.object({
   "items": zod.array(zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
@@ -260,17 +261,17 @@ export const GetApiIdentityUsersIdRolesResponse = zod.object({
 })).nullish()
 })
 
-export const PutApiIdentityUsersIdRolesParams = zod.object({
+export const UserUpdateRolesParams = zod.object({
   "id": zod.uuid()
 })
 
-export const PutApiIdentityUsersIdRolesBody = zod.object({
+export const UserUpdateRolesBody = zod.object({
   "roleNames": zod.array(zod.string())
 })
 
-export const PutApiIdentityUsersIdRolesResponse = zod.unknown()
+export const UserUpdateRolesResponse = zod.unknown()
 
-export const GetApiIdentityUsersAssignableRolesResponse = zod.object({
+export const UserGetAssignableRolesResponse = zod.object({
   "items": zod.array(zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
@@ -283,11 +284,11 @@ export const GetApiIdentityUsersAssignableRolesResponse = zod.object({
 })).nullish()
 })
 
-export const GetApiIdentityUsersByUsernameUserNameParams = zod.object({
+export const UserFindByUsernameParams = zod.object({
   "userName": zod.string()
 })
 
-export const GetApiIdentityUsersByUsernameUserNameResponse = zod.object({
+export const UserFindByUsernameResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "creationTime": zod.iso.datetime({"offset":true}).optional(),
@@ -314,11 +315,11 @@ export const GetApiIdentityUsersByUsernameUserNameResponse = zod.object({
   "lastPasswordChangeTime": zod.iso.datetime({"offset":true}).nullish()
 })
 
-export const GetApiIdentityUsersByEmailEmailParams = zod.object({
+export const UserFindByEmailParams = zod.object({
   "email": zod.string()
 })
 
-export const GetApiIdentityUsersByEmailEmailResponse = zod.object({
+export const UserFindByEmailResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "creationTime": zod.iso.datetime({"offset":true}).optional(),

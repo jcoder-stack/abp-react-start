@@ -4,10 +4,10 @@
  * AbpSwagger API
  * OpenAPI spec version: v1
  */
-import type { VoloAbpTenantManagementTenantDto } from './voloAbpTenantManagementTenantDto';
+import type { TenantDto } from './tenantDto';
 
 export interface PagedResultDtoOfTenantDto {
   /** @nullable */
-  items?: VoloAbpTenantManagementTenantDto[] | null;
+  items?: TenantDto[] | null;
   totalCount?: number;
 }

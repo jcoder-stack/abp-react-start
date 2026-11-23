@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { shortenAbpGenericName, simplifyAbpGenericSchemaNames } from "../src/abp-schema-names";
+import {
+  shortenAbpGenericName,
+  shortenAbpSchemaNames,
+  simplifyAbpGenericSchemaNames,
+} from "../src/abp-schema-names";
 
 const paged = (arg: string) =>
   `Volo.Abp.Application.Dtos.PagedResultDto\`1[[${arg}, Asm, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]`;
@@ -70,5 +74,50 @@ describe("simplifyAbpGenericSchemaNames", () => {
   it("returns a doc without components schemas untouched", () => {
     const doc = { paths: {} };
     expect(simplifyAbpGenericSchemaNames(doc)).toBe(doc);
+  });
+});
+
+describe("shortenAbpSchemaNames", () => {
+  it("drops the namespace, shortens generics, and rewrites every $ref", () => {
+    const longKey = paged("Volo.Abp.Identity.IdentityUserDto");
+    const doc = {
+      components: {
+        schemas: {
+          [longKey]: {
+            properties: {
+              items: { items: { $ref: "#/components/schemas/Volo.Abp.Identity.IdentityUserDto" } },
+            },
+          },
+          "Volo.Abp.Identity.IdentityUserDto": { type: "object" },
+        },
+      },
+      paths: { "/x": { get: { schema: { $ref: `#/components/schemas/${longKey}` } } } },
+    };
+    const out = shortenAbpSchemaNames(doc);
+    expect(Object.keys(out.components.schemas)).toEqual([
+      "PagedResultDtoOfIdentityUserDto",
+      "IdentityUserDto",
+    ]);
+    const json = JSON.stringify(out);
+    expect(json).toContain("#/components/schemas/IdentityUserDto");
+    expect(json).toContain("#/components/schemas/PagedResultDtoOfIdentityUserDto");
+    expect(json).not.toContain("Volo.Abp");
+  });
+
+  it("keeps the full id of every schema whose short name is ambiguous", () => {
+    const doc = {
+      components: {
+        schemas: {
+          "Acme.Sales.OrderDto": { type: "object" },
+          "Acme.Purchasing.OrderDto": { type: "object" },
+          "Acme.Sales.CustomerDto": { type: "object" },
+        },
+      },
+    };
+    expect(Object.keys(shortenAbpSchemaNames(doc).components.schemas)).toEqual([
+      "Acme.Sales.OrderDto",
+      "Acme.Purchasing.OrderDto",
+      "CustomerDto",
+    ]);
   });
 });

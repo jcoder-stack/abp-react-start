@@ -6,8 +6,8 @@ import { abpFormOptions } from "@/components/abp/crud/abp-form-options";
 import { useAppForm } from "@/components/form/form-hook";
 import { FormSection } from "@/components/form/form-section";
 import { SubmitButton } from "@/components/form/submit-button";
-import { postApiAppBook } from "@/routes/_layout/_authed/books/-book-api";
-import type { AbpSwaggerBooksCreateUpdateBookDto } from "@/routes/_layout/_authed/books/-book-models";
+import { bookCreate } from "@/routes/_layout/_authed/books/-book-api";
+import type { CreateUpdateBookDto } from "@/routes/_layout/_authed/books/-book-models";
 
 /** 长表单逃生舱示范(不走 SheetForm 组合层);只填 name 让后端拒绝缺失的必填项,展示服务端错误落字段。 */
 export const Route = createFileRoute("/_layout/_authed/books/new")({
@@ -26,7 +26,7 @@ function NewBookPage() {
       schema: newBookSchema,
       submit: async (value: { name: string }) => {
         setSaved(false);
-        await postApiAppBook(value as AbpSwaggerBooksCreateUpdateBookDto);
+        await bookCreate(value as CreateUpdateBookDto);
       },
       onSuccess: () => setSaved(true),
     }),

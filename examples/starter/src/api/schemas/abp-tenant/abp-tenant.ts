@@ -7,11 +7,11 @@
 import * as zod from 'zod';
 
 
-export const GetApiAbpMultiTenancyTenantsByNameNameParams = zod.object({
+export const AbpTenantFindTenantByNameParams = zod.object({
   "name": zod.string()
 })
 
-export const GetApiAbpMultiTenancyTenantsByNameNameResponse = zod.object({
+export const AbpTenantFindTenantByNameResponse = zod.object({
   "success": zod.boolean().optional(),
   "tenantId": zod.uuid().nullish(),
   "name": zod.string().nullish(),
@@ -19,11 +19,11 @@ export const GetApiAbpMultiTenancyTenantsByNameNameResponse = zod.object({
   "isActive": zod.boolean().optional()
 })
 
-export const GetApiAbpMultiTenancyTenantsByIdIdParams = zod.object({
+export const AbpTenantFindTenantByIdParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiAbpMultiTenancyTenantsByIdIdResponse = zod.object({
+export const AbpTenantFindTenantByIdResponse = zod.object({
   "success": zod.boolean().optional(),
   "tenantId": zod.uuid().nullish(),
   "name": zod.string().nullish(),

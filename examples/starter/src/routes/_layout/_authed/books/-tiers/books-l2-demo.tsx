@@ -24,12 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useGetApiAppBook } from "@/routes/_layout/_authed/books/-book-api";
+import { useBookGetList } from "@/routes/_layout/_authed/books/-book-api";
 import { BOOK_TYPE_VALUES, bookTypeLabelKey } from "@/routes/_layout/_authed/books/-book-form";
-import type {
-  AbpSwaggerBooksBookDto,
-  GetApiAppBookParams,
-} from "@/routes/_layout/_authed/books/-book-models";
+import type { BookDto, BookGetListParams } from "@/routes/_layout/_authed/books/-book-models";
 
 interface Filters {
   type: string;
@@ -83,18 +80,18 @@ export function BooksL2Demo() {
   const [draft, setDraft] = useState<Filters>(NO_FILTERS);
   const [applied, setApplied] = useState<Filters>(NO_FILTERS);
 
-  const params: GetApiAppBookParams = {
+  const params: BookGetListParams = {
     ...toAbpListParams(state.params),
     // 这个端点没有通用 Filter 参数，搜索框的关键字落到 Name 上。
     Name: state.params.filter || undefined,
-    Type: applied.type === "" ? undefined : (Number(applied.type) as GetApiAppBookParams["Type"]),
+    Type: applied.type === "" ? undefined : (Number(applied.type) as BookGetListParams["Type"]),
     InStock: applied.inStock === "" ? undefined : applied.inStock === "true",
   };
-  const listQuery = useGetApiAppBook(params, { query: { placeholderData: keepPreviousData } });
+  const listQuery = useBookGetList(params, { query: { placeholderData: keepPreviousData } });
   const items = listQuery.data?.items ?? [];
   const totalCount = listQuery.data?.totalCount ?? 0;
 
-  const columns = useMemo<TableColumnDef<AbpSwaggerBooksBookDto>[]>(
+  const columns = useMemo<TableColumnDef<BookDto>[]>(
     () => [
       { accessorKey: "name", header: () => L("App::BookName") },
       { accessorKey: "authorName", header: () => L("App::BookAuthor"), enableSorting: false },

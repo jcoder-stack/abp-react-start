@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createOrvalConfig } from "../src/orval-config";
 
-const base = { input: "/abs/swagger.json", outputDir: "/abs/out", zod: true };
+const base = {
+  input: "/abs/swagger.json",
+  outputDir: "/abs/out",
+  zod: true,
+  transformer: <T>(doc: T): T => doc,
+};
 
 interface ProjectShape {
   input: { target: string };

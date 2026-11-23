@@ -4,10 +4,10 @@
  * AbpSwagger API
  * OpenAPI spec version: v1
  */
-import type { VoloAbpIdentityIdentityUserDto } from './voloAbpIdentityIdentityUserDto';
+import type { IdentityUserDto } from './identityUserDto';
 
 export interface PagedResultDtoOfIdentityUserDto {
   /** @nullable */
-  items?: VoloAbpIdentityIdentityUserDto[] | null;
+  items?: IdentityUserDto[] | null;
   totalCount?: number;
 }

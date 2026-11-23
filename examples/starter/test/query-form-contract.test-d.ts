@@ -2,11 +2,11 @@ import { expectTypeOf, test } from "vitest";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import {
-  getGetApiAppBookQueryKey,
-  useDeleteApiAppBookId,
-  useGetApiAppBook,
-  usePostApiAppBook,
-  usePutApiAppBookId,
+  getBookGetListQueryKey,
+  useBookCreate,
+  useBookDelete,
+  useBookGetList,
+  useBookUpdate,
 } from "@/routes/_layout/_authed/books/-book-api";
 
 /**
@@ -30,11 +30,11 @@ import {
  */
 
 const bookService = createCrudService({
-  useList: useGetApiAppBook,
-  useCreate: usePostApiAppBook,
-  useUpdate: usePutApiAppBookId,
-  useDelete: useDeleteApiAppBookId,
-  listKey: getGetApiAppBookQueryKey,
+  useList: useBookGetList,
+  useCreate: useBookCreate,
+  useUpdate: useBookUpdate,
+  useDelete: useBookDelete,
+  listKey: getBookGetListQueryKey,
   supportsFilter: false,
 });
 

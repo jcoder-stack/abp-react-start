@@ -37,6 +37,8 @@ export default defineApiConfig({
 });
 ```
 
+Operations are named after the backend's C# methods (`useRoleGetList`, `useRoleCreate`) and models after their type (`IdentityRoleDto`). The method names come from the backend's `/api/abp/api-definition`, read from the `input` URL's origin; set `apiDefinition` to another URL or a saved file when the input is a local swagger file or the backend lives under a sub-path. Without it, ABP's stock modules still get method names from a built-in snapshot and your own endpoints fall back to path-derived names (`useGetBookId`). `naming: "legacy"` keeps the pre-0.7 names (`useGetApiIdentityRoles`, `VoloAbpIdentityIdentityRoleDto`). See docs/guides/initialize-a-project.en.md for the full rules.
+
 For multiple backends use the `{ targets: { identity: {...}, business: {...} } }` shape; flags cannot land on one target there, so passing `--input`/`--output` is an error — edit the config file, or point `--config` at a single-target one.
 
 The CLI requires Node ≥ 22.18: orval v8, which `gen` is built on, needs it, and every command loads it. The same version runs the `.ts` config directly via strip-types; under a runtime that cannot execute TypeScript, switch to `abp.api.config.json` (`gen` tells you the same when it happens).

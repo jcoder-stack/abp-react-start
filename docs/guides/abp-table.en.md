@@ -23,10 +23,10 @@ npx jc-abp gen
 
 Afterwards the target entity's artifacts appear in three places (using `Book`):
 
-- `src/api/endpoints/book/book.ts`: orval-generated CRUD functions and react-query hooks, e.g. `getApiAppBook` (list, function form), `useGetApiAppBook` (list hook), `usePostApiAppBook` (create), `usePutApiAppBookId` (update), `useDeleteApiAppBookId` (delete).
-- `src/api/models/`: `AbpSwaggerBooksBookDto` (the row/detail DTO), `AbpSwaggerBooksCreateUpdateBookDto` (the write DTO shared by create/update).
-- `src/api/schemas/book/book.ts`: `postApiAppBookBody` (the zod schema — the base for step ③'s form validation).
-- If a relation field needs a remote dropdown (`Book.authorId` → `Author`), the corresponding `getApiAppAuthor` is generated too; step ③ uses it.
+- `src/api/endpoints/book/book.ts`: orval-generated CRUD functions and react-query hooks, e.g. `bookGetList` (list, function form), `useBookGetList` (list hook), `useBookCreate` (create), `useBookUpdate` (update), `useBookDelete` (delete).
+- `src/api/models/`: `BookDto` (the row/detail DTO), `CreateUpdateBookDto` (the write DTO shared by create/update).
+- `src/api/schemas/book/book.ts`: `BookCreateBody` (the zod schema — the base for step ③'s form validation).
+- If a relation field needs a remote dropdown (`Book.authorId` → `Author`), the corresponding `authorGetList` is generated too; step ③ uses it.
 
 If swagger doesn't have the endpoints yet, add the backend application service first; `jc-abp gen` only converts "swagger → frontend client" and won't invent endpoints for you.
 
@@ -53,24 +53,24 @@ import type { TableColumnDef } from "@/components/data-table/table-core"
 
 ```ts
 import {
-  getGetApiAppBookQueryKey,
-  useDeleteApiAppBookId,
-  useGetApiAppBook,
-  usePostApiAppBook,
-  usePutApiAppBookId,
+  getBookGetListQueryKey,
+  useBookDelete,
+  useBookGetList,
+  useBookCreate,
+  useBookUpdate,
 } from "@/api/endpoints/book/book";
 
 const bookService = createCrudService({
-  useList: useGetApiAppBook,
-  useCreate: usePostApiAppBook,
-  useUpdate: usePutApiAppBookId,
-  useDelete: useDeleteApiAppBookId,
-  listKey: getGetApiAppBookQueryKey,   // invalidation prefix: one sweep clears every paging state after save/delete
+  useList: useBookGetList,
+  useCreate: useBookCreate,
+  useUpdate: useBookUpdate,
+  useDelete: useBookDelete,
+  listKey: getBookGetListQueryKey,   // invalidation prefix: one sweep clears every paging state after save/delete
   supportsFilter: false,               // the book endpoint has no Filter param; required here and only false compiles (enforced at compile time, see below)
 });
 ```
 
-**Why hook references, not bare functions**: the descriptor passes orval's react-query hooks straight through, and `useAbpTable`/`useAbpSheet` consume them internally — no handwritten `queryFn`/`mutationFn`. `listKey` plugs into orval's query-key namespace (`getGetApiAppBookQueryKey()` is the prefix shared by every paging state of the endpoint); after a successful save/delete both hooks use it to invalidate every paging/sorting/filter combination at once, with no page-side key assembly.
+**Why hook references, not bare functions**: the descriptor passes orval's react-query hooks straight through, and `useAbpTable`/`useAbpSheet` consume them internally — no handwritten `queryFn`/`mutationFn`. `listKey` plugs into orval's query-key namespace (`getBookGetListQueryKey()` is the prefix shared by every paging state of the endpoint); after a successful save/delete both hooks use it to invalidate every paging/sorting/filter combination at once, with no page-side key assembly.
 
 ### Read-only list pages: pass no mutations
 
@@ -78,8 +78,8 @@ Omit all three keys besides `useList` and the service is purely read-only — `u
 
 ```ts
 const bookListOnlyService = createCrudService({
-  useList: useGetApiAppBook,
-  listKey: getGetApiAppBookQueryKey,
+  useList: useBookGetList,
+  listKey: getBookGetListQueryKey,
   supportsFilter: false,
 });
 
@@ -90,7 +90,7 @@ return <t.Table />;
 Three points:
 
 - **How to set `policy`**: `policy` is a prefix string; `createCrudService` derives `resolvedPolicies.create/update/delete` per the ABP convention (`X` → `X.Create`/`X.Update`/`X.Delete`), and `useAbpTable`/`useAbpSheet` use those to decide whether the create/edit/delete buttons render. If the target application service actually carries the permission attribute (like Identity's user service requiring `AbpIdentity.Users`), pass `policy: IdentityPermissions.Users.Default`; if the backend defines no policy for the service (the demo's `BookAppService` is like that), **pass no `policy`** — `source.can.*` all resolve to `true`, matching `books/index.tsx`. If the three granularities don't line up (say delete alone has its own policy name), override individually with `policies: { create, update, delete }` instead of prefix derivation. No bare policy strings: first add constants for your business module in `src/permissions.ts` following the ABP definition-class format (e.g. `BookPermissions`), then reference them.
-- **How `supportsFilter` is decided**: no longer eyeballing — as long as you call `createCrudService` in inference form (no explicit type parameters), the field's value is constrained at compile time by the `useList` endpoint's parameter type: no `Filter` field on the params means `supportsFilter` is **required and only `false` compiles** (omitting it or passing `true` are both compile errors); with a `Filter` field it stays optional, defaulting to `true`. `GetApiAppBookParams` has no `Filter` field (it has `Name`/`MinPublishDate`, used in step ⑥), so `bookService` must pass `supportsFilter: false` — `t.Table` then hides the search box outright instead of rendering a dead input. By contrast `GetApiIdentityUsersParams` carries `Filter?: string`, so `identity/users.tsx` can omit it. **The constraint relies on inference**: adding explicit type parameters back silently drops it to the loose default (as if the endpoint always had `Filter`) — that's not a fix, it's turning the check off.
+- **How `supportsFilter` is decided**: no longer eyeballing — as long as you call `createCrudService` in inference form (no explicit type parameters), the field's value is constrained at compile time by the `useList` endpoint's parameter type: no `Filter` field on the params means `supportsFilter` is **required and only `false` compiles** (omitting it or passing `true` are both compile errors); with a `Filter` field it stays optional, defaulting to `true`. `BookGetListParams` has no `Filter` field (it has `Name`/`MinPublishDate`, used in step ⑥), so `bookService` must pass `supportsFilter: false` — `t.Table` then hides the search box outright instead of rendering a dead input. By contrast `UserGetListParams` carries `Filter?: string`, so `identity/users.tsx` can omit it. **The constraint relies on inference**: adding explicit type parameters back silently drops it to the loose default (as if the endpoint always had `Filter`) — that's not a fix, it's turning the check off.
 - **The service is a pure data descriptor**; `useAbpTable`/`useAbpSheet` each read only the parts they need — one `bookService` can feed both hooks at once (`books/index.tsx` does), or just `useAbpTable` (read-only pages need no `useAbpSheet`).
 
 ## ③ `useAbpSheet`: the form side
@@ -116,7 +116,7 @@ const EMPTY_VALUES: BookFormValues = {
 
 /** Can't use the default mapping: SelectField has a string value domain (enum String/Number round trip),
  *  and publishDate needs the date-only slice. */
-function toRecordValues(record: AbpSwaggerBooksBookDto): BookFormValues {
+function toRecordValues(record: BookDto): BookFormValues {
   return {
     name: record.name ?? "",
     authorId: record.authorId ?? "",
@@ -128,10 +128,10 @@ function toRecordValues(record: AbpSwaggerBooksBookDto): BookFormValues {
 
 /** Can't use the default mapping: SelectField string domain, date-only slice;
  *  create/update share one mapping, hence the name toInput rather than toCreateInput/toUpdateInput. */
-function toInput(value: BookFormValues): AbpSwaggerBooksCreateUpdateBookDto {
+function toInput(value: BookFormValues): CreateUpdateBookDto {
   return {
     ...value,
-    type: Number(value.type) as AbpSwaggerBooksCreateUpdateBookDto["type"],
+    type: Number(value.type) as CreateUpdateBookDto["type"],
   };
 }
 
@@ -141,7 +141,7 @@ function BooksPage() {
   // Base it on the generated body schema: backend constraints like max(128) are inherited for free;
   // `type` is the form SelectField's string domain, conflicting with the generated number literal
   // union — omit, then redeclare.
-  const bookSchema = postApiAppBookBody.omit({ type: true }).extend({
+  const bookSchema = BookCreateBody.omit({ type: true }).extend({
     type: z.string(),
     name: z.string().trim().min(1, L("App::BookNameRequired")).max(/* … */),
     authorId: z.string().min(1, L("App::BookAuthorRequired")),
@@ -151,7 +151,7 @@ function BooksPage() {
 
   const sheet = useAbpSheet(bookService, {
     emptyValues: EMPTY_VALUES,
-    toValues: (record: AbpSwaggerBooksBookDto) => toRecordValues(record),
+    toValues: (record: BookDto) => toRecordValues(record),
     toCreate: toInput,
     toUpdate: toInput,
     schema: () => bookSchema,
@@ -213,19 +213,19 @@ When either reason applies, put a one-line TSDoc on the function saying why, so 
 
 ### Validation schemas: base them on the generated body schema
 
-Don't handwrite a blank `z.object({...})` — `jc-abp gen` already compiled the backend DTO's validation attributes (`[Required]`/`[StringLength]` etc.) into the body schemas under `@/api/schemas/<module>/<module>` (e.g. `postApiIdentityRolesBody`). A handwritten schema copies the required rules and drops length constraints like `max`; over-length input then travels all the way to the backend for a 400. Use the generated schema as the base and `.extend()` only what the UI needs that the generated side lacks (`trim`, localized required messages); `max` and friends are inherited as-is:
+Don't handwrite a blank `z.object({...})` — `jc-abp gen` already compiled the backend DTO's validation attributes (`[Required]`/`[StringLength]` etc.) into the body schemas under `@/api/schemas/<module>/<module>` (e.g. `RoleCreateBody`). A handwritten schema copies the required rules and drops length constraints like `max`; over-length input then travels all the way to the backend for a 400. Use the generated schema as the base and `.extend()` only what the UI needs that the generated side lacks (`trim`, localized required messages); `max` and friends are inherited as-is:
 
 ```tsx
 // roles.tsx's name rules live in the sibling -role-schema.ts (see below), exported as a named
 // factory rather than a local inside the page component — validation rules are part of the page's
 // observable behavior; tests must hook the real artifact, not a replica.
 export function buildRoleSchema(L: Localize) {
-  return postApiIdentityRolesBody.extend({
+  return RoleCreateBody.extend({
     name: z
       .string()
       .trim()
       .min(1, L("Form:Required"))
-      .max(postApiIdentityRolesBodyNameMax, L("Form:MaxLength", postApiIdentityRolesBodyNameMax)),
+      .max(roleCreateBodyNameMax, L("Form:MaxLength", roleCreateBodyNameMax)),
   });
 }
 
@@ -246,7 +246,7 @@ Three points:
 Use `createAbpColumns<TDto>()`. It passes v9's native `accessor` / `display` / `group` through untouched and adds eight presets for column shapes common in admin tables. **The second argument is a message key, not an already-translated string:**
 
 ```ts
-const col = createAbpColumns<AbpSwaggerBooksBookDto>();
+const col = createAbpColumns<BookDto>();
 
 const columns = [
   col.text("name", "App::BookName"),
@@ -376,7 +376,7 @@ const t = useAbpTable(bookService, {
 </t.QueryForm>
 ```
 
-Identical to [`books/index.tsx`](../../examples/starter/src/routes/_layout/_authed/books/index.tsx) — this is the entire query area. `GetApiAppBookParams` has exactly two endpoint-specific query params, `Name`/`MinPublishDate`, and no upper-bound field, so the books page declares those two real fields and doesn't fabricate a `MaxPublishDate` the backend would silently drop.
+Identical to [`books/index.tsx`](../../examples/starter/src/routes/_layout/_authed/books/index.tsx) — this is the entire query area. `BookGetListParams` has exactly two endpoint-specific query params, `Name`/`MinPublishDate`, and no upper-bound field, so the books page declares those two real fields and doesn't fabricate a `MaxPublishDate` the backend would silently drop.
 
 The query area is not a separate card — `t.QueryForm`'s fields render into the **advanced filter panel** inside the table card: proper labels, a three-column grid, and the panel's own "Reset / Query" button row at the bottom. The panel starts collapsed, toggled by the funnel button in the top bar's right-side function group (same group as refresh/density/columns; it survives entering bulk mode). While the panel is open, the quick search box on the left yields — precise field filters and a fuzzy search on the same screen would be a duplicate entry. When collapsed with filters still active, the funnel shows a dot (screen readers get "N filters applied").
 
@@ -554,7 +554,7 @@ Built-in default visibility: view — `click === false && onOpen !== undefined` 
 // Reference must be stable: it's a dep of useAbpTable's columns memo; an inline arrow rebuilds
 // the column model every render (DEV churn warning).
 const permissionMenuItem = useCallback(
-  (row: VoloAbpIdentityIdentityRoleDto) =>
+  (row: IdentityRoleDto) =>
     canManagePermissions ? (
       <DropdownMenuItem onSelect={() => setPermissionsFor(row)}>
         <KeyRound />
@@ -651,8 +651,8 @@ Selection is per page: paging clears it. To run a bulk action on every matching 
 
 ```ts
 const bookService = createCrudService({
-  useList: useGetApiAppBook,
-  fetchList: getApiAppBook, // the plain function orval generates under the same name
+  useList: useBookGetList,
+  fetchList: bookGetList, // the plain function orval generates under the same name
   // …
 });
 ```
@@ -879,10 +879,10 @@ export interface AbpTableSource<TDto> {
 The `books-l1-demo.tsx` form:
 
 ```tsx
-const t = useAbpTable<AbpSwaggerBooksBookDto>(
+const t = useAbpTable<BookDto>(
   (params) => {
     // biome-ignore lint/correctness/useHookAtTopLevel: the source-callback kind never switches across renders; branch lifetime is stable
-    const listQuery = useGetApiAppBook(params, {
+    const listQuery = useBookGetList(params, {
       query: { placeholderData: keepPreviousData, select: toPagedResult },
     });
     const totalCount = listQuery.data?.totalCount ?? 0;
@@ -911,7 +911,7 @@ return <t.Table />;
 
 ```tsx
 const state = useDataTableState();
-const listQuery = useGetApiAppBook(toAbpListParams(state.params), {
+const listQuery = useBookGetList(toAbpListParams(state.params), {
   query: { placeholderData: keepPreviousData },
 });
 const dt = useDataTable({
@@ -1030,7 +1030,7 @@ If a field uses an ABP built-in resource entry (say `AbpIdentity::UserName`), us
 
    ```ts
    async function loadAuthorOptions(search: string): Promise<ComboboxOption[]> {
-     const result = await getApiAppAuthor({ SkipCount: 0, MaxResultCount: AUTHOR_PAGE_SIZE });
+     const result = await authorGetList({ SkipCount: 0, MaxResultCount: AUTHOR_PAGE_SIZE });
      const items = result.items ?? [];
      const query = search.trim().toLowerCase();
      const filtered = query ? items.filter((a) => (a.name ?? "").toLowerCase().includes(query)) : items;

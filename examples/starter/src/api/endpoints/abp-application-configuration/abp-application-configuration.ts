@@ -20,9 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetApiAbpApplicationConfigurationParams,
-  VoloAbpAspNetCoreMvcApplicationConfigurationsApplicationConfigurationDto,
-  VoloAbpHttpRemoteServiceErrorResponse
+  AbpApplicationConfigurationGetParams,
+  ApplicationConfigurationDto,
+  RemoteServiceErrorResponse
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -52,7 +52,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiAbpApplicationConfigurationUrl = (params?: GetApiAbpApplicationConfigurationParams,) => {
+export const getAbpApplicationConfigurationGetUrl = (params?: AbpApplicationConfigurationGetParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -67,9 +67,9 @@ export const getGetApiAbpApplicationConfigurationUrl = (params?: GetApiAbpApplic
   return stringifiedParams.length > 0 ? `/api/abp/application-configuration?${stringifiedParams}` : `/api/abp/application-configuration`
 }
 
-export const getApiAbpApplicationConfiguration = async (params?: GetApiAbpApplicationConfigurationParams, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpAspNetCoreMvcApplicationConfigurationsApplicationConfigurationDto> => {
+export const abpApplicationConfigurationGet = async (params?: AbpApplicationConfigurationGetParams, options?: Parameters<typeof abpMutator>[1]): Promise<ApplicationConfigurationDto> => {
 
-  return abpMutator<VoloAbpAspNetCoreMvcApplicationConfigurationsApplicationConfigurationDto>(getGetApiAbpApplicationConfigurationUrl(params),
+  return abpMutator<ApplicationConfigurationDto>(getAbpApplicationConfigurationGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -82,66 +82,65 @@ export const getApiAbpApplicationConfiguration = async (params?: GetApiAbpApplic
 
 
 
-export const getGetApiAbpApplicationConfigurationQueryKey = (params?: GetApiAbpApplicationConfigurationParams,) => {
+export const getAbpApplicationConfigurationGetQueryKey = (params?: AbpApplicationConfigurationGetParams,) => {
     return [
     `/api/abp/application-configuration`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiAbpApplicationConfigurationQueryOptions = <TData = Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiAbpApplicationConfigurationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getAbpApplicationConfigurationGetQueryOptions = <TData = Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: AbpApplicationConfigurationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiAbpApplicationConfigurationQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getAbpApplicationConfigurationGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>> = ({ signal }) => getApiAbpApplicationConfiguration(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>> = ({ signal }) => abpApplicationConfigurationGet(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiAbpApplicationConfigurationQueryResult = NonNullable<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>>
-export type GetApiAbpApplicationConfigurationQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type AbpApplicationConfigurationGetQueryResult = NonNullable<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>>
+export type AbpApplicationConfigurationGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiAbpApplicationConfiguration<TData = Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiAbpApplicationConfigurationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError, TData>> & Pick<
+export function useAbpApplicationConfigurationGet<TData = Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  AbpApplicationConfigurationGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>,
+          Awaited<ReturnType<typeof abpApplicationConfigurationGet>>,
           TError,
-          Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>
+          Awaited<ReturnType<typeof abpApplicationConfigurationGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiAbpApplicationConfiguration<TData = Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiAbpApplicationConfigurationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError, TData>> & Pick<
+export function useAbpApplicationConfigurationGet<TData = Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: AbpApplicationConfigurationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>,
+          Awaited<ReturnType<typeof abpApplicationConfigurationGet>>,
           TError,
-          Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>
+          Awaited<ReturnType<typeof abpApplicationConfigurationGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiAbpApplicationConfiguration<TData = Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiAbpApplicationConfigurationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export function useAbpApplicationConfigurationGet<TData = Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: AbpApplicationConfigurationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useGetApiAbpApplicationConfiguration<TData = Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiAbpApplicationConfigurationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationConfiguration>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export function useAbpApplicationConfigurationGet<TData = Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: AbpApplicationConfigurationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationConfigurationGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetApiAbpApplicationConfigurationQueryOptions(params,options)
+  const queryOptions = getAbpApplicationConfigurationGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

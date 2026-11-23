@@ -7,12 +7,12 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type {
-  AbpSwaggerAuthorsAuthorDto,
-  AbpSwaggerBooksBookDto,
-  AbpSwaggerBooksBookType,
-  AbpSwaggerBooksCreateUpdateBookDto,
-  GetApiAppAuthorParams,
-  GetApiAppBookParams,
+  AuthorDto,
+  AuthorGetListParams,
+  BookDto,
+  BookGetListParams,
+  BookType,
+  CreateUpdateBookDto,
 } from "@/routes/_layout/_authed/books/-book-models";
 
 /**
@@ -22,7 +22,7 @@ import type {
  * 后端没有它们。真按 swagger 生成，换一个后端重放 starter 就会编不过，而 `src/api` 每次
  * `jc-abp gen` 都整体重写，这几个演示页却是手写增量，两者的生命周期对不上。
  *
- * 于是这里手写出与 orval 产物**同名同形**的 hook（`useGetApiAppBook`、`usePostApiAppBook`……），
+ * 于是这里手写出与 orval 产物**同名同形**的 hook（`useBookGetList`、`useBookCreate`……），
  * 页面代码因此与「真实项目里由 gen 产出的样子」逐字一致，演示本身却不绑任何后端。
  * **你自己的实体请走 `jc-abp gen`，不要照抄本文件。**
  *
@@ -40,7 +40,7 @@ interface AbpErrorEnvelope {
   validationErrors: AbpValidationError[];
 }
 
-const AUTHORS: AbpSwaggerAuthorsAuthorDto[] = [
+const AUTHORS: AuthorDto[] = [
   { id: "a1000000-0000-4000-8000-000000000001", name: "George Orwell", birthDate: "1903-06-25" },
   { id: "a1000000-0000-4000-8000-000000000002", name: "Isaac Asimov", birthDate: "1920-01-02" },
   {
@@ -66,7 +66,7 @@ type SeedRow = [
   description: string,
 ];
 
-function seedBooks(): AbpSwaggerBooksBookDto[] {
+function seedBooks(): BookDto[] {
   const rows: SeedRow[] = [
     [
       "1984",
@@ -199,7 +199,7 @@ function seedBooks(): AbpSwaggerBooksBookDto[] {
         name,
         authorId: author?.id,
         authorName: author?.name,
-        type: type as AbpSwaggerBooksBookType,
+        type: type as BookType,
         publishDate: `${publishDate}T00:00:00Z`,
         price,
         inStock: stock !== null && stock > 0,
@@ -225,10 +225,7 @@ function authorNameOf(authorId: string | undefined): string | null {
 }
 
 /** ABP 的 `Sorting` 是 `"field"` / `"field desc"` / 逗号分隔的多字段表达式。 */
-function applySorting(
-  rows: AbpSwaggerBooksBookDto[],
-  sorting: string | undefined,
-): AbpSwaggerBooksBookDto[] {
+function applySorting(rows: BookDto[], sorting: string | undefined): BookDto[] {
   if (!sorting?.trim()) return rows;
   const terms = sorting
     .split(",")
@@ -240,8 +237,8 @@ function applySorting(
     });
   return [...rows].sort((a, b) => {
     for (const { field, desc } of terms) {
-      const left = a[field as keyof AbpSwaggerBooksBookDto];
-      const right = b[field as keyof AbpSwaggerBooksBookDto];
+      const left = a[field as keyof BookDto];
+      const right = b[field as keyof BookDto];
       if (left === right) continue;
       // 空值一律排在后面，不参与大小比较，否则 null/undefined 会被 < 静默当成 0/NaN 参与排序。
       if (left === undefined || left === null) return 1;
@@ -255,10 +252,10 @@ function applySorting(
 
 // 查询参数从查询表单与 URL 来，都是字符串；真实 ABP 端点走 GET 查询串，模型绑定同样会做这层转换。
 /** 长列表演示用的生成行：沿用种子的作者与类型，名字带序号，一眼能看出是补的。 */
-function paddingBooks(): AbpSwaggerBooksBookDto[] {
+function paddingBooks(): BookDto[] {
   const seed = seedBooks();
   return Array.from({ length: 48 }, (_, i) => {
-    const base = seed[i % seed.length] as AbpSwaggerBooksBookDto;
+    const base = seed[i % seed.length] as BookDto;
     return {
       ...base,
       id: `b2000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
@@ -351,9 +348,7 @@ function validate(body: z.infer<typeof bookBodySchema>): AbpValidationError[] {
 
 /** 校验失败经**返回值**回传而非 throw：server function 的抛错跨 RPC 会被压成普通 Error，
  *  `validationErrors` 结构留不下来。客户端包装再把它抛成 ABP 形状（见 `unwrap`）。 */
-type WriteResult =
-  | { ok: true; data: AbpSwaggerBooksBookDto }
-  | { ok: false; error: AbpErrorEnvelope };
+type WriteResult = { ok: true; data: BookDto } | { ok: false; error: AbpErrorEnvelope };
 
 export const createBookFn = createServerFn({ method: "POST" })
   .validator(bookBodySchema)
@@ -361,13 +356,13 @@ export const createBookFn = createServerFn({ method: "POST" })
     const errors = validate(data);
     if (errors.length > 0) return { ok: false, error: { validationErrors: errors } };
     nextId += 1;
-    const created: AbpSwaggerBooksBookDto = {
+    const created: BookDto = {
       id: `b1000000-0000-4000-8000-${String(nextId).padStart(12, "0")}`,
       creationTime: new Date().toISOString(),
       name: data.name,
       authorId: data.authorId,
       authorName: authorNameOf(data.authorId),
-      type: data.type as AbpSwaggerBooksBookType,
+      type: data.type as BookType,
       publishDate: data.publishDate,
       price: data.price,
       ...extras(data),
@@ -388,12 +383,12 @@ export const updateBookFn = createServerFn({ method: "POST" })
         error: { validationErrors: [{ message: "Book not found.", members: [] }] },
       };
     }
-    const updated: AbpSwaggerBooksBookDto = {
+    const updated: BookDto = {
       ...existing,
       name: data.body.name,
       authorId: data.body.authorId,
       authorName: authorNameOf(data.body.authorId),
-      type: data.body.type as AbpSwaggerBooksBookType,
+      type: data.body.type as BookType,
       publishDate: data.body.publishDate,
       price: data.body.price,
       ...extras(data.body),
@@ -421,7 +416,7 @@ export const getAuthorFn = createServerFn({ method: "GET" })
   .validator(z.object({ id: z.string() }))
   .handler(({ data }) => AUTHORS.find((a) => a.id === data.id) ?? null);
 
-function unwrap(result: WriteResult): AbpSwaggerBooksBookDto {
+function unwrap(result: WriteResult): BookDto {
   if (result.ok) return result.data;
   throw result.error;
 }
@@ -439,29 +434,27 @@ export function setBookDemoScenario(next: BookDemoScenario): void {
 
 class SimulatedFailure extends Error {}
 
-async function listBooks(params: GetApiAppBookParams) {
+async function listBooks(params: BookGetListParams) {
   if (demoScenario === "failing") throw new SimulatedFailure("Simulated network failure");
-  if (demoScenario === "empty") return { items: [] as AbpSwaggerBooksBookDto[], totalCount: 0 };
+  if (demoScenario === "empty") return { items: [] as BookDto[], totalCount: 0 };
   return listBooksFn({ data: { ...params, DemoPadding: demoScenario === "long" } });
 }
 
 /** 以下导出与 orval 产物同名同形：页面代码因此与真实项目里的写法逐字一致。 */
 
-export const getGetApiAppBookQueryKey = (params?: GetApiAppBookParams) =>
+export const getBookGetListQueryKey = (params?: BookGetListParams) =>
   ["/api/app/book", ...(params ? [params] : [])] as const;
 
-export const getApiAppBook = (params: GetApiAppBookParams) => listBooks(params);
+export const bookGetList = (params: BookGetListParams) => listBooks(params);
 
-export function useGetApiAppBook<TData = { items: AbpSwaggerBooksBookDto[]; totalCount: number }>(
-  params: GetApiAppBookParams,
+export function useBookGetList<TData = { items: BookDto[]; totalCount: number }>(
+  params: BookGetListParams,
   options?: {
-    query?: Partial<
-      UseQueryOptions<{ items: AbpSwaggerBooksBookDto[]; totalCount: number }, Error, TData>
-    >;
+    query?: Partial<UseQueryOptions<{ items: BookDto[]; totalCount: number }, Error, TData>>;
   },
 ) {
   return useQuery({
-    queryKey: getGetApiAppBookQueryKey(params),
+    queryKey: getBookGetListQueryKey(params),
     queryFn: () => listBooks(params),
     // 演示的「刷新失败」要立刻出现，不必等默认的三次重试。
     retry: (count, error) => !(error instanceof SimulatedFailure) && count < 3,
@@ -469,41 +462,32 @@ export function useGetApiAppBook<TData = { items: AbpSwaggerBooksBookDto[]; tota
   });
 }
 
-export const postApiAppBook = async (body: AbpSwaggerBooksCreateUpdateBookDto) =>
+export const bookCreate = async (body: CreateUpdateBookDto) =>
   unwrap(await createBookFn({ data: body }));
 
-export function usePostApiAppBook(options?: {
-  mutation?: Partial<
-    UseMutationOptions<AbpSwaggerBooksBookDto, Error, { data: AbpSwaggerBooksCreateUpdateBookDto }>
-  >;
+export function useBookCreate(options?: {
+  mutation?: Partial<UseMutationOptions<BookDto, Error, { data: CreateUpdateBookDto }>>;
 }) {
   return useMutation({
-    mutationFn: (variables: { data: AbpSwaggerBooksCreateUpdateBookDto }) =>
-      postApiAppBook(variables.data),
+    mutationFn: (variables: { data: CreateUpdateBookDto }) => bookCreate(variables.data),
     ...options?.mutation,
   });
 }
 
-export const putApiAppBookId = async (id: string, body: AbpSwaggerBooksCreateUpdateBookDto) =>
+export const bookUpdate = async (id: string, body: CreateUpdateBookDto) =>
   unwrap(await updateBookFn({ data: { id, body } }));
 
-export function usePutApiAppBookId(options?: {
-  mutation?: Partial<
-    UseMutationOptions<
-      AbpSwaggerBooksBookDto,
-      Error,
-      { id: string; data: AbpSwaggerBooksCreateUpdateBookDto }
-    >
-  >;
+export function useBookUpdate(options?: {
+  mutation?: Partial<UseMutationOptions<BookDto, Error, { id: string; data: CreateUpdateBookDto }>>;
 }) {
   return useMutation({
-    mutationFn: async (variables: { id: string; data: AbpSwaggerBooksCreateUpdateBookDto }) =>
-      putApiAppBookId(variables.id, variables.data),
+    mutationFn: async (variables: { id: string; data: CreateUpdateBookDto }) =>
+      bookUpdate(variables.id, variables.data),
     ...options?.mutation,
   });
 }
 
-export function useDeleteApiAppBookId(options?: {
+export function useBookDelete(options?: {
   mutation?: Partial<UseMutationOptions<null, Error, { id: string }>>;
 }) {
   return useMutation({
@@ -512,12 +496,12 @@ export function useDeleteApiAppBookId(options?: {
   });
 }
 
-export const getApiAppAuthor = (params: GetApiAppAuthorParams) => listAuthorsFn({ data: params });
+export const authorGetList = (params: AuthorGetListParams) => listAuthorsFn({ data: params });
 
-export function useGetApiAppAuthorId(
+export function useAuthorGet(
   id: string,
   options?: {
-    query?: Partial<UseQueryOptions<AbpSwaggerAuthorsAuthorDto | null, Error>>;
+    query?: Partial<UseQueryOptions<AuthorDto | null, Error>>;
   },
 ) {
   return useQuery({

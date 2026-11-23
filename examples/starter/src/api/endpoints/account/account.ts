@@ -15,12 +15,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  VoloAbpAccountRegisterDto,
-  VoloAbpAccountResetPasswordDto,
-  VoloAbpAccountSendPasswordResetCodeDto,
-  VoloAbpAccountVerifyPasswordResetTokenInput,
-  VoloAbpHttpRemoteServiceErrorResponse,
-  VoloAbpIdentityIdentityUserDto
+  IdentityUserDto,
+  RegisterDto,
+  RemoteServiceErrorResponse,
+  ResetPasswordDto,
+  SendPasswordResetCodeDto,
+  VerifyPasswordResetTokenInput
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -61,8 +61,28 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | number | boolean | bigint | readonly string[] | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | number | boolean | bigint | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, typeof value === 'object' ? value : String(value)]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
 
-export const getPostApiAccountRegisterUrl = () => {
+
+export const getAccountRegisterUrl = () => {
 
 
 
@@ -70,28 +90,14 @@ export const getPostApiAccountRegisterUrl = () => {
   return `/api/account/register`
 }
 
-export const postApiAccountRegister = async (voloAbpAccountRegisterDto?: NonReadonly<VoloAbpAccountRegisterDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const accountRegister = async (registerDto?: NonReadonly<RegisterDto>, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<VoloAbpIdentityIdentityUserDto>(getPostApiAccountRegisterUrl(),
+  return abpMutator<IdentityUserDto>(getAccountRegisterUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(voloAbpAccountRegisterDto)
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(registerDto)
   }
 );}
 
@@ -99,13 +105,13 @@ return abpMutator<VoloAbpIdentityIdentityUserDto>(getPostApiAccountRegisterUrl()
 
 
 
-export const getPostApiAccountRegisterMutationKey = () => ['postApiAccountRegister'] as const;
+export const getAccountRegisterMutationKey = () => ['accountRegister'] as const;
 
-export const getPostApiAccountRegisterMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountRegister>>, TError,PostApiAccountRegisterMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiAccountRegister>>, TError,PostApiAccountRegisterMutationVariables, TContext> => {
+export const getAccountRegisterMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountRegister>>, TError,AccountRegisterMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof accountRegister>>, TError,AccountRegisterMutationVariables, TContext> => {
 
-const mutationKey = getPostApiAccountRegisterMutationKey();
+const mutationKey = getAccountRegisterMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -115,10 +121,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiAccountRegister>>, PostApiAccountRegisterMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountRegister>>, AccountRegisterMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiAccountRegister(data,requestOptions)
+          return  accountRegister(data,requestOptions)
         }
 
 
@@ -128,22 +134,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiAccountRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof postApiAccountRegister>>>
-    export type PostApiAccountRegisterMutationBody = NonReadonly<VoloAbpAccountRegisterDto> | undefined
-    export type PostApiAccountRegisterMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiAccountRegisterMutationVariables = {data?: NonReadonly<VoloAbpAccountRegisterDto>}
+    export type AccountRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof accountRegister>>>
+    export type AccountRegisterMutationBody = NonReadonly<RegisterDto> | undefined
+    export type AccountRegisterMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type AccountRegisterMutationVariables = {data?: NonReadonly<RegisterDto>}
 
-    export const usePostApiAccountRegister = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountRegister>>, TError,PostApiAccountRegisterMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+    export const useAccountRegister = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountRegister>>, TError,AccountRegisterMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiAccountRegister>>,
+        Awaited<ReturnType<typeof accountRegister>>,
         TError,
-        PostApiAccountRegisterMutationVariables,
+        AccountRegisterMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountRegisterMutationOptions(options), queryClient);
+      return useMutation(getAccountRegisterMutationOptions(options), queryClient);
     }
-    export const getPostApiAccountSendPasswordResetCodeUrl = () => {
+    export const getAccountSendPasswordResetCodeUrl = () => {
 
 
 
@@ -151,28 +157,14 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/account/send-password-reset-code`
 }
 
-export const postApiAccountSendPasswordResetCode = async (voloAbpAccountSendPasswordResetCodeDto?: VoloAbpAccountSendPasswordResetCodeDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const accountSendPasswordResetCode = async (sendPasswordResetCodeDto?: SendPasswordResetCodeDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPostApiAccountSendPasswordResetCodeUrl(),
+  return abpMutator<void>(getAccountSendPasswordResetCodeUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(voloAbpAccountSendPasswordResetCodeDto)
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(sendPasswordResetCodeDto)
   }
 );}
 
@@ -180,13 +172,13 @@ return abpMutator<void>(getPostApiAccountSendPasswordResetCodeUrl(),
 
 
 
-export const getPostApiAccountSendPasswordResetCodeMutationKey = () => ['postApiAccountSendPasswordResetCode'] as const;
+export const getAccountSendPasswordResetCodeMutationKey = () => ['accountSendPasswordResetCode'] as const;
 
-export const getPostApiAccountSendPasswordResetCodeMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountSendPasswordResetCode>>, TError,PostApiAccountSendPasswordResetCodeMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiAccountSendPasswordResetCode>>, TError,PostApiAccountSendPasswordResetCodeMutationVariables, TContext> => {
+export const getAccountSendPasswordResetCodeMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountSendPasswordResetCode>>, TError,AccountSendPasswordResetCodeMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof accountSendPasswordResetCode>>, TError,AccountSendPasswordResetCodeMutationVariables, TContext> => {
 
-const mutationKey = getPostApiAccountSendPasswordResetCodeMutationKey();
+const mutationKey = getAccountSendPasswordResetCodeMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -196,10 +188,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiAccountSendPasswordResetCode>>, PostApiAccountSendPasswordResetCodeMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountSendPasswordResetCode>>, AccountSendPasswordResetCodeMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiAccountSendPasswordResetCode(data,requestOptions)
+          return  accountSendPasswordResetCode(data,requestOptions)
         }
 
 
@@ -209,22 +201,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiAccountSendPasswordResetCodeMutationResult = NonNullable<Awaited<ReturnType<typeof postApiAccountSendPasswordResetCode>>>
-    export type PostApiAccountSendPasswordResetCodeMutationBody = VoloAbpAccountSendPasswordResetCodeDto | undefined
-    export type PostApiAccountSendPasswordResetCodeMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiAccountSendPasswordResetCodeMutationVariables = {data?: VoloAbpAccountSendPasswordResetCodeDto}
+    export type AccountSendPasswordResetCodeMutationResult = NonNullable<Awaited<ReturnType<typeof accountSendPasswordResetCode>>>
+    export type AccountSendPasswordResetCodeMutationBody = SendPasswordResetCodeDto | undefined
+    export type AccountSendPasswordResetCodeMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type AccountSendPasswordResetCodeMutationVariables = {data?: SendPasswordResetCodeDto}
 
-    export const usePostApiAccountSendPasswordResetCode = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountSendPasswordResetCode>>, TError,PostApiAccountSendPasswordResetCodeMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+    export const useAccountSendPasswordResetCode = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountSendPasswordResetCode>>, TError,AccountSendPasswordResetCodeMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiAccountSendPasswordResetCode>>,
+        Awaited<ReturnType<typeof accountSendPasswordResetCode>>,
         TError,
-        PostApiAccountSendPasswordResetCodeMutationVariables,
+        AccountSendPasswordResetCodeMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountSendPasswordResetCodeMutationOptions(options), queryClient);
+      return useMutation(getAccountSendPasswordResetCodeMutationOptions(options), queryClient);
     }
-    export const getPostApiAccountVerifyPasswordResetTokenUrl = () => {
+    export const getAccountVerifyPasswordResetTokenUrl = () => {
 
 
 
@@ -232,28 +224,14 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/account/verify-password-reset-token`
 }
 
-export const postApiAccountVerifyPasswordResetToken = async (voloAbpAccountVerifyPasswordResetTokenInput?: VoloAbpAccountVerifyPasswordResetTokenInput, options?: Parameters<typeof abpMutator>[1]): Promise<boolean> => {
+export const accountVerifyPasswordResetToken = async (verifyPasswordResetTokenInput?: VerifyPasswordResetTokenInput, options?: Parameters<typeof abpMutator>[1]): Promise<boolean> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<boolean>(getPostApiAccountVerifyPasswordResetTokenUrl(),
+  return abpMutator<boolean>(getAccountVerifyPasswordResetTokenUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(voloAbpAccountVerifyPasswordResetTokenInput)
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(verifyPasswordResetTokenInput)
   }
 );}
 
@@ -261,13 +239,13 @@ return abpMutator<boolean>(getPostApiAccountVerifyPasswordResetTokenUrl(),
 
 
 
-export const getPostApiAccountVerifyPasswordResetTokenMutationKey = () => ['postApiAccountVerifyPasswordResetToken'] as const;
+export const getAccountVerifyPasswordResetTokenMutationKey = () => ['accountVerifyPasswordResetToken'] as const;
 
-export const getPostApiAccountVerifyPasswordResetTokenMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountVerifyPasswordResetToken>>, TError,PostApiAccountVerifyPasswordResetTokenMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiAccountVerifyPasswordResetToken>>, TError,PostApiAccountVerifyPasswordResetTokenMutationVariables, TContext> => {
+export const getAccountVerifyPasswordResetTokenMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountVerifyPasswordResetToken>>, TError,AccountVerifyPasswordResetTokenMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof accountVerifyPasswordResetToken>>, TError,AccountVerifyPasswordResetTokenMutationVariables, TContext> => {
 
-const mutationKey = getPostApiAccountVerifyPasswordResetTokenMutationKey();
+const mutationKey = getAccountVerifyPasswordResetTokenMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -277,10 +255,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiAccountVerifyPasswordResetToken>>, PostApiAccountVerifyPasswordResetTokenMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountVerifyPasswordResetToken>>, AccountVerifyPasswordResetTokenMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiAccountVerifyPasswordResetToken(data,requestOptions)
+          return  accountVerifyPasswordResetToken(data,requestOptions)
         }
 
 
@@ -290,22 +268,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiAccountVerifyPasswordResetTokenMutationResult = NonNullable<Awaited<ReturnType<typeof postApiAccountVerifyPasswordResetToken>>>
-    export type PostApiAccountVerifyPasswordResetTokenMutationBody = VoloAbpAccountVerifyPasswordResetTokenInput | undefined
-    export type PostApiAccountVerifyPasswordResetTokenMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiAccountVerifyPasswordResetTokenMutationVariables = {data?: VoloAbpAccountVerifyPasswordResetTokenInput}
+    export type AccountVerifyPasswordResetTokenMutationResult = NonNullable<Awaited<ReturnType<typeof accountVerifyPasswordResetToken>>>
+    export type AccountVerifyPasswordResetTokenMutationBody = VerifyPasswordResetTokenInput | undefined
+    export type AccountVerifyPasswordResetTokenMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type AccountVerifyPasswordResetTokenMutationVariables = {data?: VerifyPasswordResetTokenInput}
 
-    export const usePostApiAccountVerifyPasswordResetToken = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountVerifyPasswordResetToken>>, TError,PostApiAccountVerifyPasswordResetTokenMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+    export const useAccountVerifyPasswordResetToken = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountVerifyPasswordResetToken>>, TError,AccountVerifyPasswordResetTokenMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiAccountVerifyPasswordResetToken>>,
+        Awaited<ReturnType<typeof accountVerifyPasswordResetToken>>,
         TError,
-        PostApiAccountVerifyPasswordResetTokenMutationVariables,
+        AccountVerifyPasswordResetTokenMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountVerifyPasswordResetTokenMutationOptions(options), queryClient);
+      return useMutation(getAccountVerifyPasswordResetTokenMutationOptions(options), queryClient);
     }
-    export const getPostApiAccountResetPasswordUrl = () => {
+    export const getAccountResetPasswordUrl = () => {
 
 
 
@@ -313,28 +291,14 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/account/reset-password`
 }
 
-export const postApiAccountResetPassword = async (voloAbpAccountResetPasswordDto?: VoloAbpAccountResetPasswordDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const accountResetPassword = async (resetPasswordDto?: ResetPasswordDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPostApiAccountResetPasswordUrl(),
+  return abpMutator<void>(getAccountResetPasswordUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(voloAbpAccountResetPasswordDto)
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(resetPasswordDto)
   }
 );}
 
@@ -342,13 +306,13 @@ return abpMutator<void>(getPostApiAccountResetPasswordUrl(),
 
 
 
-export const getPostApiAccountResetPasswordMutationKey = () => ['postApiAccountResetPassword'] as const;
+export const getAccountResetPasswordMutationKey = () => ['accountResetPassword'] as const;
 
-export const getPostApiAccountResetPasswordMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountResetPassword>>, TError,PostApiAccountResetPasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiAccountResetPassword>>, TError,PostApiAccountResetPasswordMutationVariables, TContext> => {
+export const getAccountResetPasswordMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountResetPassword>>, TError,AccountResetPasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof accountResetPassword>>, TError,AccountResetPasswordMutationVariables, TContext> => {
 
-const mutationKey = getPostApiAccountResetPasswordMutationKey();
+const mutationKey = getAccountResetPasswordMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -358,10 +322,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiAccountResetPassword>>, PostApiAccountResetPasswordMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountResetPassword>>, AccountResetPasswordMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiAccountResetPassword(data,requestOptions)
+          return  accountResetPassword(data,requestOptions)
         }
 
 
@@ -371,18 +335,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiAccountResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postApiAccountResetPassword>>>
-    export type PostApiAccountResetPasswordMutationBody = VoloAbpAccountResetPasswordDto | undefined
-    export type PostApiAccountResetPasswordMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiAccountResetPasswordMutationVariables = {data?: VoloAbpAccountResetPasswordDto}
+    export type AccountResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof accountResetPassword>>>
+    export type AccountResetPasswordMutationBody = ResetPasswordDto | undefined
+    export type AccountResetPasswordMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type AccountResetPasswordMutationVariables = {data?: ResetPasswordDto}
 
-    export const usePostApiAccountResetPassword = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountResetPassword>>, TError,PostApiAccountResetPasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+    export const useAccountResetPassword = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountResetPassword>>, TError,AccountResetPasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiAccountResetPassword>>,
+        Awaited<ReturnType<typeof accountResetPassword>>,
         TError,
-        PostApiAccountResetPasswordMutationVariables,
+        AccountResetPasswordMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountResetPasswordMutationOptions(options), queryClient);
+      return useMutation(getAccountResetPasswordMutationOptions(options), queryClient);
     }

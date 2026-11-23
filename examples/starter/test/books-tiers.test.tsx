@@ -5,10 +5,10 @@ import crudMessages from "@/components/abp/crud/crud-messages.json";
 import tableMessages from "@/components/data-table/table-messages.json";
 import formMessages from "@/components/form/form-messages.json";
 import {
-  useDeleteApiAppBookId,
-  useGetApiAppBook,
-  usePostApiAppBook,
-  usePutApiAppBookId,
+  useBookCreate,
+  useBookDelete,
+  useBookGetList,
+  useBookUpdate,
 } from "@/routes/_layout/_authed/books/-book-api";
 import { Route } from "@/routes/_layout/_authed/books/index";
 import { admin, renderWithProviders } from "./test-utils";
@@ -19,17 +19,17 @@ import { admin, renderWithProviders } from "./test-utils";
 // 这类回归，复刻挂具从不会跑到真实代码，自然抓不到）。
 // 端点模块整体 mock 掉：三个页签都靠它取数据，且它内含 createServerFn，本仓 vitest 没装
 // TanStack Start 插件，真加载会炸。类型与 body schema 在 -book-models.ts，不受影响照常真用。
-// getApiAppAuthor/useGetApiAppAuthorId 一并给桩：前者被 loadAuthorOptions 引用，后者只在
+// authorGetList/useAuthorGet 一并给桩：前者被 loadAuthorOptions 引用，后者只在
 // record 存在时 enabled，三条用例都不进编辑态。
 vi.mock("@/routes/_layout/_authed/books/-book-api", () => ({
-  useGetApiAppBook: vi.fn(),
-  getApiAppBook: vi.fn(async () => ({ items: [], totalCount: 0 })),
-  getApiAppAuthor: vi.fn(async () => ({ items: [], totalCount: 0 })),
-  useGetApiAppAuthorId: () => ({ data: undefined }),
-  useDeleteApiAppBookId: vi.fn(),
-  usePostApiAppBook: vi.fn(),
-  usePutApiAppBookId: vi.fn(),
-  getGetApiAppBookQueryKey: () => ["book"],
+  useBookGetList: vi.fn(),
+  bookGetList: vi.fn(async () => ({ items: [], totalCount: 0 })),
+  authorGetList: vi.fn(async () => ({ items: [], totalCount: 0 })),
+  useAuthorGet: () => ({ data: undefined }),
+  useBookDelete: vi.fn(),
+  useBookCreate: vi.fn(),
+  useBookUpdate: vi.fn(),
+  getBookGetListQueryKey: () => ["book"],
 }));
 
 // App 词条桶没接进挂具（跟 tenants-field-set.test.tsx 同款注释：L() 缺条目回退成 key 本身），
@@ -50,15 +50,15 @@ const BOOKS = [
   { id: "2", name: "Book Two", authorName: "Author B", price: 19.99, publishDate: "2021-02-02" },
 ];
 
-type GetQuery = ReturnType<typeof useGetApiAppBook>;
-type DeleteMutation = ReturnType<typeof useDeleteApiAppBookId>;
-type PostMutation = ReturnType<typeof usePostApiAppBook>;
-type PutMutation = ReturnType<typeof usePutApiAppBookId>;
+type GetQuery = ReturnType<typeof useBookGetList>;
+type DeleteMutation = ReturnType<typeof useBookDelete>;
+type PostMutation = ReturnType<typeof useBookCreate>;
+type PutMutation = ReturnType<typeof useBookUpdate>;
 
-const mockUseGetApiAppBook = vi.mocked(useGetApiAppBook);
-const mockUseDeleteApiAppBookId = vi.mocked(useDeleteApiAppBookId);
-const mockUsePostApiAppBook = vi.mocked(usePostApiAppBook);
-const mockUsePutApiAppBookId = vi.mocked(usePutApiAppBookId);
+const mockUseBookGetList = vi.mocked(useBookGetList);
+const mockUseBookDelete = vi.mocked(useBookDelete);
+const mockUseBookCreate = vi.mocked(useBookCreate);
+const mockUseBookUpdate = vi.mocked(useBookUpdate);
 
 /** Route.options.component 就是 index.tsx 里的 BooksPage，file-route 内部函数本身没有具名导出，
  * 但组装它的 route 对象是导出的，借道拿到真实页面组件，不必另开一份复刻。 */
@@ -70,19 +70,19 @@ function renderBooksPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseGetApiAppBook.mockReturnValue({
+  mockUseBookGetList.mockReturnValue({
     data: { items: BOOKS, totalCount: BOOKS.length },
     isPending: false,
     isFetching: false,
     isError: false,
     refetch: vi.fn(),
   } as unknown as GetQuery);
-  mockUseDeleteApiAppBookId.mockReturnValue({ mutate: vi.fn() } as unknown as DeleteMutation);
-  mockUsePostApiAppBook.mockReturnValue({
+  mockUseBookDelete.mockReturnValue({ mutate: vi.fn() } as unknown as DeleteMutation);
+  mockUseBookCreate.mockReturnValue({
     mutate: vi.fn(),
     mutateAsync: vi.fn(),
   } as unknown as PostMutation);
-  mockUsePutApiAppBookId.mockReturnValue({
+  mockUseBookUpdate.mockReturnValue({
     mutate: vi.fn(),
     mutateAsync: vi.fn(),
   } as unknown as PutMutation);

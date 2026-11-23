@@ -7,12 +7,12 @@
 import * as zod from 'zod';
 
 
-export const GetApiFeatureManagementFeaturesQueryParams = zod.object({
+export const FeaturesGetQueryParams = zod.object({
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const GetApiFeatureManagementFeaturesResponse = zod.object({
+export const FeaturesGetResponse = zod.object({
   "groups": zod.array(zod.object({
   "name": zod.string().nullish(),
   "displayName": zod.string().nullish(),
@@ -39,24 +39,24 @@ export const GetApiFeatureManagementFeaturesResponse = zod.object({
 })).nullish()
 })
 
-export const PutApiFeatureManagementFeaturesQueryParams = zod.object({
+export const FeaturesUpdateQueryParams = zod.object({
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const PutApiFeatureManagementFeaturesBody = zod.object({
+export const FeaturesUpdateBody = zod.object({
   "features": zod.array(zod.object({
   "name": zod.string().nullish(),
   "value": zod.string().nullish()
 })).nullish()
 })
 
-export const PutApiFeatureManagementFeaturesResponse = zod.unknown()
+export const FeaturesUpdateResponse = zod.unknown()
 
-export const DeleteApiFeatureManagementFeaturesQueryParams = zod.object({
+export const FeaturesDeleteQueryParams = zod.object({
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const DeleteApiFeatureManagementFeaturesResponse = zod.unknown()
+export const FeaturesDeleteResponse = zod.unknown()
 
