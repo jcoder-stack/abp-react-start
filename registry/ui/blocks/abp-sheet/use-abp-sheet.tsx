@@ -92,6 +92,12 @@ export function useAbpSheet<
 
   const mode = sheet?.mode;
   const record = sheet?.record;
+  // 关闭后 sheet 立刻是 null，抽屉却还要淡出 200ms；标题和布局沿用最后一次打开时的状态，
+  // 否则退场那一下会闪成「新建」的标题和可编辑的表单。
+  const lastShown = useRef(sheet);
+  if (sheet) lastShown.current = sheet;
+  const shown = sheet ?? lastShown.current;
+  const shownMode = shown?.mode ?? "create";
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: service.listKey() });
   const saved = () => {
@@ -181,15 +187,21 @@ export function useAbpSheet<
   const allow = (policy: string | undefined) => (policy === undefined ? true : can(policy));
 
   const sheetProps = {
-    mode: mode ?? "create",
+    mode: shownMode,
     open: sheet !== null,
     onOpenChange: (nextOpen: boolean) => {
       if (!nextOpen) setSheet(null);
     },
     title:
-      opts.title?.(mode ?? "create", sheet?.record) ??
-      L(mode === "edit" ? "Crud:EditTitle" : mode === "view" ? "Crud:ViewTitle" : "Crud:Create"),
-    subtitle: opts.subtitle?.(mode ?? "create", sheet?.record),
+      opts.title?.(shownMode, shown?.record) ??
+      L(
+        shownMode === "edit"
+          ? "Crud:EditTitle"
+          : shownMode === "view"
+            ? "Crud:ViewTitle"
+            : "Crud:Create",
+      ),
+    subtitle: opts.subtitle?.(shownMode, shown?.record),
     onSubmit: () => {
       void form.handleSubmit();
     },
@@ -235,7 +247,7 @@ export function useAbpSheet<
     open,
     close: () => setSheet(null),
     record,
-    readOnly: mode === "view",
+    readOnly: shownMode === "view",
     mode,
     Sheet: bound.Sheet,
   };
