@@ -7,5 +7,5 @@
 import * as zod from 'zod';
 
 
-export const PostApiAccountDynamicClaimsRefreshResponse = zod.unknown()
+export const DynamicClaimsRefreshResponse = zod.unknown()
 

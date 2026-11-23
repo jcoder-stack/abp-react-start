@@ -189,6 +189,24 @@ npx jc-abp gen
 
 `input` 也接受本地文件路径，所以后端不在线时可以先拿一份 swagger.json 离线生成。
 
+### 生成物的命名
+
+名字跟后端的 C# 方法走，不从路径推：`gen` 读后端的 `/api/abp/api-definition`，按「HTTP 方法 + 路由」对上 swagger 的每个操作，得到 `<tag><方法名>`；模型用类型名本身，去掉 .NET 命名空间。
+
+| 后端 | 生成物 |
+| --- | --- |
+| `IdentityRoleAppService.GetListAsync` | `roleGetList` / `useRoleGetList` / `getRoleGetListQueryKey` / `RoleGetListParams` |
+| `IdentityRoleAppService.CreateAsync` | `roleCreate` / `useRoleCreate` / `RoleCreateBody`（zod） |
+| `Volo.Abp.Identity.IdentityRoleDto` | `IdentityRoleDto` |
+| `PagedResultDto<IdentityRoleDto>` | `PagedResultDtoOfIdentityRoleDto` |
+
+几条边界：
+
+- swagger 里自己声明了 `operationId` 的操作原样保留。
+- 两个不同命名空间下的同名类型（`Sales.OrderDto` 与 `Purchasing.OrderDto`）都保留完整名，不靠声明顺序决定谁占短名；重名的操作同理，退回 orval 的路径命名。
+- `input` 是本地文件、或后端没暴露 api-definition 时，ABP 自带模块（identity、租户、权限、功能、设置、account）仍按内置快照拿到方法名——admin 页面的 import 就靠它；你自己的应用服务退到路径名（`GET /api/app/book/{id}` → `getBookId`），`gen` 会打印一行提示。要离线也拿到方法名，把 api-definition 存成文件并在配置里写 `apiDefinition: "./api-definition.json"`（也接受 URL，用于后端挂在子路径下的情况）。
+- 老项目升级后不想改名：配置里写 `naming: "legacy"`，保持 `useGetApiIdentityRoles` / `VoloAbpIdentityIdentityRoleDto` 这套旧名字。注意 registry 的 admin 页面按新名字写 import，legacy 项目重装这些块后要自己改回去。
+
 ---
 
 ## 7. 跑起来

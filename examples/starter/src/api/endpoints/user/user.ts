@@ -9,9 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -19,14 +24,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetApiIdentityUsersParams,
+  IdentityUserCreateDto,
+  IdentityUserDto,
+  IdentityUserUpdateDto,
+  IdentityUserUpdateRolesDto,
   ListResultDtoOfIdentityRoleDto,
   PagedResultDtoOfIdentityUserDto,
-  VoloAbpHttpRemoteServiceErrorResponse,
-  VoloAbpIdentityIdentityUserCreateDto,
-  VoloAbpIdentityIdentityUserDto,
-  VoloAbpIdentityIdentityUserUpdateDto,
-  VoloAbpIdentityIdentityUserUpdateRolesDto
+  RemoteServiceErrorResponse,
+  UserGetListParams
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -103,7 +108,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiIdentityUsersIdUrl = (id: string,) => {
+export const getUserGetUrl = (id: string,) => {
 
 
 
@@ -111,9 +116,9 @@ export const getGetApiIdentityUsersIdUrl = (id: string,) => {
   return `/api/identity/users/${id}`
 }
 
-export const getApiIdentityUsersId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const userGet = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityUserDto>(getGetApiIdentityUsersIdUrl(id),
+  return abpMutator<IdentityUserDto>(getUserGetUrl(id),
   {
     ...options,
     method: 'GET'
@@ -126,43 +131,67 @@ export const getApiIdentityUsersId = async (id: string, options?: Parameters<typ
 
 
 
-export const getGetApiIdentityUsersIdQueryKey = (id: string,) => {
+export const getUserGetQueryKey = (id: string,) => {
     return [
     `/api/identity/users/${id}`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersIdQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserGetQueryOptions = <TData = Awaited<ReturnType<typeof userGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersIdQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getUserGetQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersId>>> = ({ signal }) => getApiIdentityUsersId(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userGet>>> = ({ signal }) => userGet(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersIdQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersId>>>
-export type GetApiIdentityUsersIdQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserGetQueryResult = NonNullable<Awaited<ReturnType<typeof userGet>>>
+export type UserGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersId<TData = Awaited<ReturnType<typeof getApiIdentityUsersId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserGet<TData = Awaited<ReturnType<typeof userGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGet>>,
+          TError,
+          Awaited<ReturnType<typeof userGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGet<TData = Awaited<ReturnType<typeof userGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGet>>,
+          TError,
+          Awaited<ReturnType<typeof userGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGet<TData = Awaited<ReturnType<typeof userGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGet<TData = Awaited<ReturnType<typeof userGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserGetQueryOptions(id,options)
 
-  const queryOptions = getGetApiIdentityUsersIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -172,7 +201,7 @@ export function useGetApiIdentityUsersId<TData = Awaited<ReturnType<typeof getAp
 
 
 
-export const getPutApiIdentityUsersIdUrl = (id: string,) => {
+export const getUserUpdateUrl = (id: string,) => {
 
 
 
@@ -180,15 +209,15 @@ export const getPutApiIdentityUsersIdUrl = (id: string,) => {
   return `/api/identity/users/${id}`
 }
 
-export const putApiIdentityUsersId = async (id: string,
-    voloAbpIdentityIdentityUserUpdateDto?: NonReadonly<VoloAbpIdentityIdentityUserUpdateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const userUpdate = async (id: string,
+    identityUserUpdateDto?: NonReadonly<IdentityUserUpdateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityUserDto>(getPutApiIdentityUsersIdUrl(id),
+  return abpMutator<IdentityUserDto>(getUserUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpIdentityIdentityUserUpdateDto)
+    body: JSON.stringify(identityUserUpdateDto)
   }
 );}
 
@@ -196,13 +225,13 @@ export const putApiIdentityUsersId = async (id: string,
 
 
 
-export const getPutApiIdentityUsersIdMutationKey = () => ['putApiIdentityUsersId'] as const;
+export const getUserUpdateMutationKey = () => ['userUpdate'] as const;
 
-export const getPutApiIdentityUsersIdMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityUsersId>>, TError,PutApiIdentityUsersIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityUsersId>>, TError,PutApiIdentityUsersIdMutationVariables, TContext> => {
+export const getUserUpdateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userUpdate>>, TError,UserUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof userUpdate>>, TError,UserUpdateMutationVariables, TContext> => {
 
-const mutationKey = getPutApiIdentityUsersIdMutationKey();
+const mutationKey = getUserUpdateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -212,10 +241,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiIdentityUsersId>>, PutApiIdentityUsersIdMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof userUpdate>>, UserUpdateMutationVariables> = (props) => {
           const {id,data} = props ?? {};
 
-          return  putApiIdentityUsersId(id,data,requestOptions)
+          return  userUpdate(id,data,requestOptions)
         }
 
 
@@ -225,22 +254,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiIdentityUsersIdMutationResult = NonNullable<Awaited<ReturnType<typeof putApiIdentityUsersId>>>
-    export type PutApiIdentityUsersIdMutationBody = NonReadonly<VoloAbpIdentityIdentityUserUpdateDto> | undefined
-    export type PutApiIdentityUsersIdMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiIdentityUsersIdMutationVariables = {id: string;data?: NonReadonly<VoloAbpIdentityIdentityUserUpdateDto>}
+    export type UserUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof userUpdate>>>
+    export type UserUpdateMutationBody = NonReadonly<IdentityUserUpdateDto> | undefined
+    export type UserUpdateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type UserUpdateMutationVariables = {id: string;data?: NonReadonly<IdentityUserUpdateDto>}
 
-    export const usePutApiIdentityUsersId = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityUsersId>>, TError,PutApiIdentityUsersIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiIdentityUsersId>>,
+    export const useUserUpdate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userUpdate>>, TError,UserUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof userUpdate>>,
         TError,
-        PutApiIdentityUsersIdMutationVariables,
+        UserUpdateMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiIdentityUsersIdMutationOptions(options));
+      return useMutation(getUserUpdateMutationOptions(options), queryClient);
     }
-    export const getDeleteApiIdentityUsersIdUrl = (id: string,) => {
+    export const getUserDeleteUrl = (id: string,) => {
 
 
 
@@ -248,9 +277,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/identity/users/${id}`
 }
 
-export const deleteApiIdentityUsersId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const userDelete = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getDeleteApiIdentityUsersIdUrl(id),
+  return abpMutator<void>(getUserDeleteUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -263,13 +292,13 @@ export const deleteApiIdentityUsersId = async (id: string, options?: Parameters<
 
 
 
-export const getDeleteApiIdentityUsersIdMutationKey = () => ['deleteApiIdentityUsersId'] as const;
+export const getUserDeleteMutationKey = () => ['userDelete'] as const;
 
-export const getDeleteApiIdentityUsersIdMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiIdentityUsersId>>, TError,DeleteApiIdentityUsersIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteApiIdentityUsersId>>, TError,DeleteApiIdentityUsersIdMutationVariables, TContext> => {
+export const getUserDeleteMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userDelete>>, TError,UserDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof userDelete>>, TError,UserDeleteMutationVariables, TContext> => {
 
-const mutationKey = getDeleteApiIdentityUsersIdMutationKey();
+const mutationKey = getUserDeleteMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -279,10 +308,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiIdentityUsersId>>, DeleteApiIdentityUsersIdMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof userDelete>>, UserDeleteMutationVariables> = (props) => {
           const {id} = props ?? {};
 
-          return  deleteApiIdentityUsersId(id,requestOptions)
+          return  userDelete(id,requestOptions)
         }
 
 
@@ -292,22 +321,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteApiIdentityUsersIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiIdentityUsersId>>>
+    export type UserDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof userDelete>>>
 
-    export type DeleteApiIdentityUsersIdMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type DeleteApiIdentityUsersIdMutationVariables = {id: string}
+    export type UserDeleteMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type UserDeleteMutationVariables = {id: string}
 
-    export const useDeleteApiIdentityUsersId = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiIdentityUsersId>>, TError,DeleteApiIdentityUsersIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteApiIdentityUsersId>>,
+    export const useUserDelete = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userDelete>>, TError,UserDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof userDelete>>,
         TError,
-        DeleteApiIdentityUsersIdMutationVariables,
+        UserDeleteMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiIdentityUsersIdMutationOptions(options));
+      return useMutation(getUserDeleteMutationOptions(options), queryClient);
     }
-    export const getGetApiIdentityUsersUrl = (params?: GetApiIdentityUsersParams,) => {
+    export const getUserGetListUrl = (params?: UserGetListParams,) => {
   const normalizedParams = new URLSearchParams();
   const formObjectParameters = new Map<string, string>([["ExtraProperties","flatten"]]);
 
@@ -340,9 +369,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return stringifiedParams.length > 0 ? `/api/identity/users?${stringifiedParams}` : `/api/identity/users`
 }
 
-export const getApiIdentityUsers = async (params?: GetApiIdentityUsersParams, options?: Parameters<typeof abpMutator>[1]): Promise<PagedResultDtoOfIdentityUserDto> => {
+export const userGetList = async (params?: UserGetListParams, options?: Parameters<typeof abpMutator>[1]): Promise<PagedResultDtoOfIdentityUserDto> => {
 
-  return abpMutator<PagedResultDtoOfIdentityUserDto>(getGetApiIdentityUsersUrl(params),
+  return abpMutator<PagedResultDtoOfIdentityUserDto>(getUserGetListUrl(params),
   {
     ...options,
     method: 'GET'
@@ -355,43 +384,67 @@ export const getApiIdentityUsers = async (params?: GetApiIdentityUsersParams, op
 
 
 
-export const getGetApiIdentityUsersQueryKey = (params?: GetApiIdentityUsersParams,) => {
+export const getUserGetListQueryKey = (params?: UserGetListParams,) => {
     return [
     `/api/identity/users`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsers>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiIdentityUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsers>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserGetListQueryOptions = <TData = Awaited<ReturnType<typeof userGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: UserGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getUserGetListQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsers>>> = ({ signal }) => getApiIdentityUsers(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userGetList>>> = ({ signal }) => userGetList(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsers>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userGetList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsers>>>
-export type GetApiIdentityUsersQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserGetListQueryResult = NonNullable<Awaited<ReturnType<typeof userGetList>>>
+export type UserGetListQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsers<TData = Awaited<ReturnType<typeof getApiIdentityUsers>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiIdentityUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsers>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserGetList<TData = Awaited<ReturnType<typeof userGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  UserGetListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGetList>>,
+          TError,
+          Awaited<ReturnType<typeof userGetList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetList<TData = Awaited<ReturnType<typeof userGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGetList>>,
+          TError,
+          Awaited<ReturnType<typeof userGetList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetList<TData = Awaited<ReturnType<typeof userGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetList<TData = Awaited<ReturnType<typeof userGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserGetListQueryOptions(params,options)
 
-  const queryOptions = getGetApiIdentityUsersQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -401,7 +454,7 @@ export function useGetApiIdentityUsers<TData = Awaited<ReturnType<typeof getApiI
 
 
 
-export const getPostApiIdentityUsersUrl = () => {
+export const getUserCreateUrl = () => {
 
 
 
@@ -409,14 +462,14 @@ export const getPostApiIdentityUsersUrl = () => {
   return `/api/identity/users`
 }
 
-export const postApiIdentityUsers = async (voloAbpIdentityIdentityUserCreateDto?: NonReadonly<VoloAbpIdentityIdentityUserCreateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const userCreate = async (identityUserCreateDto?: NonReadonly<IdentityUserCreateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityUserDto>(getPostApiIdentityUsersUrl(),
+  return abpMutator<IdentityUserDto>(getUserCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpIdentityIdentityUserCreateDto)
+    body: JSON.stringify(identityUserCreateDto)
   }
 );}
 
@@ -424,13 +477,13 @@ export const postApiIdentityUsers = async (voloAbpIdentityIdentityUserCreateDto?
 
 
 
-export const getPostApiIdentityUsersMutationKey = () => ['postApiIdentityUsers'] as const;
+export const getUserCreateMutationKey = () => ['userCreate'] as const;
 
-export const getPostApiIdentityUsersMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiIdentityUsers>>, TError,PostApiIdentityUsersMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiIdentityUsers>>, TError,PostApiIdentityUsersMutationVariables, TContext> => {
+export const getUserCreateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userCreate>>, TError,UserCreateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof userCreate>>, TError,UserCreateMutationVariables, TContext> => {
 
-const mutationKey = getPostApiIdentityUsersMutationKey();
+const mutationKey = getUserCreateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -440,10 +493,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiIdentityUsers>>, PostApiIdentityUsersMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof userCreate>>, UserCreateMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiIdentityUsers(data,requestOptions)
+          return  userCreate(data,requestOptions)
         }
 
 
@@ -453,22 +506,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiIdentityUsersMutationResult = NonNullable<Awaited<ReturnType<typeof postApiIdentityUsers>>>
-    export type PostApiIdentityUsersMutationBody = NonReadonly<VoloAbpIdentityIdentityUserCreateDto> | undefined
-    export type PostApiIdentityUsersMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiIdentityUsersMutationVariables = {data?: NonReadonly<VoloAbpIdentityIdentityUserCreateDto>}
+    export type UserCreateMutationResult = NonNullable<Awaited<ReturnType<typeof userCreate>>>
+    export type UserCreateMutationBody = NonReadonly<IdentityUserCreateDto> | undefined
+    export type UserCreateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type UserCreateMutationVariables = {data?: NonReadonly<IdentityUserCreateDto>}
 
-    export const usePostApiIdentityUsers = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiIdentityUsers>>, TError,PostApiIdentityUsersMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postApiIdentityUsers>>,
+    export const useUserCreate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userCreate>>, TError,UserCreateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof userCreate>>,
         TError,
-        PostApiIdentityUsersMutationVariables,
+        UserCreateMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiIdentityUsersMutationOptions(options));
+      return useMutation(getUserCreateMutationOptions(options), queryClient);
     }
-    export const getGetApiIdentityUsersByIdIdUrl = (id: string,) => {
+    export const getUserFindByIdUrl = (id: string,) => {
 
 
 
@@ -476,9 +529,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/identity/users/by-id/${id}`
 }
 
-export const getApiIdentityUsersByIdId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const userFindById = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityUserDto>(getGetApiIdentityUsersByIdIdUrl(id),
+  return abpMutator<IdentityUserDto>(getUserFindByIdUrl(id),
   {
     ...options,
     method: 'GET'
@@ -491,43 +544,67 @@ export const getApiIdentityUsersByIdId = async (id: string, options?: Parameters
 
 
 
-export const getGetApiIdentityUsersByIdIdQueryKey = (id: string,) => {
+export const getUserFindByIdQueryKey = (id: string,) => {
     return [
     `/api/identity/users/by-id/${id}`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersByIdIdQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserFindByIdQueryOptions = <TData = Awaited<ReturnType<typeof userFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindById>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersByIdIdQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getUserFindByIdQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>> = ({ signal }) => getApiIdentityUsersByIdId(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userFindById>>> = ({ signal }) => userFindById(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userFindById>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersByIdIdQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>>
-export type GetApiIdentityUsersByIdIdQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserFindByIdQueryResult = NonNullable<Awaited<ReturnType<typeof userFindById>>>
+export type UserFindByIdQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersByIdId<TData = Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByIdId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserFindById<TData = Awaited<ReturnType<typeof userFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindById>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userFindById>>,
+          TError,
+          Awaited<ReturnType<typeof userFindById>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindById<TData = Awaited<ReturnType<typeof userFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindById>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userFindById>>,
+          TError,
+          Awaited<ReturnType<typeof userFindById>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindById<TData = Awaited<ReturnType<typeof userFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindById>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindById<TData = Awaited<ReturnType<typeof userFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindById>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserFindByIdQueryOptions(id,options)
 
-  const queryOptions = getGetApiIdentityUsersByIdIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -537,7 +614,7 @@ export function useGetApiIdentityUsersByIdId<TData = Awaited<ReturnType<typeof g
 
 
 
-export const getGetApiIdentityUsersIdRolesUrl = (id: string,) => {
+export const getUserGetRolesUrl = (id: string,) => {
 
 
 
@@ -545,9 +622,9 @@ export const getGetApiIdentityUsersIdRolesUrl = (id: string,) => {
   return `/api/identity/users/${id}/roles`
 }
 
-export const getApiIdentityUsersIdRoles = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfIdentityRoleDto> => {
+export const userGetRoles = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfIdentityRoleDto> => {
 
-  return abpMutator<ListResultDtoOfIdentityRoleDto>(getGetApiIdentityUsersIdRolesUrl(id),
+  return abpMutator<ListResultDtoOfIdentityRoleDto>(getUserGetRolesUrl(id),
   {
     ...options,
     method: 'GET'
@@ -560,43 +637,67 @@ export const getApiIdentityUsersIdRoles = async (id: string, options?: Parameter
 
 
 
-export const getGetApiIdentityUsersIdRolesQueryKey = (id: string,) => {
+export const getUserGetRolesQueryKey = (id: string,) => {
     return [
     `/api/identity/users/${id}/roles`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersIdRolesQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserGetRolesQueryOptions = <TData = Awaited<ReturnType<typeof userGetRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetRoles>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersIdRolesQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getUserGetRolesQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>> = ({ signal }) => getApiIdentityUsersIdRoles(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userGetRoles>>> = ({ signal }) => userGetRoles(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userGetRoles>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersIdRolesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>>
-export type GetApiIdentityUsersIdRolesQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserGetRolesQueryResult = NonNullable<Awaited<ReturnType<typeof userGetRoles>>>
+export type UserGetRolesQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersIdRoles<TData = Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersIdRoles>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserGetRoles<TData = Awaited<ReturnType<typeof userGetRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetRoles>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGetRoles>>,
+          TError,
+          Awaited<ReturnType<typeof userGetRoles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetRoles<TData = Awaited<ReturnType<typeof userGetRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetRoles>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGetRoles>>,
+          TError,
+          Awaited<ReturnType<typeof userGetRoles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetRoles<TData = Awaited<ReturnType<typeof userGetRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetRoles>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetRoles<TData = Awaited<ReturnType<typeof userGetRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetRoles>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserGetRolesQueryOptions(id,options)
 
-  const queryOptions = getGetApiIdentityUsersIdRolesQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -606,7 +707,7 @@ export function useGetApiIdentityUsersIdRoles<TData = Awaited<ReturnType<typeof 
 
 
 
-export const getPutApiIdentityUsersIdRolesUrl = (id: string,) => {
+export const getUserUpdateRolesUrl = (id: string,) => {
 
 
 
@@ -614,15 +715,15 @@ export const getPutApiIdentityUsersIdRolesUrl = (id: string,) => {
   return `/api/identity/users/${id}/roles`
 }
 
-export const putApiIdentityUsersIdRoles = async (id: string,
-    voloAbpIdentityIdentityUserUpdateRolesDto?: VoloAbpIdentityIdentityUserUpdateRolesDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const userUpdateRoles = async (id: string,
+    identityUserUpdateRolesDto?: IdentityUserUpdateRolesDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getPutApiIdentityUsersIdRolesUrl(id),
+  return abpMutator<void>(getUserUpdateRolesUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpIdentityIdentityUserUpdateRolesDto)
+    body: JSON.stringify(identityUserUpdateRolesDto)
   }
 );}
 
@@ -630,13 +731,13 @@ export const putApiIdentityUsersIdRoles = async (id: string,
 
 
 
-export const getPutApiIdentityUsersIdRolesMutationKey = () => ['putApiIdentityUsersIdRoles'] as const;
+export const getUserUpdateRolesMutationKey = () => ['userUpdateRoles'] as const;
 
-export const getPutApiIdentityUsersIdRolesMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityUsersIdRoles>>, TError,PutApiIdentityUsersIdRolesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityUsersIdRoles>>, TError,PutApiIdentityUsersIdRolesMutationVariables, TContext> => {
+export const getUserUpdateRolesMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userUpdateRoles>>, TError,UserUpdateRolesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof userUpdateRoles>>, TError,UserUpdateRolesMutationVariables, TContext> => {
 
-const mutationKey = getPutApiIdentityUsersIdRolesMutationKey();
+const mutationKey = getUserUpdateRolesMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -646,10 +747,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiIdentityUsersIdRoles>>, PutApiIdentityUsersIdRolesMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof userUpdateRoles>>, UserUpdateRolesMutationVariables> = (props) => {
           const {id,data} = props ?? {};
 
-          return  putApiIdentityUsersIdRoles(id,data,requestOptions)
+          return  userUpdateRoles(id,data,requestOptions)
         }
 
 
@@ -659,22 +760,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiIdentityUsersIdRolesMutationResult = NonNullable<Awaited<ReturnType<typeof putApiIdentityUsersIdRoles>>>
-    export type PutApiIdentityUsersIdRolesMutationBody = VoloAbpIdentityIdentityUserUpdateRolesDto | undefined
-    export type PutApiIdentityUsersIdRolesMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiIdentityUsersIdRolesMutationVariables = {id: string;data?: VoloAbpIdentityIdentityUserUpdateRolesDto}
+    export type UserUpdateRolesMutationResult = NonNullable<Awaited<ReturnType<typeof userUpdateRoles>>>
+    export type UserUpdateRolesMutationBody = IdentityUserUpdateRolesDto | undefined
+    export type UserUpdateRolesMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type UserUpdateRolesMutationVariables = {id: string;data?: IdentityUserUpdateRolesDto}
 
-    export const usePutApiIdentityUsersIdRoles = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityUsersIdRoles>>, TError,PutApiIdentityUsersIdRolesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiIdentityUsersIdRoles>>,
+    export const useUserUpdateRoles = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof userUpdateRoles>>, TError,UserUpdateRolesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof userUpdateRoles>>,
         TError,
-        PutApiIdentityUsersIdRolesMutationVariables,
+        UserUpdateRolesMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiIdentityUsersIdRolesMutationOptions(options));
+      return useMutation(getUserUpdateRolesMutationOptions(options), queryClient);
     }
-    export const getGetApiIdentityUsersAssignableRolesUrl = () => {
+    export const getUserGetAssignableRolesUrl = () => {
 
 
 
@@ -682,9 +783,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/identity/users/assignable-roles`
 }
 
-export const getApiIdentityUsersAssignableRoles = async ( options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfIdentityRoleDto> => {
+export const userGetAssignableRoles = async ( options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfIdentityRoleDto> => {
 
-  return abpMutator<ListResultDtoOfIdentityRoleDto>(getGetApiIdentityUsersAssignableRolesUrl(),
+  return abpMutator<ListResultDtoOfIdentityRoleDto>(getUserGetAssignableRolesUrl(),
   {
     ...options,
     method: 'GET'
@@ -697,43 +798,67 @@ export const getApiIdentityUsersAssignableRoles = async ( options?: Parameters<t
 
 
 
-export const getGetApiIdentityUsersAssignableRolesQueryKey = () => {
+export const getUserGetAssignableRolesQueryKey = () => {
     return [
     `/api/identity/users/assignable-roles`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersAssignableRolesQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserGetAssignableRolesQueryOptions = <TData = Awaited<ReturnType<typeof userGetAssignableRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetAssignableRoles>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersAssignableRolesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getUserGetAssignableRolesQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>> = ({ signal }) => getApiIdentityUsersAssignableRoles({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userGetAssignableRoles>>> = ({ signal }) => userGetAssignableRoles({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userGetAssignableRoles>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersAssignableRolesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>>
-export type GetApiIdentityUsersAssignableRolesQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserGetAssignableRolesQueryResult = NonNullable<Awaited<ReturnType<typeof userGetAssignableRoles>>>
+export type UserGetAssignableRolesQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersAssignableRoles<TData = Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersAssignableRoles>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserGetAssignableRoles<TData = Awaited<ReturnType<typeof userGetAssignableRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetAssignableRoles>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGetAssignableRoles>>,
+          TError,
+          Awaited<ReturnType<typeof userGetAssignableRoles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetAssignableRoles<TData = Awaited<ReturnType<typeof userGetAssignableRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetAssignableRoles>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userGetAssignableRoles>>,
+          TError,
+          Awaited<ReturnType<typeof userGetAssignableRoles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetAssignableRoles<TData = Awaited<ReturnType<typeof userGetAssignableRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetAssignableRoles>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserGetAssignableRoles<TData = Awaited<ReturnType<typeof userGetAssignableRoles>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userGetAssignableRoles>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserGetAssignableRolesQueryOptions(options)
 
-  const queryOptions = getGetApiIdentityUsersAssignableRolesQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -743,7 +868,7 @@ export function useGetApiIdentityUsersAssignableRoles<TData = Awaited<ReturnType
 
 
 
-export const getGetApiIdentityUsersByUsernameUserNameUrl = (userName: string,) => {
+export const getUserFindByUsernameUrl = (userName: string,) => {
 
 
 
@@ -751,9 +876,9 @@ export const getGetApiIdentityUsersByUsernameUserNameUrl = (userName: string,) =
   return `/api/identity/users/by-username/${userName}`
 }
 
-export const getApiIdentityUsersByUsernameUserName = async (userName: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const userFindByUsername = async (userName: string, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityUserDto>(getGetApiIdentityUsersByUsernameUserNameUrl(userName),
+  return abpMutator<IdentityUserDto>(getUserFindByUsernameUrl(userName),
   {
     ...options,
     method: 'GET'
@@ -766,43 +891,67 @@ export const getApiIdentityUsersByUsernameUserName = async (userName: string, op
 
 
 
-export const getGetApiIdentityUsersByUsernameUserNameQueryKey = (userName: string,) => {
+export const getUserFindByUsernameQueryKey = (userName: string,) => {
     return [
     `/api/identity/users/by-username/${userName}`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersByUsernameUserNameQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(userName: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserFindByUsernameQueryOptions = <TData = Awaited<ReturnType<typeof userFindByUsername>>, TError = ErrorType<RemoteServiceErrorResponse>>(userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByUsername>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersByUsernameUserNameQueryKey(userName);
+  const queryKey =  queryOptions?.queryKey ?? getUserFindByUsernameQueryKey(userName);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>> = ({ signal }) => getApiIdentityUsersByUsernameUserName(userName, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userFindByUsername>>> = ({ signal }) => userFindByUsername(userName, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: userName !== null && userName !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: userName !== null && userName !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userFindByUsername>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersByUsernameUserNameQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>>
-export type GetApiIdentityUsersByUsernameUserNameQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserFindByUsernameQueryResult = NonNullable<Awaited<ReturnType<typeof userFindByUsername>>>
+export type UserFindByUsernameQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersByUsernameUserName<TData = Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- userName: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByUsernameUserName>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserFindByUsername<TData = Awaited<ReturnType<typeof userFindByUsername>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByUsername>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userFindByUsername>>,
+          TError,
+          Awaited<ReturnType<typeof userFindByUsername>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindByUsername<TData = Awaited<ReturnType<typeof userFindByUsername>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByUsername>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userFindByUsername>>,
+          TError,
+          Awaited<ReturnType<typeof userFindByUsername>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindByUsername<TData = Awaited<ReturnType<typeof userFindByUsername>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByUsername>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindByUsername<TData = Awaited<ReturnType<typeof userFindByUsername>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByUsername>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserFindByUsernameQueryOptions(userName,options)
 
-  const queryOptions = getGetApiIdentityUsersByUsernameUserNameQueryOptions(userName,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -812,7 +961,7 @@ export function useGetApiIdentityUsersByUsernameUserName<TData = Awaited<ReturnT
 
 
 
-export const getGetApiIdentityUsersByEmailEmailUrl = (email: string,) => {
+export const getUserFindByEmailUrl = (email: string,) => {
 
 
 
@@ -820,9 +969,9 @@ export const getGetApiIdentityUsersByEmailEmailUrl = (email: string,) => {
   return `/api/identity/users/by-email/${email}`
 }
 
-export const getApiIdentityUsersByEmailEmail = async (email: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityUserDto> => {
+export const userFindByEmail = async (email: string, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityUserDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityUserDto>(getGetApiIdentityUsersByEmailEmailUrl(email),
+  return abpMutator<IdentityUserDto>(getUserFindByEmailUrl(email),
   {
     ...options,
     method: 'GET'
@@ -835,43 +984,67 @@ export const getApiIdentityUsersByEmailEmail = async (email: string, options?: P
 
 
 
-export const getGetApiIdentityUsersByEmailEmailQueryKey = (email: string,) => {
+export const getUserFindByEmailQueryKey = (email: string,) => {
     return [
     `/api/identity/users/by-email/${email}`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersByEmailEmailQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(email: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserFindByEmailQueryOptions = <TData = Awaited<ReturnType<typeof userFindByEmail>>, TError = ErrorType<RemoteServiceErrorResponse>>(email: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByEmail>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersByEmailEmailQueryKey(email);
+  const queryKey =  queryOptions?.queryKey ?? getUserFindByEmailQueryKey(email);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>> = ({ signal }) => getApiIdentityUsersByEmailEmail(email, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userFindByEmail>>> = ({ signal }) => userFindByEmail(email, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: email !== null && email !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: email !== null && email !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userFindByEmail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersByEmailEmailQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>>
-export type GetApiIdentityUsersByEmailEmailQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserFindByEmailQueryResult = NonNullable<Awaited<ReturnType<typeof userFindByEmail>>>
+export type UserFindByEmailQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersByEmailEmail<TData = Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- email: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersByEmailEmail>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserFindByEmail<TData = Awaited<ReturnType<typeof userFindByEmail>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ email: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByEmail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userFindByEmail>>,
+          TError,
+          Awaited<ReturnType<typeof userFindByEmail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindByEmail<TData = Awaited<ReturnType<typeof userFindByEmail>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ email: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByEmail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userFindByEmail>>,
+          TError,
+          Awaited<ReturnType<typeof userFindByEmail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindByEmail<TData = Awaited<ReturnType<typeof userFindByEmail>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ email: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByEmail>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserFindByEmail<TData = Awaited<ReturnType<typeof userFindByEmail>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ email: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userFindByEmail>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserFindByEmailQueryOptions(email,options)
 
-  const queryOptions = getGetApiIdentityUsersByEmailEmailQueryOptions(email,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

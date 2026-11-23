@@ -189,6 +189,24 @@ After generating, it verifies `endpoints/` is non-empty — orval can exit 0 on 
 
 `input` also accepts a local file path, so an offline swagger.json works when the backend is down.
 
+### How generated names are derived
+
+Names follow the backend's C# methods rather than the URL: `gen` reads the backend's `/api/abp/api-definition`, joins it to each swagger operation by HTTP method + route, and names the operation `<tag><Method>`; models use the type name itself, without the .NET namespace.
+
+| Backend | Generated |
+| --- | --- |
+| `IdentityRoleAppService.GetListAsync` | `roleGetList` / `useRoleGetList` / `getRoleGetListQueryKey` / `RoleGetListParams` |
+| `IdentityRoleAppService.CreateAsync` | `roleCreate` / `useRoleCreate` / `RoleCreateBody` (zod) |
+| `Volo.Abp.Identity.IdentityRoleDto` | `IdentityRoleDto` |
+| `PagedResultDto<IdentityRoleDto>` | `PagedResultDtoOfIdentityRoleDto` |
+
+Edge cases:
+
+- An operation whose swagger entry declares its own `operationId` keeps it.
+- Two types with the same name in different namespaces (`Sales.OrderDto` and `Purchasing.OrderDto`) both keep their full name, so declaration order never decides who gets the short one; operations that would share a name likewise fall back to orval's path naming.
+- When `input` is a local file, or the backend does not expose the api-definition, ABP's stock modules (identity, tenants, permissions, features, settings, account) still get method names from a built-in snapshot — the admin pages' imports rely on it; your own app services fall back to path names (`GET /api/app/book/{id}` → `getBookId`) and `gen` prints a note. To get method names offline, save the api-definition to a file and set `apiDefinition: "./api-definition.json"` in the config (a URL works too, for a backend mounted under a sub-path).
+- To keep the old names in an existing project, set `naming: "legacy"`: you keep `useGetApiIdentityRoles` / `VoloAbpIdentityIdentityRoleDto`. The registry's admin pages import the new names, so a legacy project has to rename those imports after reinstalling the blocks.
+
 ---
 
 ## 7. Run it

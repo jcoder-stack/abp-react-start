@@ -1,50 +1,47 @@
 import { test } from "vitest";
 import {
-  getGetApiIdentityRolesQueryKey,
-  useDeleteApiIdentityRolesId,
-  useGetApiIdentityRoles,
-  usePostApiIdentityRoles,
-  usePutApiIdentityRolesId,
+  getRoleGetListQueryKey,
+  useRoleCreate,
+  useRoleDelete,
+  useRoleGetList,
+  useRoleUpdate,
 } from "@/api/endpoints/role/role";
 import {
-  getGetApiMultiTenancyTenantsQueryKey,
-  useDeleteApiMultiTenancyTenantsId,
-  useGetApiMultiTenancyTenants,
-  usePostApiMultiTenancyTenants,
-  usePutApiMultiTenancyTenantsId,
+  getTenantGetListQueryKey,
+  useTenantCreate,
+  useTenantDelete,
+  useTenantGetList,
+  useTenantUpdate,
 } from "@/api/endpoints/tenant/tenant";
 import {
-  getGetApiIdentityUsersQueryKey,
-  useDeleteApiIdentityUsersId,
-  useGetApiIdentityUsers,
-  usePostApiIdentityUsers,
-  usePutApiIdentityUsersId,
+  getUserGetListQueryKey,
+  useUserCreate,
+  useUserDelete,
+  useUserGetList,
+  useUserUpdate,
 } from "@/api/endpoints/user/user";
 import type {
-  VoloAbpIdentityIdentityRoleCreateDto,
-  VoloAbpIdentityIdentityRoleDto,
-  VoloAbpIdentityIdentityRoleUpdateDto,
-  VoloAbpIdentityIdentityUserCreateDto,
-  VoloAbpIdentityIdentityUserDto,
-  VoloAbpIdentityIdentityUserUpdateDto,
-  VoloAbpTenantManagementTenantCreateDto,
-  VoloAbpTenantManagementTenantDto,
-  VoloAbpTenantManagementTenantUpdateDto,
+  IdentityRoleCreateDto,
+  IdentityRoleDto,
+  IdentityRoleUpdateDto,
+  IdentityUserCreateDto,
+  IdentityUserDto,
+  IdentityUserUpdateDto,
+  TenantCreateDto,
+  TenantDto,
+  TenantUpdateDto,
 } from "@/api/models";
 import type { CrudService, FilterConfig } from "@/components/abp/crud/crud-service";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { IdentityPermissions, TenantManagementPermissions } from "@/permissions";
 import {
-  getGetApiAppBookQueryKey,
-  useDeleteApiAppBookId,
-  useGetApiAppBook,
-  usePostApiAppBook,
-  usePutApiAppBookId,
+  getBookGetListQueryKey,
+  useBookCreate,
+  useBookDelete,
+  useBookGetList,
+  useBookUpdate,
 } from "@/routes/_layout/_authed/books/-book-api";
-import type {
-  AbpSwaggerBooksBookDto,
-  AbpSwaggerBooksCreateUpdateBookDto,
-} from "@/routes/_layout/_authed/books/-book-models";
+import type { BookDto, CreateUpdateBookDto } from "@/routes/_layout/_authed/books/-book-models";
 
 /**
  * 类型契约：省略 `createCrudService` 的显式类型参数后，推断所得是否与四个页面手写的完全一致。
@@ -75,49 +72,45 @@ type ArgsOf<T> =
 // ── books ──（examples/starter/src/routes/_layout/_authed/books/index.tsx）
 
 const inferredBook = createCrudService({
-  useList: useGetApiAppBook,
-  useCreate: usePostApiAppBook,
-  useUpdate: usePutApiAppBookId,
-  useDelete: useDeleteApiAppBookId,
-  listKey: getGetApiAppBookQueryKey,
+  useList: useBookGetList,
+  useCreate: useBookCreate,
+  useUpdate: useBookUpdate,
+  useDelete: useBookDelete,
+  listKey: getBookGetListQueryKey,
   supportsFilter: false,
 });
 
-const explicitBook = createCrudService<
-  AbpSwaggerBooksBookDto,
-  AbpSwaggerBooksCreateUpdateBookDto,
-  AbpSwaggerBooksCreateUpdateBookDto
->({
-  useList: useGetApiAppBook,
-  useCreate: usePostApiAppBook,
-  useUpdate: usePutApiAppBookId,
-  useDelete: useDeleteApiAppBookId,
-  listKey: getGetApiAppBookQueryKey,
+const explicitBook = createCrudService<BookDto, CreateUpdateBookDto, CreateUpdateBookDto>({
+  useList: useBookGetList,
+  useCreate: useBookCreate,
+  useUpdate: useBookUpdate,
+  useDelete: useBookDelete,
+  listKey: getBookGetListQueryKey,
   supportsFilter: false,
 });
 
 // ── identity/users ──（examples/starter/src/routes/_layout/_authed/identity/users.tsx）
 
 const inferredUser = createCrudService({
-  useList: useGetApiIdentityUsers,
-  useCreate: usePostApiIdentityUsers,
-  useUpdate: usePutApiIdentityUsersId,
-  useDelete: useDeleteApiIdentityUsersId,
-  listKey: getGetApiIdentityUsersQueryKey,
+  useList: useUserGetList,
+  useCreate: useUserCreate,
+  useUpdate: useUserUpdate,
+  useDelete: useUserDelete,
+  listKey: getUserGetListQueryKey,
   policy: IdentityPermissions.Users.Default,
   supportsFilter: true,
 });
 
 const explicitUser = createCrudService<
-  VoloAbpIdentityIdentityUserDto,
-  VoloAbpIdentityIdentityUserCreateDto,
-  VoloAbpIdentityIdentityUserUpdateDto
+  IdentityUserDto,
+  IdentityUserCreateDto,
+  IdentityUserUpdateDto
 >({
-  useList: useGetApiIdentityUsers,
-  useCreate: usePostApiIdentityUsers,
-  useUpdate: usePutApiIdentityUsersId,
-  useDelete: useDeleteApiIdentityUsersId,
-  listKey: getGetApiIdentityUsersQueryKey,
+  useList: useUserGetList,
+  useCreate: useUserCreate,
+  useUpdate: useUserUpdate,
+  useDelete: useUserDelete,
+  listKey: getUserGetListQueryKey,
   policy: IdentityPermissions.Users.Default,
   supportsFilter: true,
 });
@@ -125,25 +118,25 @@ const explicitUser = createCrudService<
 // ── identity/roles ──（examples/starter/src/routes/_layout/_authed/identity/roles.tsx）
 
 const inferredRole = createCrudService({
-  useList: useGetApiIdentityRoles,
-  useCreate: usePostApiIdentityRoles,
-  useUpdate: usePutApiIdentityRolesId,
-  useDelete: useDeleteApiIdentityRolesId,
-  listKey: getGetApiIdentityRolesQueryKey,
+  useList: useRoleGetList,
+  useCreate: useRoleCreate,
+  useUpdate: useRoleUpdate,
+  useDelete: useRoleDelete,
+  listKey: getRoleGetListQueryKey,
   policy: IdentityPermissions.Roles.Default,
   supportsFilter: true,
 });
 
 const explicitRole = createCrudService<
-  VoloAbpIdentityIdentityRoleDto,
-  VoloAbpIdentityIdentityRoleCreateDto,
-  VoloAbpIdentityIdentityRoleUpdateDto
+  IdentityRoleDto,
+  IdentityRoleCreateDto,
+  IdentityRoleUpdateDto
 >({
-  useList: useGetApiIdentityRoles,
-  useCreate: usePostApiIdentityRoles,
-  useUpdate: usePutApiIdentityRolesId,
-  useDelete: useDeleteApiIdentityRolesId,
-  listKey: getGetApiIdentityRolesQueryKey,
+  useList: useRoleGetList,
+  useCreate: useRoleCreate,
+  useUpdate: useRoleUpdate,
+  useDelete: useRoleDelete,
+  listKey: getRoleGetListQueryKey,
   policy: IdentityPermissions.Roles.Default,
   supportsFilter: true,
 });
@@ -151,25 +144,21 @@ const explicitRole = createCrudService<
 // ── tenants ──（examples/starter/src/routes/_layout/_authed/tenants/index.tsx）
 
 const inferredTenant = createCrudService({
-  useList: useGetApiMultiTenancyTenants,
-  useCreate: usePostApiMultiTenancyTenants,
-  useUpdate: usePutApiMultiTenancyTenantsId,
-  useDelete: useDeleteApiMultiTenancyTenantsId,
-  listKey: getGetApiMultiTenancyTenantsQueryKey,
+  useList: useTenantGetList,
+  useCreate: useTenantCreate,
+  useUpdate: useTenantUpdate,
+  useDelete: useTenantDelete,
+  listKey: getTenantGetListQueryKey,
   policy: TenantManagementPermissions.Tenants.Default,
   supportsFilter: true,
 });
 
-const explicitTenant = createCrudService<
-  VoloAbpTenantManagementTenantDto,
-  VoloAbpTenantManagementTenantCreateDto,
-  VoloAbpTenantManagementTenantUpdateDto
->({
-  useList: useGetApiMultiTenancyTenants,
-  useCreate: usePostApiMultiTenancyTenants,
-  useUpdate: usePutApiMultiTenancyTenantsId,
-  useDelete: useDeleteApiMultiTenancyTenantsId,
-  listKey: getGetApiMultiTenancyTenantsQueryKey,
+const explicitTenant = createCrudService<TenantDto, TenantCreateDto, TenantUpdateDto>({
+  useList: useTenantGetList,
+  useCreate: useTenantCreate,
+  useUpdate: useTenantUpdate,
+  useDelete: useTenantDelete,
+  listKey: getTenantGetListQueryKey,
   policy: TenantManagementPermissions.Tenants.Default,
   supportsFilter: true,
 });
@@ -185,31 +174,31 @@ test("四个页面省略显式类型参数后推断与手写一致（已知 6 �
 
   assertTrue<Equals<ArgsOf<typeof inferredUser>["dto"], ArgsOf<typeof explicitUser>["dto"]>>();
   assertTrue<
-    // @ts-expect-error 推断值 ≡ Omit<VoloAbpIdentityIdentityUserCreateDto, "extraProperties">
+    // @ts-expect-error 推断值 ≡ Omit<IdentityUserCreateDto, "extraProperties">
     Equals<ArgsOf<typeof inferredUser>["create"], ArgsOf<typeof explicitUser>["create"]>
   >();
   assertTrue<
-    // @ts-expect-error 推断值 ≡ Omit<VoloAbpIdentityIdentityUserUpdateDto, "extraProperties">
+    // @ts-expect-error 推断值 ≡ Omit<IdentityUserUpdateDto, "extraProperties">
     Equals<ArgsOf<typeof inferredUser>["update"], ArgsOf<typeof explicitUser>["update"]>
   >();
 
   assertTrue<Equals<ArgsOf<typeof inferredRole>["dto"], ArgsOf<typeof explicitRole>["dto"]>>();
   assertTrue<
-    // @ts-expect-error 推断值 ≡ Omit<VoloAbpIdentityIdentityRoleCreateDto, "extraProperties">
+    // @ts-expect-error 推断值 ≡ Omit<IdentityRoleCreateDto, "extraProperties">
     Equals<ArgsOf<typeof inferredRole>["create"], ArgsOf<typeof explicitRole>["create"]>
   >();
   assertTrue<
-    // @ts-expect-error 推断值 ≡ Omit<VoloAbpIdentityIdentityRoleUpdateDto, "extraProperties">
+    // @ts-expect-error 推断值 ≡ Omit<IdentityRoleUpdateDto, "extraProperties">
     Equals<ArgsOf<typeof inferredRole>["update"], ArgsOf<typeof explicitRole>["update"]>
   >();
 
   assertTrue<Equals<ArgsOf<typeof inferredTenant>["dto"], ArgsOf<typeof explicitTenant>["dto"]>>();
   assertTrue<
-    // @ts-expect-error 推断值 ≡ Omit<VoloAbpTenantManagementTenantCreateDto, "extraProperties">
+    // @ts-expect-error 推断值 ≡ Omit<TenantCreateDto, "extraProperties">
     Equals<ArgsOf<typeof inferredTenant>["create"], ArgsOf<typeof explicitTenant>["create"]>
   >();
   assertTrue<
-    // @ts-expect-error 推断值 ≡ Omit<VoloAbpTenantManagementTenantUpdateDto, "extraProperties">
+    // @ts-expect-error 推断值 ≡ Omit<TenantUpdateDto, "extraProperties">
     Equals<ArgsOf<typeof inferredTenant>["update"], ArgsOf<typeof explicitTenant>["update"]>
   >();
 });
@@ -217,30 +206,26 @@ test("四个页面省略显式类型参数后推断与手写一致（已知 6 �
 test("ArgsOf 反解本身非空：显式侧钉回页面手写的具名类型", () => {
   /* 若 `ArgsOf` 匹配失败而退化成 `never`，上面 12 条会两侧同为 `never` 而假性通过。
      把显式侧钉回页面手写的具名类型，`never` 就通不过这 12 条。 */
-  assertTrue<Equals<ArgsOf<typeof explicitBook>["dto"], AbpSwaggerBooksBookDto>>();
-  assertTrue<Equals<ArgsOf<typeof explicitBook>["create"], AbpSwaggerBooksCreateUpdateBookDto>>();
-  assertTrue<Equals<ArgsOf<typeof explicitBook>["update"], AbpSwaggerBooksCreateUpdateBookDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitBook>["dto"], BookDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitBook>["create"], CreateUpdateBookDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitBook>["update"], CreateUpdateBookDto>>();
 
-  assertTrue<Equals<ArgsOf<typeof explicitUser>["dto"], VoloAbpIdentityIdentityUserDto>>();
-  assertTrue<Equals<ArgsOf<typeof explicitUser>["create"], VoloAbpIdentityIdentityUserCreateDto>>();
-  assertTrue<Equals<ArgsOf<typeof explicitUser>["update"], VoloAbpIdentityIdentityUserUpdateDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitUser>["dto"], IdentityUserDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitUser>["create"], IdentityUserCreateDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitUser>["update"], IdentityUserUpdateDto>>();
 
-  assertTrue<Equals<ArgsOf<typeof explicitRole>["dto"], VoloAbpIdentityIdentityRoleDto>>();
-  assertTrue<Equals<ArgsOf<typeof explicitRole>["create"], VoloAbpIdentityIdentityRoleCreateDto>>();
-  assertTrue<Equals<ArgsOf<typeof explicitRole>["update"], VoloAbpIdentityIdentityRoleUpdateDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitRole>["dto"], IdentityRoleDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitRole>["create"], IdentityRoleCreateDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitRole>["update"], IdentityRoleUpdateDto>>();
 
-  assertTrue<Equals<ArgsOf<typeof explicitTenant>["dto"], VoloAbpTenantManagementTenantDto>>();
-  assertTrue<
-    Equals<ArgsOf<typeof explicitTenant>["create"], VoloAbpTenantManagementTenantCreateDto>
-  >();
-  assertTrue<
-    Equals<ArgsOf<typeof explicitTenant>["update"], VoloAbpTenantManagementTenantUpdateDto>
-  >();
+  assertTrue<Equals<ArgsOf<typeof explicitTenant>["dto"], TenantDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitTenant>["create"], TenantCreateDto>>();
+  assertTrue<Equals<ArgsOf<typeof explicitTenant>["update"], TenantUpdateDto>>();
 });
 
 /* books 端点无 Filter，声称支持、或漏填都必须编译失败；identity/users 端点有 Filter，两者都合法。
  * 没有直接用 `@ts-expect-error` 包 `createCrudService({...})` 调用来测，那是最初的写法，但
- * `usePostApiAppBook`/`usePutApiAppBookId` 这类 orval mutation hook 本身也是带 TError/TContext
+ * `useBookCreate`/`useBookUpdate` 这类 orval mutation hook 本身也是带 TError/TContext
  * 缺省值的泛型函数；一旦 `supportsFilter` 违反约束令整个实参不存在任何满足约束的实例化，TS 会连带放弃
  * 对同一调用里 useCreate/useUpdate 的推断、回退到它们的缺省值 `unknown`，报错跨行级联到 useCreate/
  * useUpdate 各自的属性行，`@ts-expect-error` 的“仅抑制下一行”语义完全罩不住。改为对 `FilterConfig`
@@ -249,7 +234,7 @@ test("ArgsOf 反解本身非空：显式侧钉回页面手写的具名类型", (
  *
  * `probeFilterConfig` 特意把 `useList` 声明成未拆解的整体类型参数 `T`，与 crud-service.ts 里
  * `createCrudService` 的 `TUseList` 同一种写法，再靠真实调用（而非显式指定类型实参）让 TS 从
- * `useGetApiAppBook` 反向推断 `T`。这是真正脆弱的一环：`FilterConfig` 本身的条件类型逻辑一直是对的，
+ * `useBookGetList` 反向推断 `T`。这是真正脆弱的一环：`FilterConfig` 本身的条件类型逻辑一直是对的，
  * 会碎的是「重载 hook 能不能被推断出来、而不是静默落回缺省值」，直接对 `typeof hook` 取
  * `Parameters<...>[0]` 不经过推断，测不出这环断没断。 */
 
@@ -258,9 +243,9 @@ declare function probeFilterConfig<T extends (params: never, ...rest: never[]) =
 ): FilterConfig<NonNullable<Parameters<T>[0]>>;
 
 test("FilterConfig 经重载 hook 推断：无 Filter 端点钉死 false，有 Filter 端点可选", () => {
-  const bookFilterProbe = probeFilterConfig(useGetApiAppBook);
+  const bookFilterProbe = probeFilterConfig(useBookGetList);
   assertTrue<Equals<typeof bookFilterProbe, { supportsFilter: false }>>();
 
-  const userFilterProbe = probeFilterConfig(useGetApiIdentityUsers);
+  const userFilterProbe = probeFilterConfig(useUserGetList);
   assertTrue<Equals<typeof userFilterProbe, { supportsFilter?: boolean }>>();
 });

@@ -9,9 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -19,10 +24,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  VoloAbpAccountChangePasswordInput,
-  VoloAbpAccountProfileDto,
-  VoloAbpAccountUpdateProfileDto,
-  VoloAbpHttpRemoteServiceErrorResponse
+  ChangePasswordInput,
+  ProfileDto,
+  RemoteServiceErrorResponse,
+  UpdateProfileDto
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -99,7 +104,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiAccountMyProfileUrl = () => {
+export const getProfileGetUrl = () => {
 
 
 
@@ -107,9 +112,9 @@ export const getGetApiAccountMyProfileUrl = () => {
   return `/api/account/my-profile`
 }
 
-export const getApiAccountMyProfile = async ( options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpAccountProfileDto> => {
+export const profileGet = async ( options?: Parameters<typeof abpMutator>[1]): Promise<ProfileDto> => {
 
-  return abpMutator<VoloAbpAccountProfileDto>(getGetApiAccountMyProfileUrl(),
+  return abpMutator<ProfileDto>(getProfileGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -122,43 +127,67 @@ export const getApiAccountMyProfile = async ( options?: Parameters<typeof abpMut
 
 
 
-export const getGetApiAccountMyProfileQueryKey = () => {
+export const getProfileGetQueryKey = () => {
     return [
     `/api/account/my-profile`
     ] as const;
     }
 
 
-export const getGetApiAccountMyProfileQueryOptions = <TData = Awaited<ReturnType<typeof getApiAccountMyProfile>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAccountMyProfile>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof profileGet>>, TError = ErrorType<RemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof profileGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiAccountMyProfileQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getProfileGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiAccountMyProfile>>> = ({ signal }) => getApiAccountMyProfile({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof profileGet>>> = ({ signal }) => profileGet({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiAccountMyProfile>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof profileGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiAccountMyProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getApiAccountMyProfile>>>
-export type GetApiAccountMyProfileQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type ProfileGetQueryResult = NonNullable<Awaited<ReturnType<typeof profileGet>>>
+export type ProfileGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiAccountMyProfile<TData = Awaited<ReturnType<typeof getApiAccountMyProfile>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAccountMyProfile>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useProfileGet<TData = Awaited<ReturnType<typeof profileGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof profileGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof profileGet>>,
+          TError,
+          Awaited<ReturnType<typeof profileGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProfileGet<TData = Awaited<ReturnType<typeof profileGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof profileGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof profileGet>>,
+          TError,
+          Awaited<ReturnType<typeof profileGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProfileGet<TData = Awaited<ReturnType<typeof profileGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof profileGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProfileGet<TData = Awaited<ReturnType<typeof profileGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof profileGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getProfileGetQueryOptions(options)
 
-  const queryOptions = getGetApiAccountMyProfileQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -168,7 +197,7 @@ export function useGetApiAccountMyProfile<TData = Awaited<ReturnType<typeof getA
 
 
 
-export const getPutApiAccountMyProfileUrl = () => {
+export const getProfileUpdateUrl = () => {
 
 
 
@@ -176,14 +205,14 @@ export const getPutApiAccountMyProfileUrl = () => {
   return `/api/account/my-profile`
 }
 
-export const putApiAccountMyProfile = async (voloAbpAccountUpdateProfileDto?: NonReadonly<VoloAbpAccountUpdateProfileDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpAccountProfileDto> => {
+export const profileUpdate = async (updateProfileDto?: NonReadonly<UpdateProfileDto>, options?: Parameters<typeof abpMutator>[1]): Promise<ProfileDto> => {
 
-  return abpMutator<VoloAbpAccountProfileDto>(getPutApiAccountMyProfileUrl(),
+  return abpMutator<ProfileDto>(getProfileUpdateUrl(),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpAccountUpdateProfileDto)
+    body: JSON.stringify(updateProfileDto)
   }
 );}
 
@@ -191,13 +220,13 @@ export const putApiAccountMyProfile = async (voloAbpAccountUpdateProfileDto?: No
 
 
 
-export const getPutApiAccountMyProfileMutationKey = () => ['putApiAccountMyProfile'] as const;
+export const getProfileUpdateMutationKey = () => ['profileUpdate'] as const;
 
-export const getPutApiAccountMyProfileMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiAccountMyProfile>>, TError,PutApiAccountMyProfileMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiAccountMyProfile>>, TError,PutApiAccountMyProfileMutationVariables, TContext> => {
+export const getProfileUpdateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof profileUpdate>>, TError,ProfileUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof profileUpdate>>, TError,ProfileUpdateMutationVariables, TContext> => {
 
-const mutationKey = getPutApiAccountMyProfileMutationKey();
+const mutationKey = getProfileUpdateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -207,10 +236,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiAccountMyProfile>>, PutApiAccountMyProfileMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof profileUpdate>>, ProfileUpdateMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  putApiAccountMyProfile(data,requestOptions)
+          return  profileUpdate(data,requestOptions)
         }
 
 
@@ -220,22 +249,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiAccountMyProfileMutationResult = NonNullable<Awaited<ReturnType<typeof putApiAccountMyProfile>>>
-    export type PutApiAccountMyProfileMutationBody = NonReadonly<VoloAbpAccountUpdateProfileDto> | undefined
-    export type PutApiAccountMyProfileMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiAccountMyProfileMutationVariables = {data?: NonReadonly<VoloAbpAccountUpdateProfileDto>}
+    export type ProfileUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof profileUpdate>>>
+    export type ProfileUpdateMutationBody = NonReadonly<UpdateProfileDto> | undefined
+    export type ProfileUpdateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type ProfileUpdateMutationVariables = {data?: NonReadonly<UpdateProfileDto>}
 
-    export const usePutApiAccountMyProfile = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiAccountMyProfile>>, TError,PutApiAccountMyProfileMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiAccountMyProfile>>,
+    export const useProfileUpdate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof profileUpdate>>, TError,ProfileUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof profileUpdate>>,
         TError,
-        PutApiAccountMyProfileMutationVariables,
+        ProfileUpdateMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiAccountMyProfileMutationOptions(options));
+      return useMutation(getProfileUpdateMutationOptions(options), queryClient);
     }
-    export const getPostApiAccountMyProfileChangePasswordUrl = () => {
+    export const getProfileChangePasswordUrl = () => {
 
 
 
@@ -243,14 +272,14 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/account/my-profile/change-password`
 }
 
-export const postApiAccountMyProfileChangePassword = async (voloAbpAccountChangePasswordInput?: VoloAbpAccountChangePasswordInput, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const profileChangePassword = async (changePasswordInput?: ChangePasswordInput, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getPostApiAccountMyProfileChangePasswordUrl(),
+  return abpMutator<void>(getProfileChangePasswordUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpAccountChangePasswordInput)
+    body: JSON.stringify(changePasswordInput)
   }
 );}
 
@@ -258,13 +287,13 @@ export const postApiAccountMyProfileChangePassword = async (voloAbpAccountChange
 
 
 
-export const getPostApiAccountMyProfileChangePasswordMutationKey = () => ['postApiAccountMyProfileChangePassword'] as const;
+export const getProfileChangePasswordMutationKey = () => ['profileChangePassword'] as const;
 
-export const getPostApiAccountMyProfileChangePasswordMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountMyProfileChangePassword>>, TError,PostApiAccountMyProfileChangePasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiAccountMyProfileChangePassword>>, TError,PostApiAccountMyProfileChangePasswordMutationVariables, TContext> => {
+export const getProfileChangePasswordMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof profileChangePassword>>, TError,ProfileChangePasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof profileChangePassword>>, TError,ProfileChangePasswordMutationVariables, TContext> => {
 
-const mutationKey = getPostApiAccountMyProfileChangePasswordMutationKey();
+const mutationKey = getProfileChangePasswordMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -274,10 +303,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiAccountMyProfileChangePassword>>, PostApiAccountMyProfileChangePasswordMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof profileChangePassword>>, ProfileChangePasswordMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiAccountMyProfileChangePassword(data,requestOptions)
+          return  profileChangePassword(data,requestOptions)
         }
 
 
@@ -287,18 +316,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiAccountMyProfileChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postApiAccountMyProfileChangePassword>>>
-    export type PostApiAccountMyProfileChangePasswordMutationBody = VoloAbpAccountChangePasswordInput | undefined
-    export type PostApiAccountMyProfileChangePasswordMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiAccountMyProfileChangePasswordMutationVariables = {data?: VoloAbpAccountChangePasswordInput}
+    export type ProfileChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof profileChangePassword>>>
+    export type ProfileChangePasswordMutationBody = ChangePasswordInput | undefined
+    export type ProfileChangePasswordMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type ProfileChangePasswordMutationVariables = {data?: ChangePasswordInput}
 
-    export const usePostApiAccountMyProfileChangePassword = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountMyProfileChangePassword>>, TError,PostApiAccountMyProfileChangePasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postApiAccountMyProfileChangePassword>>,
+    export const useProfileChangePassword = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof profileChangePassword>>, TError,ProfileChangePasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof profileChangePassword>>,
         TError,
-        PostApiAccountMyProfileChangePasswordMutationVariables,
+        ProfileChangePasswordMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountMyProfileChangePasswordMutationOptions(options));
+      return useMutation(getProfileChangePasswordMutationOptions(options), queryClient);
     }

@@ -3,7 +3,7 @@ import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { postApiIdentityRolesBodyNameMax } from "@/api/schemas/role/role";
+import { roleCreateBodyNameMax } from "@/api/schemas/role/role";
 import crudMessages from "@/components/abp/crud/crud-messages.json";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
@@ -114,12 +114,12 @@ describe("identity roles page: name max length", () => {
 
     const nameInput = (await screen.findByLabelText(/^Name/)) as HTMLInputElement;
     fireEvent.change(nameInput, {
-      target: { value: "a".repeat(postApiIdentityRolesBodyNameMax + 1) },
+      target: { value: "a".repeat(roleCreateBodyNameMax + 1) },
     });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() =>
-      expect(screen.getByText(`Up to ${postApiIdentityRolesBodyNameMax} characters`)).toBeDefined(),
+      expect(screen.getByText(`Up to ${roleCreateBodyNameMax} characters`)).toBeDefined(),
     );
     expect(create).not.toHaveBeenCalled();
   });

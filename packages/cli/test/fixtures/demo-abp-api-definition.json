@@ -1,0 +1,534 @@
+{
+  "modules": {
+    "abp": {
+      "controllers": {
+        "Pages.Abp.MultiTenancy.AbpTenantController": {
+          "controllerName": "AbpTenant",
+          "controllerGroupName": "AbpTenant",
+          "actions": {
+            "FindTenantByNameAsyncByName": {
+              "name": "FindTenantByNameAsync",
+              "httpMethod": "GET",
+              "url": "api/abp/multi-tenancy/tenants/by-name/{name}"
+            },
+            "FindTenantByIdAsyncById": {
+              "name": "FindTenantByIdAsync",
+              "httpMethod": "GET",
+              "url": "api/abp/multi-tenancy/tenants/by-id/{id}"
+            }
+          }
+        },
+        "Volo.Abp.AspNetCore.Mvc.ApiExploring.AbpApiDefinitionController": {
+          "controllerName": "AbpApiDefinition",
+          "controllerGroupName": "AbpApiDefinition",
+          "actions": {
+            "GetByModel": {
+              "name": "Get",
+              "httpMethod": "GET",
+              "url": "api/abp/api-definition"
+            }
+          }
+        },
+        "Volo.Abp.AspNetCore.Mvc.ApplicationConfigurations.AbpApplicationConfigurationController": {
+          "controllerName": "AbpApplicationConfiguration",
+          "controllerGroupName": "AbpApplicationConfiguration",
+          "actions": {
+            "GetAsyncByOptions": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/abp/application-configuration"
+            }
+          }
+        },
+        "Volo.Abp.AspNetCore.Mvc.ApplicationConfigurations.AbpApplicationLocalizationController": {
+          "controllerName": "AbpApplicationLocalization",
+          "controllerGroupName": "AbpApplicationLocalization",
+          "actions": {
+            "GetAsyncByInput": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/abp/application-localization"
+            }
+          }
+        }
+      }
+    },
+    "account": {
+      "controllers": {
+        "Volo.Abp.Account.AccountController": {
+          "controllerName": "Account",
+          "controllerGroupName": "Account",
+          "actions": {
+            "RegisterAsyncByInput": {
+              "name": "RegisterAsync",
+              "httpMethod": "POST",
+              "url": "api/account/register"
+            },
+            "SendPasswordResetCodeAsyncByInput": {
+              "name": "SendPasswordResetCodeAsync",
+              "httpMethod": "POST",
+              "url": "api/account/send-password-reset-code"
+            },
+            "VerifyPasswordResetTokenAsyncByInput": {
+              "name": "VerifyPasswordResetTokenAsync",
+              "httpMethod": "POST",
+              "url": "api/account/verify-password-reset-token"
+            },
+            "ResetPasswordAsyncByInput": {
+              "name": "ResetPasswordAsync",
+              "httpMethod": "POST",
+              "url": "api/account/reset-password"
+            }
+          }
+        },
+        "Volo.Abp.Account.DynamicClaimsController": {
+          "controllerName": "DynamicClaims",
+          "controllerGroupName": "DynamicClaims",
+          "actions": {
+            "RefreshAsync": {
+              "name": "RefreshAsync",
+              "httpMethod": "POST",
+              "url": "api/account/dynamic-claims/refresh"
+            }
+          }
+        },
+        "Volo.Abp.Account.ProfileController": {
+          "controllerName": "Profile",
+          "controllerGroupName": "Profile",
+          "actions": {
+            "GetAsync": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/account/my-profile"
+            },
+            "UpdateAsyncByInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/account/my-profile"
+            },
+            "ChangePasswordAsyncByInput": {
+              "name": "ChangePasswordAsync",
+              "httpMethod": "POST",
+              "url": "api/account/my-profile/change-password"
+            }
+          }
+        },
+        "Volo.Abp.Account.Web.Areas.Account.Controllers.AccountController": {
+          "controllerName": "Account",
+          "controllerGroupName": "Login",
+          "actions": {
+            "LoginByLogin": {
+              "name": "Login",
+              "httpMethod": "POST",
+              "url": "api/account/login"
+            },
+            "Logout": {
+              "name": "Logout",
+              "httpMethod": "GET",
+              "url": "api/account/logout"
+            },
+            "CheckPasswordByLogin": {
+              "name": "CheckPassword",
+              "httpMethod": "POST",
+              "url": "api/account/check-password"
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "controllers": {
+        "AbpSwagger.Authors.AuthorAppService": {
+          "controllerName": "Author",
+          "controllerGroupName": "Author",
+          "actions": {
+            "GetAsyncById": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/app/author/{id}"
+            },
+            "GetListAsyncByInput": {
+              "name": "GetListAsync",
+              "httpMethod": "GET",
+              "url": "api/app/author"
+            },
+            "CreateAsyncByInput": {
+              "name": "CreateAsync",
+              "httpMethod": "POST",
+              "url": "api/app/author"
+            },
+            "UpdateAsyncByIdAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/app/author/{id}"
+            },
+            "DeleteAsyncById": {
+              "name": "DeleteAsync",
+              "httpMethod": "DELETE",
+              "url": "api/app/author/{id}"
+            },
+            "GetListAsExcelFileAsyncByInput": {
+              "name": "GetListAsExcelFileAsync",
+              "httpMethod": "GET",
+              "url": "api/app/author/as-excel-file"
+            },
+            "GetDownloadTokenAsync": {
+              "name": "GetDownloadTokenAsync",
+              "httpMethod": "GET",
+              "url": "api/app/author/download-token"
+            }
+          }
+        },
+        "AbpSwagger.Books.BookAppService": {
+          "controllerName": "Book",
+          "controllerGroupName": "Book",
+          "actions": {
+            "GetAsyncById": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/app/book/{id}"
+            },
+            "GetListAsyncByInput": {
+              "name": "GetListAsync",
+              "httpMethod": "GET",
+              "url": "api/app/book"
+            },
+            "CreateAsyncByInput": {
+              "name": "CreateAsync",
+              "httpMethod": "POST",
+              "url": "api/app/book"
+            },
+            "UpdateAsyncByIdAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/app/book/{id}"
+            },
+            "DeleteAsyncById": {
+              "name": "DeleteAsync",
+              "httpMethod": "DELETE",
+              "url": "api/app/book/{id}"
+            },
+            "GetListAsExcelFileAsyncByInput": {
+              "name": "GetListAsExcelFileAsync",
+              "httpMethod": "GET",
+              "url": "api/app/book/as-excel-file"
+            },
+            "GetDownloadTokenAsync": {
+              "name": "GetDownloadTokenAsync",
+              "httpMethod": "GET",
+              "url": "api/app/book/download-token"
+            }
+          }
+        }
+      }
+    },
+    "featureManagement": {
+      "controllers": {
+        "Volo.Abp.FeatureManagement.FeaturesController": {
+          "controllerName": "Features",
+          "controllerGroupName": "Features",
+          "actions": {
+            "GetAsyncByProviderNameAndProviderKey": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/feature-management/features"
+            },
+            "UpdateAsyncByProviderNameAndProviderKeyAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/feature-management/features"
+            },
+            "DeleteAsyncByProviderNameAndProviderKey": {
+              "name": "DeleteAsync",
+              "httpMethod": "DELETE",
+              "url": "api/feature-management/features"
+            }
+          }
+        }
+      }
+    },
+    "identity": {
+      "controllers": {
+        "Volo.Abp.Identity.IdentityRoleController": {
+          "controllerName": "IdentityRole",
+          "controllerGroupName": "Role",
+          "actions": {
+            "GetAllListAsync": {
+              "name": "GetAllListAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/roles/all"
+            },
+            "GetListAsyncByInput": {
+              "name": "GetListAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/roles"
+            },
+            "GetAsyncById": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/roles/{id}"
+            },
+            "CreateAsyncByInput": {
+              "name": "CreateAsync",
+              "httpMethod": "POST",
+              "url": "api/identity/roles"
+            },
+            "UpdateAsyncByIdAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/identity/roles/{id}"
+            },
+            "DeleteAsyncById": {
+              "name": "DeleteAsync",
+              "httpMethod": "DELETE",
+              "url": "api/identity/roles/{id}"
+            }
+          }
+        },
+        "Volo.Abp.Identity.IdentityUserController": {
+          "controllerName": "IdentityUser",
+          "controllerGroupName": "User",
+          "actions": {
+            "GetAsyncById": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/{id}"
+            },
+            "GetListAsyncByInput": {
+              "name": "GetListAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users"
+            },
+            "CreateAsyncByInput": {
+              "name": "CreateAsync",
+              "httpMethod": "POST",
+              "url": "api/identity/users"
+            },
+            "UpdateAsyncByIdAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/identity/users/{id}"
+            },
+            "DeleteAsyncById": {
+              "name": "DeleteAsync",
+              "httpMethod": "DELETE",
+              "url": "api/identity/users/{id}"
+            },
+            "FindByIdAsyncById": {
+              "name": "FindByIdAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/by-id/{id}"
+            },
+            "GetRolesAsyncById": {
+              "name": "GetRolesAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/{id}/roles"
+            },
+            "GetAssignableRolesAsync": {
+              "name": "GetAssignableRolesAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/assignable-roles"
+            },
+            "UpdateRolesAsyncByIdAndInput": {
+              "name": "UpdateRolesAsync",
+              "httpMethod": "PUT",
+              "url": "api/identity/users/{id}/roles"
+            },
+            "FindByUsernameAsyncByUserName": {
+              "name": "FindByUsernameAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/by-username/{userName}"
+            },
+            "FindByEmailAsyncByEmail": {
+              "name": "FindByEmailAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/by-email/{email}"
+            }
+          }
+        },
+        "Volo.Abp.Identity.IdentityUserLookupController": {
+          "controllerName": "IdentityUserLookup",
+          "controllerGroupName": "UserLookup",
+          "actions": {
+            "FindByIdAsyncById": {
+              "name": "FindByIdAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/lookup/{id}"
+            },
+            "FindByUserNameAsyncByUserName": {
+              "name": "FindByUserNameAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/lookup/by-username/{userName}"
+            },
+            "SearchAsyncByInput": {
+              "name": "SearchAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/lookup/search"
+            },
+            "GetCountAsyncByInput": {
+              "name": "GetCountAsync",
+              "httpMethod": "GET",
+              "url": "api/identity/users/lookup/count"
+            }
+          }
+        }
+      }
+    },
+    "multi-tenancy": {
+      "controllers": {
+        "Volo.Abp.TenantManagement.TenantController": {
+          "controllerName": "Tenant",
+          "controllerGroupName": "Tenant",
+          "actions": {
+            "GetAsyncById": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/multi-tenancy/tenants/{id}"
+            },
+            "GetListAsyncByInput": {
+              "name": "GetListAsync",
+              "httpMethod": "GET",
+              "url": "api/multi-tenancy/tenants"
+            },
+            "CreateAsyncByInput": {
+              "name": "CreateAsync",
+              "httpMethod": "POST",
+              "url": "api/multi-tenancy/tenants"
+            },
+            "UpdateAsyncByIdAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/multi-tenancy/tenants/{id}"
+            },
+            "DeleteAsyncById": {
+              "name": "DeleteAsync",
+              "httpMethod": "DELETE",
+              "url": "api/multi-tenancy/tenants/{id}"
+            },
+            "GetDefaultConnectionStringAsyncById": {
+              "name": "GetDefaultConnectionStringAsync",
+              "httpMethod": "GET",
+              "url": "api/multi-tenancy/tenants/{id}/default-connection-string"
+            },
+            "UpdateDefaultConnectionStringAsyncByIdAndDefaultConnectionString": {
+              "name": "UpdateDefaultConnectionStringAsync",
+              "httpMethod": "PUT",
+              "url": "api/multi-tenancy/tenants/{id}/default-connection-string"
+            },
+            "DeleteDefaultConnectionStringAsyncById": {
+              "name": "DeleteDefaultConnectionStringAsync",
+              "httpMethod": "DELETE",
+              "url": "api/multi-tenancy/tenants/{id}/default-connection-string"
+            }
+          }
+        }
+      }
+    },
+    "permissionManagement": {
+      "controllers": {
+        "Volo.Abp.PermissionManagement.PermissionsController": {
+          "controllerName": "Permissions",
+          "controllerGroupName": "Permissions",
+          "actions": {
+            "GetAsyncByProviderNameAndProviderKey": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions"
+            },
+            "GetByGroupAsyncByGroupNameAndProviderNameAndProviderKey": {
+              "name": "GetByGroupAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions/by-group"
+            },
+            "UpdateAsyncByProviderNameAndProviderKeyAndInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "PUT",
+              "url": "api/permission-management/permissions"
+            },
+            "GetResourceProviderKeyLookupServicesAsyncByResourceName": {
+              "name": "GetResourceProviderKeyLookupServicesAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions/resource-provider-key-lookup-services"
+            },
+            "SearchResourceProviderKeyAsyncByResourceNameAndServiceNameAndFilterAndPage": {
+              "name": "SearchResourceProviderKeyAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions/search-resource-provider-keys"
+            },
+            "GetResourceDefinitionsAsyncByResourceName": {
+              "name": "GetResourceDefinitionsAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions/resource-definitions"
+            },
+            "GetResourceAsyncByResourceNameAndResourceKey": {
+              "name": "GetResourceAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions/resource"
+            },
+            "GetResourceByProviderAsyncByResourceNameAndResourceKeyAndProviderNameAndProviderKey": {
+              "name": "GetResourceByProviderAsync",
+              "httpMethod": "GET",
+              "url": "api/permission-management/permissions/resource/by-provider"
+            },
+            "UpdateResourceAsyncByResourceNameAndResourceKeyAndInput": {
+              "name": "UpdateResourceAsync",
+              "httpMethod": "PUT",
+              "url": "api/permission-management/permissions/resource"
+            },
+            "DeleteResourceAsyncByResourceNameAndResourceKeyAndProviderNameAndProviderKey": {
+              "name": "DeleteResourceAsync",
+              "httpMethod": "DELETE",
+              "url": "api/permission-management/permissions/resource"
+            }
+          }
+        }
+      }
+    },
+    "settingManagement": {
+      "controllers": {
+        "Volo.Abp.SettingManagement.EmailSettingsController": {
+          "controllerName": "EmailSettings",
+          "controllerGroupName": "EmailSettings",
+          "actions": {
+            "GetAsync": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/setting-management/emailing"
+            },
+            "UpdateAsyncByInput": {
+              "name": "UpdateAsync",
+              "httpMethod": "POST",
+              "url": "api/setting-management/emailing"
+            },
+            "SendTestEmailAsyncByInput": {
+              "name": "SendTestEmailAsync",
+              "httpMethod": "POST",
+              "url": "api/setting-management/emailing/send-test-email"
+            }
+          }
+        },
+        "Volo.Abp.SettingManagement.TimeZoneSettingsController": {
+          "controllerName": "TimeZoneSettings",
+          "controllerGroupName": "TimeZoneSettings",
+          "actions": {
+            "GetAsync": {
+              "name": "GetAsync",
+              "httpMethod": "GET",
+              "url": "api/setting-management/timezone"
+            },
+            "GetTimezonesAsync": {
+              "name": "GetTimezonesAsync",
+              "httpMethod": "GET",
+              "url": "api/setting-management/timezone/timezones"
+            },
+            "UpdateAsyncByTimezone": {
+              "name": "UpdateAsync",
+              "httpMethod": "POST",
+              "url": "api/setting-management/timezone"
+            }
+          }
+        }
+      }
+    }
+  }
+}

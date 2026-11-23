@@ -5,11 +5,11 @@ import { useMemo } from "react";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
 import type { TableColumnDef } from "@/components/data-table/table-core";
 import {
-  getGetApiAppBookQueryKey,
-  useDeleteApiAppBookId,
-  useGetApiAppBook,
+  getBookGetListQueryKey,
+  useBookDelete,
+  useBookGetList,
 } from "@/routes/_layout/_authed/books/-book-api";
-import type { AbpSwaggerBooksBookDto } from "@/routes/_layout/_authed/books/-book-models";
+import type { BookDto } from "@/routes/_layout/_authed/books/-book-models";
 
 /** L1 参考实现：向 `useAbpTable` 传入 source 回调而非 service 描述符，刻意不经
  * `createCrudService`。数据源不走标准 service 描述符（非 ABP 后端、测试替身、带缓存包装层）
@@ -17,13 +17,13 @@ import type { AbpSwaggerBooksBookDto } from "@/routes/_layout/_authed/books/-boo
 export function BooksL1Demo() {
   const L = useLocalization();
   const queryClient = useQueryClient();
-  const deleteBook = useDeleteApiAppBookId({
+  const deleteBook = useBookDelete({
     mutation: {
-      onSuccess: () => void queryClient.invalidateQueries({ queryKey: getGetApiAppBookQueryKey() }),
+      onSuccess: () => void queryClient.invalidateQueries({ queryKey: getBookGetListQueryKey() }),
     },
   });
 
-  const columns = useMemo<TableColumnDef<AbpSwaggerBooksBookDto>[]>(
+  const columns = useMemo<TableColumnDef<BookDto>[]>(
     () => [
       { accessorKey: "name", header: () => L("App::BookName") },
       { accessorKey: "authorName", header: () => L("App::BookAuthor"), enableSorting: false },
@@ -36,13 +36,13 @@ export function BooksL1Demo() {
     [L],
   );
 
-  const t = useAbpTable<AbpSwaggerBooksBookDto>(
+  const t = useAbpTable<BookDto>(
     (params) => {
       // source 回调本身跨渲染只有这一种 lifetime 稳定的形态（不会中途切换成别的数据源），
       // 这里调用 hook 不是真正意义上"有时调用、有时不调用"的条件 hook，同 use-abp-table.ts
       // 的 useServiceSource 分支先例。
       // biome-ignore lint/correctness/useHookAtTopLevel: 见上，分支 lifetime 稳定
-      const listQuery = useGetApiAppBook(params, {
+      const listQuery = useBookGetList(params, {
         query: { placeholderData: keepPreviousData, select: toPagedResult },
       });
       const totalCount = listQuery.data?.totalCount ?? 0;

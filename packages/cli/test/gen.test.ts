@@ -18,6 +18,13 @@ import { describeSpecFetchError, runGen } from "../src/gen";
 const MINI = join(__dirname, "fixtures", "mini-abp-swagger.json");
 const DEMO = join(__dirname, "fixtures", "demo-abp-swagger.json");
 const UPLOAD = join(__dirname, "fixtures", "upload-abp-swagger.json");
+const DEMO_DEFINITION = join(__dirname, "fixtures", "demo-abp-api-definition.json");
+
+function exportedNames(file: string): string[] {
+  return [...readFileSync(file, "utf8").matchAll(/^\s*export (?:const|function) (\w+)/gm)].map(
+    (match) => match[1] ?? "",
+  );
+}
 
 function listFiles(dir: string): string[] {
   return existsSync(dir) ? readdirSync(dir, { recursive: true }).map(String) : [];
@@ -86,7 +93,11 @@ describe("runGen", () => {
   it("fetches a remote OpenAPI document once per run", { timeout: 60_000 }, async () => {
     const spec = readFileSync(MINI, "utf8");
     let hits = 0;
-    const server = createServer((_req, res) => {
+    const server = createServer((req, res) => {
+      if (req.url !== "/swagger.json") {
+        res.writeHead(404).end();
+        return;
+      }
       hits += 1;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(spec);
@@ -130,6 +141,91 @@ describe("runGen", () => {
     const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-demo-"));
     await runGen({ cwd, overrides: { input: DEMO, output: "src/api" } });
     expect(listFiles(join(cwd, "src/api/endpoints")).length).toBeGreaterThan(0);
+  });
+
+  it("names operations after the ABP methods in the api-definition and models after their type", {
+    timeout: 120_000,
+  }, async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-naming-"));
+    const result = await runGen({
+      cwd,
+      overrides: { input: DEMO, output: "src/api", apiDefinition: DEMO_DEFINITION },
+    });
+    expect(result.targets[0]?.operationNaming).toBe("abp");
+    const out = join(cwd, "src/api");
+    const role = exportedNames(join(out, "endpoints/role/role.ts"));
+    expect(role).toEqual(
+      expect.arrayContaining(["roleGetList", "useRoleGetList", "useRoleCreate", "useRoleDelete"]),
+    );
+    // Book 是应用自己的服务，名字只能来自 api-definition
+    expect(exportedNames(join(out, "endpoints/book/book.ts"))).toContain("useBookGetList");
+    expect(existsSync(join(out, "models/identityRoleDto.ts"))).toBe(true);
+    expect(exportedNames(join(out, "schemas/role/role.ts"))).toContain("RoleCreateBody");
+  });
+
+  it("without an api-definition keeps method names for ABP's stock modules and falls back to path names for the app's own", {
+    timeout: 120_000,
+  }, async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-naming-fallback-"));
+    const result = await runGen({ cwd, overrides: { input: DEMO, output: "src/api" } });
+    expect(result.targets[0]?.operationNaming).toBe("path");
+    const out = join(cwd, "src/api");
+    expect(exportedNames(join(out, "endpoints/role/role.ts"))).toContain("useRoleGetList");
+    expect(exportedNames(join(out, "endpoints/book/book.ts"))).toContain("useGetBook");
+  });
+
+  it("reads the api-definition from the remote input's origin", { timeout: 120_000 }, async () => {
+    const spec = readFileSync(DEMO, "utf8");
+    const definition = readFileSync(DEMO_DEFINITION, "utf8");
+    const server = createServer((req, res) => {
+      const body =
+        req.url === "/swagger/v1/swagger.json"
+          ? spec
+          : req.url === "/api/abp/api-definition"
+            ? definition
+            : undefined;
+      if (body === undefined) {
+        res.writeHead(404).end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(body);
+    });
+    await new Promise<void>((ready) => server.listen(0, "127.0.0.1", ready));
+    const address = server.address();
+    const port = typeof address === "object" && address !== null ? address.port : 0;
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-naming-remote-"));
+    try {
+      const result = await runGen({
+        cwd,
+        overrides: { input: `http://127.0.0.1:${port}/swagger/v1/swagger.json`, output: "src/api" },
+      });
+      expect(result.targets[0]?.operationNaming).toBe("abp");
+    } finally {
+      server.close();
+    }
+    expect(exportedNames(join(cwd, "src/api/endpoints/book/book.ts"))).toContain("useBookGetList");
+  });
+
+  it("fails when an explicitly configured api-definition cannot be read", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-naming-missing-"));
+    await expect(
+      runGen({ cwd, overrides: { input: DEMO, output: "src/api", apiDefinition: "./nope.json" } }),
+    ).rejects.toThrow(/nope\.json/);
+  });
+
+  it('naming: "legacy" keeps the path- and namespace-derived names', {
+    timeout: 120_000,
+  }, async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "jc-abp-gen-naming-legacy-"));
+    const result = await runGen({
+      cwd,
+      overrides: { input: DEMO, output: "src/api", naming: "legacy" },
+    });
+    expect(result.targets[0]?.operationNaming).toBe("legacy");
+    const out = join(cwd, "src/api");
+    expect(exportedNames(join(out, "endpoints/role/role.ts"))).toContain("useGetApiIdentityRoles");
+    expect(existsSync(join(out, "models/voloAbpIdentityIdentityRoleDto.ts"))).toBe(true);
   });
 
   it("executes generated GET/POST endpoints through the copied mutator (gen↔mutator seam)", {
@@ -189,15 +285,15 @@ describe("runGen", () => {
       configureAbpMutator: (config: { baseUrl?: string; fetchFn?: typeof fetch }) => void;
     };
     const fileMod = (await import(pathToFileURL(join(out, "endpoints/file/file.ts")).href)) as {
-      postApiAppFileUploadMany: (body: { files?: Blob[] }) => Promise<unknown>;
-      getApiAppFileIdDownload: (id: string) => Promise<Blob>;
-      postApiAppDocumentIdAttachment: (
+      postFileUploadMany: (body: { files?: Blob[] }) => Promise<unknown>;
+      getFileIdDownload: (id: string) => Promise<Blob>;
+      postDocumentIdAttachment: (
         id: string,
         body: { Category?: string; Remark?: string | null; Content?: Blob },
       ) => Promise<unknown>;
     };
     const schemaMod = (await import(pathToFileURL(join(out, "schemas/file/file.ts")).href)) as {
-      PostApiAppFileUploadBody: { safeParse: (value: unknown) => { success: boolean } };
+      PostFileUploadBody: { safeParse: (value: unknown) => { success: boolean } };
     };
 
     const fetchFn = vi.fn(
@@ -210,14 +306,14 @@ describe("runGen", () => {
     mutatorMod.configureAbpMutator({ fetchFn });
 
     const resume = new File(["pdf"], "resume.pdf", { type: "application/pdf" });
-    await fileMod.postApiAppDocumentIdAttachment("42", { Category: "contract", Content: resume });
+    await fileMod.postDocumentIdAttachment("42", { Category: "contract", Content: resume });
     const single = fetchFn.mock.calls[0]?.[1]?.body;
     expect(single).toBeInstanceOf(FormData);
     expect((single as FormData).get("Category")).toBe("contract");
     expect(((single as FormData).get("Content") as File).name).toBe("resume.pdf");
     expect((single as FormData).has("Remark")).toBe(false);
 
-    await fileMod.postApiAppFileUploadMany({ files: [new Blob(["a"]), new Blob(["b"])] });
+    await fileMod.postFileUploadMany({ files: [new Blob(["a"]), new Blob(["b"])] });
     const many = fetchFn.mock.calls[1]?.[1]?.body as FormData;
     expect(many.getAll("files")).toHaveLength(2);
 
@@ -230,14 +326,12 @@ describe("runGen", () => {
         },
       }),
     );
-    const downloaded = await fileMod.getApiAppFileIdDownload("42");
+    const downloaded = await fileMod.getFileIdDownload("42");
     expect((downloaded as File).name).toBe("resume.pdf");
     expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(new Uint8Array([0xff, 0x00]));
 
     // orval@7 生成 `zod.instanceof(File)`，而 TS 类型给的是 Blob：拿 Blob 喂表单校验会被拒。
-    expect(schemaMod.PostApiAppFileUploadBody.safeParse({ file: new Blob(["x"]) }).success).toBe(
-      true,
-    );
+    expect(schemaMod.PostFileUploadBody.safeParse({ file: new Blob(["x"]) }).success).toBe(true);
   });
 });
 

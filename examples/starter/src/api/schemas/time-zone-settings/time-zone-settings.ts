@@ -7,17 +7,17 @@
 import * as zod from 'zod';
 
 
-export const GetApiSettingManagementTimezoneResponse = zod.string()
+export const TimeZoneSettingsGetResponse = zod.string()
 
-export const PostApiSettingManagementTimezoneQueryParams = zod.object({
+export const TimeZoneSettingsUpdateQueryParams = zod.object({
   "timezone": zod.string().optional()
 })
 
-export const PostApiSettingManagementTimezoneResponse = zod.unknown()
+export const TimeZoneSettingsUpdateResponse = zod.unknown()
 
-export const GetApiSettingManagementTimezoneTimezonesResponseItem = zod.object({
+export const TimeZoneSettingsGetTimezonesResponseItem = zod.object({
   "name": zod.string().nullish(),
   "value": zod.string().nullish()
 })
-export const GetApiSettingManagementTimezoneTimezonesResponse = zod.array(GetApiSettingManagementTimezoneTimezonesResponseItem)
+export const TimeZoneSettingsGetTimezonesResponse = zod.array(TimeZoneSettingsGetTimezonesResponseItem)
 

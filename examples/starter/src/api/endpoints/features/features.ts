@@ -9,9 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -19,12 +24,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  DeleteApiFeatureManagementFeaturesParams,
-  GetApiFeatureManagementFeaturesParams,
-  PutApiFeatureManagementFeaturesParams,
-  VoloAbpFeatureManagementGetFeatureListResultDto,
-  VoloAbpFeatureManagementUpdateFeaturesDto,
-  VoloAbpHttpRemoteServiceErrorResponse
+  FeaturesDeleteParams,
+  FeaturesGetParams,
+  FeaturesUpdateParams,
+  GetFeatureListResultDto,
+  RemoteServiceErrorResponse,
+  UpdateFeaturesDto
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -74,7 +79,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiFeatureManagementFeaturesUrl = (params?: GetApiFeatureManagementFeaturesParams,) => {
+export const getFeaturesGetUrl = (params?: FeaturesGetParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -89,9 +94,9 @@ export const getGetApiFeatureManagementFeaturesUrl = (params?: GetApiFeatureMana
   return stringifiedParams.length > 0 ? `/api/feature-management/features?${stringifiedParams}` : `/api/feature-management/features`
 }
 
-export const getApiFeatureManagementFeatures = async (params?: GetApiFeatureManagementFeaturesParams, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpFeatureManagementGetFeatureListResultDto> => {
+export const featuresGet = async (params?: FeaturesGetParams, options?: Parameters<typeof abpMutator>[1]): Promise<GetFeatureListResultDto> => {
 
-  return abpMutator<VoloAbpFeatureManagementGetFeatureListResultDto>(getGetApiFeatureManagementFeaturesUrl(params),
+  return abpMutator<GetFeatureListResultDto>(getFeaturesGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -104,43 +109,67 @@ export const getApiFeatureManagementFeatures = async (params?: GetApiFeatureMana
 
 
 
-export const getGetApiFeatureManagementFeaturesQueryKey = (params?: GetApiFeatureManagementFeaturesParams,) => {
+export const getFeaturesGetQueryKey = (params?: FeaturesGetParams,) => {
     return [
     `/api/feature-management/features`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiFeatureManagementFeaturesQueryOptions = <TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiFeatureManagementFeaturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getFeaturesGetQueryOptions = <TData = Awaited<ReturnType<typeof featuresGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: FeaturesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof featuresGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiFeatureManagementFeaturesQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getFeaturesGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>> = ({ signal }) => getApiFeatureManagementFeatures(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof featuresGet>>> = ({ signal }) => featuresGet(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof featuresGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiFeatureManagementFeaturesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>>
-export type GetApiFeatureManagementFeaturesQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type FeaturesGetQueryResult = NonNullable<Awaited<ReturnType<typeof featuresGet>>>
+export type FeaturesGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiFeatureManagementFeatures<TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiFeatureManagementFeaturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useFeaturesGet<TData = Awaited<ReturnType<typeof featuresGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  FeaturesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof featuresGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof featuresGet>>,
+          TError,
+          Awaited<ReturnType<typeof featuresGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFeaturesGet<TData = Awaited<ReturnType<typeof featuresGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: FeaturesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof featuresGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof featuresGet>>,
+          TError,
+          Awaited<ReturnType<typeof featuresGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFeaturesGet<TData = Awaited<ReturnType<typeof featuresGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: FeaturesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof featuresGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFeaturesGet<TData = Awaited<ReturnType<typeof featuresGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: FeaturesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof featuresGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getFeaturesGetQueryOptions(params,options)
 
-  const queryOptions = getGetApiFeatureManagementFeaturesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -150,7 +179,7 @@ export function useGetApiFeatureManagementFeatures<TData = Awaited<ReturnType<ty
 
 
 
-export const getPutApiFeatureManagementFeaturesUrl = (params?: PutApiFeatureManagementFeaturesParams,) => {
+export const getFeaturesUpdateUrl = (params?: FeaturesUpdateParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -165,15 +194,15 @@ export const getPutApiFeatureManagementFeaturesUrl = (params?: PutApiFeatureMana
   return stringifiedParams.length > 0 ? `/api/feature-management/features?${stringifiedParams}` : `/api/feature-management/features`
 }
 
-export const putApiFeatureManagementFeatures = async (voloAbpFeatureManagementUpdateFeaturesDto?: VoloAbpFeatureManagementUpdateFeaturesDto,
-    params?: PutApiFeatureManagementFeaturesParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const featuresUpdate = async (updateFeaturesDto?: UpdateFeaturesDto,
+    params?: FeaturesUpdateParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getPutApiFeatureManagementFeaturesUrl(params),
+  return abpMutator<void>(getFeaturesUpdateUrl(params),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpFeatureManagementUpdateFeaturesDto)
+    body: JSON.stringify(updateFeaturesDto)
   }
 );}
 
@@ -181,13 +210,13 @@ export const putApiFeatureManagementFeatures = async (voloAbpFeatureManagementUp
 
 
 
-export const getPutApiFeatureManagementFeaturesMutationKey = () => ['putApiFeatureManagementFeatures'] as const;
+export const getFeaturesUpdateMutationKey = () => ['featuresUpdate'] as const;
 
-export const getPutApiFeatureManagementFeaturesMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>, TError,PutApiFeatureManagementFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>, TError,PutApiFeatureManagementFeaturesMutationVariables, TContext> => {
+export const getFeaturesUpdateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof featuresUpdate>>, TError,FeaturesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof featuresUpdate>>, TError,FeaturesUpdateMutationVariables, TContext> => {
 
-const mutationKey = getPutApiFeatureManagementFeaturesMutationKey();
+const mutationKey = getFeaturesUpdateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -197,10 +226,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>, PutApiFeatureManagementFeaturesMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof featuresUpdate>>, FeaturesUpdateMutationVariables> = (props) => {
           const {data,params} = props ?? {};
 
-          return  putApiFeatureManagementFeatures(data,params,requestOptions)
+          return  featuresUpdate(data,params,requestOptions)
         }
 
 
@@ -210,22 +239,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiFeatureManagementFeaturesMutationResult = NonNullable<Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>>
-    export type PutApiFeatureManagementFeaturesMutationBody = VoloAbpFeatureManagementUpdateFeaturesDto | undefined
-    export type PutApiFeatureManagementFeaturesMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiFeatureManagementFeaturesMutationVariables = {data?: VoloAbpFeatureManagementUpdateFeaturesDto;params?: PutApiFeatureManagementFeaturesParams}
+    export type FeaturesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof featuresUpdate>>>
+    export type FeaturesUpdateMutationBody = UpdateFeaturesDto | undefined
+    export type FeaturesUpdateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type FeaturesUpdateMutationVariables = {data?: UpdateFeaturesDto;params?: FeaturesUpdateParams}
 
-    export const usePutApiFeatureManagementFeatures = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>, TError,PutApiFeatureManagementFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>,
+    export const useFeaturesUpdate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof featuresUpdate>>, TError,FeaturesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof featuresUpdate>>,
         TError,
-        PutApiFeatureManagementFeaturesMutationVariables,
+        FeaturesUpdateMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiFeatureManagementFeaturesMutationOptions(options));
+      return useMutation(getFeaturesUpdateMutationOptions(options), queryClient);
     }
-    export const getDeleteApiFeatureManagementFeaturesUrl = (params?: DeleteApiFeatureManagementFeaturesParams,) => {
+    export const getFeaturesDeleteUrl = (params?: FeaturesDeleteParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -240,9 +269,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return stringifiedParams.length > 0 ? `/api/feature-management/features?${stringifiedParams}` : `/api/feature-management/features`
 }
 
-export const deleteApiFeatureManagementFeatures = async (params?: DeleteApiFeatureManagementFeaturesParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const featuresDelete = async (params?: FeaturesDeleteParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getDeleteApiFeatureManagementFeaturesUrl(params),
+  return abpMutator<void>(getFeaturesDeleteUrl(params),
   {
     ...options,
     method: 'DELETE'
@@ -255,13 +284,13 @@ export const deleteApiFeatureManagementFeatures = async (params?: DeleteApiFeatu
 
 
 
-export const getDeleteApiFeatureManagementFeaturesMutationKey = () => ['deleteApiFeatureManagementFeatures'] as const;
+export const getFeaturesDeleteMutationKey = () => ['featuresDelete'] as const;
 
-export const getDeleteApiFeatureManagementFeaturesMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>, TError,DeleteApiFeatureManagementFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>, TError,DeleteApiFeatureManagementFeaturesMutationVariables, TContext> => {
+export const getFeaturesDeleteMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof featuresDelete>>, TError,FeaturesDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof featuresDelete>>, TError,FeaturesDeleteMutationVariables, TContext> => {
 
-const mutationKey = getDeleteApiFeatureManagementFeaturesMutationKey();
+const mutationKey = getFeaturesDeleteMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -271,10 +300,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>, DeleteApiFeatureManagementFeaturesMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof featuresDelete>>, FeaturesDeleteMutationVariables> = (props) => {
           const {params} = props ?? {};
 
-          return  deleteApiFeatureManagementFeatures(params,requestOptions)
+          return  featuresDelete(params,requestOptions)
         }
 
 
@@ -284,18 +313,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteApiFeatureManagementFeaturesMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>>
+    export type FeaturesDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof featuresDelete>>>
 
-    export type DeleteApiFeatureManagementFeaturesMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type DeleteApiFeatureManagementFeaturesMutationVariables = {params?: DeleteApiFeatureManagementFeaturesParams}
+    export type FeaturesDeleteMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type FeaturesDeleteMutationVariables = {params?: FeaturesDeleteParams}
 
-    export const useDeleteApiFeatureManagementFeatures = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>, TError,DeleteApiFeatureManagementFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>,
+    export const useFeaturesDelete = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof featuresDelete>>, TError,FeaturesDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof featuresDelete>>,
         TError,
-        DeleteApiFeatureManagementFeaturesMutationVariables,
+        FeaturesDeleteMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiFeatureManagementFeaturesMutationOptions(options));
+      return useMutation(getFeaturesDeleteMutationOptions(options), queryClient);
     }

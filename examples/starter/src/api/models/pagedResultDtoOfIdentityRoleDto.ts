@@ -4,10 +4,10 @@
  * AbpSwagger API
  * OpenAPI spec version: v1
  */
-import type { VoloAbpIdentityIdentityRoleDto } from './voloAbpIdentityIdentityRoleDto';
+import type { IdentityRoleDto } from './identityRoleDto';
 
 export interface PagedResultDtoOfIdentityRoleDto {
   /** @nullable */
-  items?: VoloAbpIdentityIdentityRoleDto[] | null;
+  items?: IdentityRoleDto[] | null;
   totalCount?: number;
 }

@@ -53,7 +53,7 @@ async function readWithProgress(
 /**
  * 经流式路由取回一个 ABP 文件，服务端不缓冲、不转 base64。
  *
- * `url` 传 orval 生成的 `get…Url()`（如 `getGetApiAppFileIdDownloadUrl(id)`），接口改名或删除会在编译期暴露。
+ * `url` 传 orval 生成的 `get…Url()`（如 `getFileDownloadUrl(id)`），接口改名或删除会在编译期暴露。
  * 非 2xx 抛 `AbpApiError`（与生成的 hook 同形，可直接交给 `abpErrorMessage` 出文案）；
  * 响应带文件名时返回 `File`，否则返回 `Blob`。只在浏览器端调用：请求的是本站相对路径。
  */

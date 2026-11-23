@@ -9,9 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -19,13 +24,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetApiIdentityRolesParams,
+  IdentityRoleCreateDto,
+  IdentityRoleDto,
+  IdentityRoleUpdateDto,
   ListResultDtoOfIdentityRoleDto,
   PagedResultDtoOfIdentityRoleDto,
-  VoloAbpHttpRemoteServiceErrorResponse,
-  VoloAbpIdentityIdentityRoleCreateDto,
-  VoloAbpIdentityIdentityRoleDto,
-  VoloAbpIdentityIdentityRoleUpdateDto
+  RemoteServiceErrorResponse,
+  RoleGetListParams
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -102,7 +107,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiIdentityRolesAllUrl = () => {
+export const getRoleGetAllListUrl = () => {
 
 
 
@@ -110,9 +115,9 @@ export const getGetApiIdentityRolesAllUrl = () => {
   return `/api/identity/roles/all`
 }
 
-export const getApiIdentityRolesAll = async ( options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfIdentityRoleDto> => {
+export const roleGetAllList = async ( options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfIdentityRoleDto> => {
 
-  return abpMutator<ListResultDtoOfIdentityRoleDto>(getGetApiIdentityRolesAllUrl(),
+  return abpMutator<ListResultDtoOfIdentityRoleDto>(getRoleGetAllListUrl(),
   {
     ...options,
     method: 'GET'
@@ -125,43 +130,67 @@ export const getApiIdentityRolesAll = async ( options?: Parameters<typeof abpMut
 
 
 
-export const getGetApiIdentityRolesAllQueryKey = () => {
+export const getRoleGetAllListQueryKey = () => {
     return [
     `/api/identity/roles/all`
     ] as const;
     }
 
 
-export const getGetApiIdentityRolesAllQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityRolesAll>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRolesAll>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getRoleGetAllListQueryOptions = <TData = Awaited<ReturnType<typeof roleGetAllList>>, TError = ErrorType<RemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetAllList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityRolesAllQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getRoleGetAllListQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityRolesAll>>> = ({ signal }) => getApiIdentityRolesAll({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof roleGetAllList>>> = ({ signal }) => roleGetAllList({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRolesAll>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof roleGetAllList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityRolesAllQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityRolesAll>>>
-export type GetApiIdentityRolesAllQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type RoleGetAllListQueryResult = NonNullable<Awaited<ReturnType<typeof roleGetAllList>>>
+export type RoleGetAllListQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityRolesAll<TData = Awaited<ReturnType<typeof getApiIdentityRolesAll>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRolesAll>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useRoleGetAllList<TData = Awaited<ReturnType<typeof roleGetAllList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetAllList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof roleGetAllList>>,
+          TError,
+          Awaited<ReturnType<typeof roleGetAllList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGetAllList<TData = Awaited<ReturnType<typeof roleGetAllList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetAllList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof roleGetAllList>>,
+          TError,
+          Awaited<ReturnType<typeof roleGetAllList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGetAllList<TData = Awaited<ReturnType<typeof roleGetAllList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetAllList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGetAllList<TData = Awaited<ReturnType<typeof roleGetAllList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetAllList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getRoleGetAllListQueryOptions(options)
 
-  const queryOptions = getGetApiIdentityRolesAllQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -171,7 +200,7 @@ export function useGetApiIdentityRolesAll<TData = Awaited<ReturnType<typeof getA
 
 
 
-export const getGetApiIdentityRolesUrl = (params?: GetApiIdentityRolesParams,) => {
+export const getRoleGetListUrl = (params?: RoleGetListParams,) => {
   const normalizedParams = new URLSearchParams();
   const formObjectParameters = new Map<string, string>([["ExtraProperties","flatten"]]);
 
@@ -204,9 +233,9 @@ export const getGetApiIdentityRolesUrl = (params?: GetApiIdentityRolesParams,) =
   return stringifiedParams.length > 0 ? `/api/identity/roles?${stringifiedParams}` : `/api/identity/roles`
 }
 
-export const getApiIdentityRoles = async (params?: GetApiIdentityRolesParams, options?: Parameters<typeof abpMutator>[1]): Promise<PagedResultDtoOfIdentityRoleDto> => {
+export const roleGetList = async (params?: RoleGetListParams, options?: Parameters<typeof abpMutator>[1]): Promise<PagedResultDtoOfIdentityRoleDto> => {
 
-  return abpMutator<PagedResultDtoOfIdentityRoleDto>(getGetApiIdentityRolesUrl(params),
+  return abpMutator<PagedResultDtoOfIdentityRoleDto>(getRoleGetListUrl(params),
   {
     ...options,
     method: 'GET'
@@ -219,43 +248,67 @@ export const getApiIdentityRoles = async (params?: GetApiIdentityRolesParams, op
 
 
 
-export const getGetApiIdentityRolesQueryKey = (params?: GetApiIdentityRolesParams,) => {
+export const getRoleGetListQueryKey = (params?: RoleGetListParams,) => {
     return [
     `/api/identity/roles`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiIdentityRolesQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityRoles>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiIdentityRolesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRoles>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getRoleGetListQueryOptions = <TData = Awaited<ReturnType<typeof roleGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: RoleGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityRolesQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getRoleGetListQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityRoles>>> = ({ signal }) => getApiIdentityRoles(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof roleGetList>>> = ({ signal }) => roleGetList(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRoles>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof roleGetList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityRolesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityRoles>>>
-export type GetApiIdentityRolesQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type RoleGetListQueryResult = NonNullable<Awaited<ReturnType<typeof roleGetList>>>
+export type RoleGetListQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityRoles<TData = Awaited<ReturnType<typeof getApiIdentityRoles>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiIdentityRolesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRoles>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useRoleGetList<TData = Awaited<ReturnType<typeof roleGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  RoleGetListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof roleGetList>>,
+          TError,
+          Awaited<ReturnType<typeof roleGetList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGetList<TData = Awaited<ReturnType<typeof roleGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: RoleGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof roleGetList>>,
+          TError,
+          Awaited<ReturnType<typeof roleGetList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGetList<TData = Awaited<ReturnType<typeof roleGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: RoleGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGetList<TData = Awaited<ReturnType<typeof roleGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: RoleGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getRoleGetListQueryOptions(params,options)
 
-  const queryOptions = getGetApiIdentityRolesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -265,7 +318,7 @@ export function useGetApiIdentityRoles<TData = Awaited<ReturnType<typeof getApiI
 
 
 
-export const getPostApiIdentityRolesUrl = () => {
+export const getRoleCreateUrl = () => {
 
 
 
@@ -273,14 +326,14 @@ export const getPostApiIdentityRolesUrl = () => {
   return `/api/identity/roles`
 }
 
-export const postApiIdentityRoles = async (voloAbpIdentityIdentityRoleCreateDto?: NonReadonly<VoloAbpIdentityIdentityRoleCreateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityRoleDto> => {
+export const roleCreate = async (identityRoleCreateDto?: NonReadonly<IdentityRoleCreateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityRoleDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityRoleDto>(getPostApiIdentityRolesUrl(),
+  return abpMutator<IdentityRoleDto>(getRoleCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpIdentityIdentityRoleCreateDto)
+    body: JSON.stringify(identityRoleCreateDto)
   }
 );}
 
@@ -288,13 +341,13 @@ export const postApiIdentityRoles = async (voloAbpIdentityIdentityRoleCreateDto?
 
 
 
-export const getPostApiIdentityRolesMutationKey = () => ['postApiIdentityRoles'] as const;
+export const getRoleCreateMutationKey = () => ['roleCreate'] as const;
 
-export const getPostApiIdentityRolesMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiIdentityRoles>>, TError,PostApiIdentityRolesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiIdentityRoles>>, TError,PostApiIdentityRolesMutationVariables, TContext> => {
+export const getRoleCreateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof roleCreate>>, TError,RoleCreateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof roleCreate>>, TError,RoleCreateMutationVariables, TContext> => {
 
-const mutationKey = getPostApiIdentityRolesMutationKey();
+const mutationKey = getRoleCreateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -304,10 +357,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiIdentityRoles>>, PostApiIdentityRolesMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof roleCreate>>, RoleCreateMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiIdentityRoles(data,requestOptions)
+          return  roleCreate(data,requestOptions)
         }
 
 
@@ -317,22 +370,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiIdentityRolesMutationResult = NonNullable<Awaited<ReturnType<typeof postApiIdentityRoles>>>
-    export type PostApiIdentityRolesMutationBody = NonReadonly<VoloAbpIdentityIdentityRoleCreateDto> | undefined
-    export type PostApiIdentityRolesMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiIdentityRolesMutationVariables = {data?: NonReadonly<VoloAbpIdentityIdentityRoleCreateDto>}
+    export type RoleCreateMutationResult = NonNullable<Awaited<ReturnType<typeof roleCreate>>>
+    export type RoleCreateMutationBody = NonReadonly<IdentityRoleCreateDto> | undefined
+    export type RoleCreateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type RoleCreateMutationVariables = {data?: NonReadonly<IdentityRoleCreateDto>}
 
-    export const usePostApiIdentityRoles = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiIdentityRoles>>, TError,PostApiIdentityRolesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postApiIdentityRoles>>,
+    export const useRoleCreate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof roleCreate>>, TError,RoleCreateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof roleCreate>>,
         TError,
-        PostApiIdentityRolesMutationVariables,
+        RoleCreateMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiIdentityRolesMutationOptions(options));
+      return useMutation(getRoleCreateMutationOptions(options), queryClient);
     }
-    export const getGetApiIdentityRolesIdUrl = (id: string,) => {
+    export const getRoleGetUrl = (id: string,) => {
 
 
 
@@ -340,9 +393,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/identity/roles/${id}`
 }
 
-export const getApiIdentityRolesId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityRoleDto> => {
+export const roleGet = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityRoleDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityRoleDto>(getGetApiIdentityRolesIdUrl(id),
+  return abpMutator<IdentityRoleDto>(getRoleGetUrl(id),
   {
     ...options,
     method: 'GET'
@@ -355,43 +408,67 @@ export const getApiIdentityRolesId = async (id: string, options?: Parameters<typ
 
 
 
-export const getGetApiIdentityRolesIdQueryKey = (id: string,) => {
+export const getRoleGetQueryKey = (id: string,) => {
     return [
     `/api/identity/roles/${id}`
     ] as const;
     }
 
 
-export const getGetApiIdentityRolesIdQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityRolesId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRolesId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getRoleGetQueryOptions = <TData = Awaited<ReturnType<typeof roleGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityRolesIdQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getRoleGetQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityRolesId>>> = ({ signal }) => getApiIdentityRolesId(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof roleGet>>> = ({ signal }) => roleGet(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRolesId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof roleGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityRolesIdQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityRolesId>>>
-export type GetApiIdentityRolesIdQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type RoleGetQueryResult = NonNullable<Awaited<ReturnType<typeof roleGet>>>
+export type RoleGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityRolesId<TData = Awaited<ReturnType<typeof getApiIdentityRolesId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityRolesId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useRoleGet<TData = Awaited<ReturnType<typeof roleGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof roleGet>>,
+          TError,
+          Awaited<ReturnType<typeof roleGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGet<TData = Awaited<ReturnType<typeof roleGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof roleGet>>,
+          TError,
+          Awaited<ReturnType<typeof roleGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGet<TData = Awaited<ReturnType<typeof roleGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRoleGet<TData = Awaited<ReturnType<typeof roleGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof roleGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getRoleGetQueryOptions(id,options)
 
-  const queryOptions = getGetApiIdentityRolesIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -401,7 +478,7 @@ export function useGetApiIdentityRolesId<TData = Awaited<ReturnType<typeof getAp
 
 
 
-export const getPutApiIdentityRolesIdUrl = (id: string,) => {
+export const getRoleUpdateUrl = (id: string,) => {
 
 
 
@@ -409,15 +486,15 @@ export const getPutApiIdentityRolesIdUrl = (id: string,) => {
   return `/api/identity/roles/${id}`
 }
 
-export const putApiIdentityRolesId = async (id: string,
-    voloAbpIdentityIdentityRoleUpdateDto?: NonReadonly<VoloAbpIdentityIdentityRoleUpdateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpIdentityIdentityRoleDto> => {
+export const roleUpdate = async (id: string,
+    identityRoleUpdateDto?: NonReadonly<IdentityRoleUpdateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<IdentityRoleDto> => {
 
-  return abpMutator<VoloAbpIdentityIdentityRoleDto>(getPutApiIdentityRolesIdUrl(id),
+  return abpMutator<IdentityRoleDto>(getRoleUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpIdentityIdentityRoleUpdateDto)
+    body: JSON.stringify(identityRoleUpdateDto)
   }
 );}
 
@@ -425,13 +502,13 @@ export const putApiIdentityRolesId = async (id: string,
 
 
 
-export const getPutApiIdentityRolesIdMutationKey = () => ['putApiIdentityRolesId'] as const;
+export const getRoleUpdateMutationKey = () => ['roleUpdate'] as const;
 
-export const getPutApiIdentityRolesIdMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityRolesId>>, TError,PutApiIdentityRolesIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityRolesId>>, TError,PutApiIdentityRolesIdMutationVariables, TContext> => {
+export const getRoleUpdateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof roleUpdate>>, TError,RoleUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof roleUpdate>>, TError,RoleUpdateMutationVariables, TContext> => {
 
-const mutationKey = getPutApiIdentityRolesIdMutationKey();
+const mutationKey = getRoleUpdateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -441,10 +518,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiIdentityRolesId>>, PutApiIdentityRolesIdMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof roleUpdate>>, RoleUpdateMutationVariables> = (props) => {
           const {id,data} = props ?? {};
 
-          return  putApiIdentityRolesId(id,data,requestOptions)
+          return  roleUpdate(id,data,requestOptions)
         }
 
 
@@ -454,22 +531,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiIdentityRolesIdMutationResult = NonNullable<Awaited<ReturnType<typeof putApiIdentityRolesId>>>
-    export type PutApiIdentityRolesIdMutationBody = NonReadonly<VoloAbpIdentityIdentityRoleUpdateDto> | undefined
-    export type PutApiIdentityRolesIdMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiIdentityRolesIdMutationVariables = {id: string;data?: NonReadonly<VoloAbpIdentityIdentityRoleUpdateDto>}
+    export type RoleUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof roleUpdate>>>
+    export type RoleUpdateMutationBody = NonReadonly<IdentityRoleUpdateDto> | undefined
+    export type RoleUpdateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type RoleUpdateMutationVariables = {id: string;data?: NonReadonly<IdentityRoleUpdateDto>}
 
-    export const usePutApiIdentityRolesId = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiIdentityRolesId>>, TError,PutApiIdentityRolesIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiIdentityRolesId>>,
+    export const useRoleUpdate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof roleUpdate>>, TError,RoleUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof roleUpdate>>,
         TError,
-        PutApiIdentityRolesIdMutationVariables,
+        RoleUpdateMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiIdentityRolesIdMutationOptions(options));
+      return useMutation(getRoleUpdateMutationOptions(options), queryClient);
     }
-    export const getDeleteApiIdentityRolesIdUrl = (id: string,) => {
+    export const getRoleDeleteUrl = (id: string,) => {
 
 
 
@@ -477,9 +554,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/identity/roles/${id}`
 }
 
-export const deleteApiIdentityRolesId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const roleDelete = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getDeleteApiIdentityRolesIdUrl(id),
+  return abpMutator<void>(getRoleDeleteUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -492,13 +569,13 @@ export const deleteApiIdentityRolesId = async (id: string, options?: Parameters<
 
 
 
-export const getDeleteApiIdentityRolesIdMutationKey = () => ['deleteApiIdentityRolesId'] as const;
+export const getRoleDeleteMutationKey = () => ['roleDelete'] as const;
 
-export const getDeleteApiIdentityRolesIdMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiIdentityRolesId>>, TError,DeleteApiIdentityRolesIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteApiIdentityRolesId>>, TError,DeleteApiIdentityRolesIdMutationVariables, TContext> => {
+export const getRoleDeleteMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof roleDelete>>, TError,RoleDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof roleDelete>>, TError,RoleDeleteMutationVariables, TContext> => {
 
-const mutationKey = getDeleteApiIdentityRolesIdMutationKey();
+const mutationKey = getRoleDeleteMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -508,10 +585,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiIdentityRolesId>>, DeleteApiIdentityRolesIdMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof roleDelete>>, RoleDeleteMutationVariables> = (props) => {
           const {id} = props ?? {};
 
-          return  deleteApiIdentityRolesId(id,requestOptions)
+          return  roleDelete(id,requestOptions)
         }
 
 
@@ -521,18 +598,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteApiIdentityRolesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiIdentityRolesId>>>
+    export type RoleDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof roleDelete>>>
 
-    export type DeleteApiIdentityRolesIdMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type DeleteApiIdentityRolesIdMutationVariables = {id: string}
+    export type RoleDeleteMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type RoleDeleteMutationVariables = {id: string}
 
-    export const useDeleteApiIdentityRolesId = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiIdentityRolesId>>, TError,DeleteApiIdentityRolesIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteApiIdentityRolesId>>,
+    export const useRoleDelete = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof roleDelete>>, TError,RoleDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof roleDelete>>,
         TError,
-        DeleteApiIdentityRolesIdMutationVariables,
+        RoleDeleteMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiIdentityRolesIdMutationOptions(options));
+      return useMutation(getRoleDeleteMutationOptions(options), queryClient);
     }

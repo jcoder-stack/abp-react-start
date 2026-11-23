@@ -7,42 +7,42 @@
 import * as zod from 'zod';
 
 
-export const postApiAccountLoginBodyUserNameOrEmailAddressMin = 0;
-export const postApiAccountLoginBodyUserNameOrEmailAddressMax = 255;
+export const loginLoginBodyUserNameOrEmailAddressMin = 0;
+export const loginLoginBodyUserNameOrEmailAddressMax = 255;
 
-export const postApiAccountLoginBodyPasswordMin = 0;
-export const postApiAccountLoginBodyPasswordMax = 32;
+export const loginLoginBodyPasswordMin = 0;
+export const loginLoginBodyPasswordMax = 32;
 
 
 
-export const PostApiAccountLoginBody = zod.object({
-  "userNameOrEmailAddress": zod.string().min(postApiAccountLoginBodyUserNameOrEmailAddressMin).max(postApiAccountLoginBodyUserNameOrEmailAddressMax),
-  "password": zod.string().min(postApiAccountLoginBodyPasswordMin).max(postApiAccountLoginBodyPasswordMax),
+export const LoginLoginBody = zod.object({
+  "userNameOrEmailAddress": zod.string().min(loginLoginBodyUserNameOrEmailAddressMin).max(loginLoginBodyUserNameOrEmailAddressMax),
+  "password": zod.string().min(loginLoginBodyPasswordMin).max(loginLoginBodyPasswordMax),
   "rememberMe": zod.boolean().optional()
 })
 
-export const PostApiAccountLoginResponse = zod.object({
+export const LoginLoginResponse = zod.object({
   "result": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5)]).optional(),
   "description": zod.string().nullish()
 })
 
-export const GetApiAccountLogoutResponse = zod.unknown()
+export const LoginLogoutResponse = zod.unknown()
 
-export const postApiAccountCheckPasswordBodyUserNameOrEmailAddressMin = 0;
-export const postApiAccountCheckPasswordBodyUserNameOrEmailAddressMax = 255;
+export const loginCheckPasswordBodyUserNameOrEmailAddressMin = 0;
+export const loginCheckPasswordBodyUserNameOrEmailAddressMax = 255;
 
-export const postApiAccountCheckPasswordBodyPasswordMin = 0;
-export const postApiAccountCheckPasswordBodyPasswordMax = 32;
+export const loginCheckPasswordBodyPasswordMin = 0;
+export const loginCheckPasswordBodyPasswordMax = 32;
 
 
 
-export const PostApiAccountCheckPasswordBody = zod.object({
-  "userNameOrEmailAddress": zod.string().min(postApiAccountCheckPasswordBodyUserNameOrEmailAddressMin).max(postApiAccountCheckPasswordBodyUserNameOrEmailAddressMax),
-  "password": zod.string().min(postApiAccountCheckPasswordBodyPasswordMin).max(postApiAccountCheckPasswordBodyPasswordMax),
+export const LoginCheckPasswordBody = zod.object({
+  "userNameOrEmailAddress": zod.string().min(loginCheckPasswordBodyUserNameOrEmailAddressMin).max(loginCheckPasswordBodyUserNameOrEmailAddressMax),
+  "password": zod.string().min(loginCheckPasswordBodyPasswordMin).max(loginCheckPasswordBodyPasswordMax),
   "rememberMe": zod.boolean().optional()
 })
 
-export const PostApiAccountCheckPasswordResponse = zod.object({
+export const LoginCheckPasswordResponse = zod.object({
   "result": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5)]).optional(),
   "description": zod.string().nullish()
 })

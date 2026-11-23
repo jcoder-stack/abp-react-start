@@ -67,7 +67,7 @@ const USAGE_ROWS = [
     descKey: "Landing:UsageCrudDesc",
     bulletKeys: ["Landing:UsageCrudB1", "Landing:UsageCrudB2", "Landing:UsageCrudB3"],
     label: "identity/roles.tsx",
-    code: 'const roleService = createCrudService({\n  useList: useGetApiIdentityRoles,\n  useCreate: usePostApiIdentityRoles,\n  useUpdate: usePutApiIdentityRolesId,\n  useDelete: useDeleteApiIdentityRolesId,\n  listKey: getGetApiIdentityRolesQueryKey,\n  policy: IdentityPermissions.Roles.Default,\n})\n\nconst sheet = useAbpSheet(roleService, { emptyValues, schema: () => roleSchema })\nconst t = useAbpTable(roleService, { columns, onOpen: sheet.open })\n\n<t.Table>\n  <t.BulkBar>\n    <t.BulkDelete />\n  </t.BulkBar>\n</t.Table>\n\n<sheet.Sheet>\n  <sheet.form.AppField name="name">\n    {(field) => <field.TextField label={L("...:RoleName")} required />}\n  </sheet.form.AppField>\n</sheet.Sheet>',
+    code: 'const roleService = createCrudService({\n  useList: useRoleGetList,\n  useCreate: useRoleCreate,\n  useUpdate: useRoleUpdate,\n  useDelete: useRoleDelete,\n  listKey: getRoleGetListQueryKey,\n  policy: IdentityPermissions.Roles.Default,\n})\n\nconst sheet = useAbpSheet(roleService, { emptyValues, schema: () => roleSchema })\nconst t = useAbpTable(roleService, { columns, onOpen: sheet.open })\n\n<t.Table>\n  <t.BulkBar>\n    <t.BulkDelete />\n  </t.BulkBar>\n</t.Table>\n\n<sheet.Sheet>\n  <sheet.form.AppField name="name">\n    {(field) => <field.TextField label={L("...:RoleName")} required />}\n  </sheet.form.AppField>\n</sheet.Sheet>',
   },
   {
     titleKey: "Landing:UsageMenuTitle",

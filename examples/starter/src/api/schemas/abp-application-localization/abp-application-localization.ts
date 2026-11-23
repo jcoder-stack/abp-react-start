@@ -7,12 +7,12 @@
 import * as zod from 'zod';
 
 
-export const GetApiAbpApplicationLocalizationQueryParams = zod.object({
+export const AbpApplicationLocalizationGetQueryParams = zod.object({
   "CultureName": zod.string(),
   "OnlyDynamics": zod.boolean().optional()
 })
 
-export const GetApiAbpApplicationLocalizationResponse = zod.object({
+export const AbpApplicationLocalizationGetResponse = zod.object({
   "resources": zod.record(zod.string(), zod.object({
   "texts": zod.record(zod.string(), zod.string()).nullish(),
   "baseResources": zod.array(zod.string()).nullish()

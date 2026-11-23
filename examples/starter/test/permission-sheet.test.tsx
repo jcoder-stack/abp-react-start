@@ -2,13 +2,10 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  useGetApiPermissionManagementPermissions as useGetPermissionsMock,
-  usePutApiPermissionManagementPermissions as usePutPermissionsMock,
+  usePermissionsGet as useGetPermissionsMock,
+  usePermissionsUpdate as usePutPermissionsMock,
 } from "@/api/endpoints/permissions/permissions";
-import type {
-  VoloAbpPermissionManagementGetPermissionListResultDto,
-  VoloAbpPermissionManagementPermissionGrantInfoDto,
-} from "@/api/models";
+import type { GetPermissionListResultDto, PermissionGrantInfoDto } from "@/api/models";
 import crudMessages from "@/components/abp/crud/crud-messages.json";
 import adminMessages from "@/components/abp/permission/admin-messages.json";
 import {
@@ -24,8 +21,8 @@ import treeMessages from "@/components/tree/tree-messages.json";
 import { renderWithProviders } from "./test-utils";
 
 vi.mock("@/api/endpoints/permissions/permissions", () => ({
-  useGetApiPermissionManagementPermissions: vi.fn(),
-  usePutApiPermissionManagementPermissions: vi.fn(),
+  usePermissionsGet: vi.fn(),
+  usePermissionsUpdate: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -50,8 +47,8 @@ const messages = {
 };
 
 function permission(
-  overrides: Partial<VoloAbpPermissionManagementPermissionGrantInfoDto> & { name: string },
-): VoloAbpPermissionManagementPermissionGrantInfoDto {
+  overrides: Partial<PermissionGrantInfoDto> & { name: string },
+): PermissionGrantInfoDto {
   return {
     displayName: overrides.name,
     parentName: null,
@@ -67,7 +64,7 @@ function permission(
  * 两组权限：Identity 组含父子（Users → Users.Create/Users.Delete），Users.Delete 已被 Role
  * provider（"R"）授予，用于 lockedNames/disabled 断言；Tenant 组为独立单节点。
  */
-const GET_RESULT: VoloAbpPermissionManagementGetPermissionListResultDto = {
+const GET_RESULT: GetPermissionListResultDto = {
   entityDisplayName: null,
   groups: [
     {

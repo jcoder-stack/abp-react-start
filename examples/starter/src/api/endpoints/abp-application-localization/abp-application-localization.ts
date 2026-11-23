@@ -8,16 +8,21 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  GetApiAbpApplicationLocalizationParams,
-  VoloAbpAspNetCoreMvcApplicationConfigurationsApplicationLocalizationDto,
-  VoloAbpHttpRemoteServiceErrorResponse
+  AbpApplicationLocalizationGetParams,
+  ApplicationLocalizationDto,
+  RemoteServiceErrorResponse
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -47,7 +52,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiAbpApplicationLocalizationUrl = (params: GetApiAbpApplicationLocalizationParams,) => {
+export const getAbpApplicationLocalizationGetUrl = (params: AbpApplicationLocalizationGetParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -62,9 +67,9 @@ export const getGetApiAbpApplicationLocalizationUrl = (params: GetApiAbpApplicat
   return stringifiedParams.length > 0 ? `/api/abp/application-localization?${stringifiedParams}` : `/api/abp/application-localization`
 }
 
-export const getApiAbpApplicationLocalization = async (params: GetApiAbpApplicationLocalizationParams, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpAspNetCoreMvcApplicationConfigurationsApplicationLocalizationDto> => {
+export const abpApplicationLocalizationGet = async (params: AbpApplicationLocalizationGetParams, options?: Parameters<typeof abpMutator>[1]): Promise<ApplicationLocalizationDto> => {
 
-  return abpMutator<VoloAbpAspNetCoreMvcApplicationConfigurationsApplicationLocalizationDto>(getGetApiAbpApplicationLocalizationUrl(params),
+  return abpMutator<ApplicationLocalizationDto>(getAbpApplicationLocalizationGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -77,43 +82,67 @@ export const getApiAbpApplicationLocalization = async (params: GetApiAbpApplicat
 
 
 
-export const getGetApiAbpApplicationLocalizationQueryKey = (params?: GetApiAbpApplicationLocalizationParams,) => {
+export const getAbpApplicationLocalizationGetQueryKey = (params?: AbpApplicationLocalizationGetParams,) => {
     return [
     `/api/abp/application-localization`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiAbpApplicationLocalizationQueryOptions = <TData = Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params: GetApiAbpApplicationLocalizationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getAbpApplicationLocalizationGetQueryOptions = <TData = Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(params: AbpApplicationLocalizationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiAbpApplicationLocalizationQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getAbpApplicationLocalizationGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>> = ({ signal }) => getApiAbpApplicationLocalization(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>> = ({ signal }) => abpApplicationLocalizationGet(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiAbpApplicationLocalizationQueryResult = NonNullable<Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>>
-export type GetApiAbpApplicationLocalizationQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type AbpApplicationLocalizationGetQueryResult = NonNullable<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>>
+export type AbpApplicationLocalizationGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiAbpApplicationLocalization<TData = Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: GetApiAbpApplicationLocalizationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApplicationLocalization>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useAbpApplicationLocalizationGet<TData = Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: AbpApplicationLocalizationGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof abpApplicationLocalizationGet>>,
+          TError,
+          Awaited<ReturnType<typeof abpApplicationLocalizationGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAbpApplicationLocalizationGet<TData = Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: AbpApplicationLocalizationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof abpApplicationLocalizationGet>>,
+          TError,
+          Awaited<ReturnType<typeof abpApplicationLocalizationGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAbpApplicationLocalizationGet<TData = Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: AbpApplicationLocalizationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAbpApplicationLocalizationGet<TData = Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: AbpApplicationLocalizationGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApplicationLocalizationGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAbpApplicationLocalizationGetQueryOptions(params,options)
 
-  const queryOptions = getGetApiAbpApplicationLocalizationQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

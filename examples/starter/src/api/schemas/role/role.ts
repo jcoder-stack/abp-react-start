@@ -7,7 +7,7 @@
 import * as zod from 'zod';
 
 
-export const GetApiIdentityRolesAllResponse = zod.object({
+export const RoleGetAllListResponse = zod.object({
   "items": zod.array(zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
@@ -20,23 +20,23 @@ export const GetApiIdentityRolesAllResponse = zod.object({
 })).nullish()
 })
 
-export const getApiIdentityRolesQuerySkipCountMin = 0;
-export const getApiIdentityRolesQuerySkipCountMax = 2147483647;
+export const roleGetListQuerySkipCountMin = 0;
+export const roleGetListQuerySkipCountMax = 2147483647;
 
-export const getApiIdentityRolesQueryMaxResultCountMin = 1;
-export const getApiIdentityRolesQueryMaxResultCountMax = 2147483647;
+export const roleGetListQueryMaxResultCountMin = 1;
+export const roleGetListQueryMaxResultCountMax = 2147483647;
 
 
 
-export const GetApiIdentityRolesQueryParams = zod.object({
+export const RoleGetListQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
-  "SkipCount": zod.int().min(getApiIdentityRolesQuerySkipCountMin).max(getApiIdentityRolesQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(getApiIdentityRolesQueryMaxResultCountMin).max(getApiIdentityRolesQueryMaxResultCountMax).optional(),
+  "SkipCount": zod.int().min(roleGetListQuerySkipCountMin).max(roleGetListQuerySkipCountMax).optional(),
+  "MaxResultCount": zod.int().min(roleGetListQueryMaxResultCountMin).max(roleGetListQueryMaxResultCountMax).optional(),
   "ExtraProperties": zod.record(zod.string(), zod.unknown()).optional()
 })
 
-export const GetApiIdentityRolesResponse = zod.object({
+export const RoleGetListResponse = zod.object({
   "items": zod.array(zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
@@ -50,18 +50,18 @@ export const GetApiIdentityRolesResponse = zod.object({
   "totalCount": zod.int().optional()
 })
 
-export const postApiIdentityRolesBodyNameMin = 0;
-export const postApiIdentityRolesBodyNameMax = 256;
+export const roleCreateBodyNameMin = 0;
+export const roleCreateBodyNameMax = 256;
 
 
 
-export const PostApiIdentityRolesBody = zod.object({
-  "name": zod.string().min(postApiIdentityRolesBodyNameMin).max(postApiIdentityRolesBodyNameMax),
+export const RoleCreateBody = zod.object({
+  "name": zod.string().min(roleCreateBodyNameMin).max(roleCreateBodyNameMax),
   "isDefault": zod.boolean().optional(),
   "isPublic": zod.boolean().optional()
 })
 
-export const PostApiIdentityRolesResponse = zod.object({
+export const RoleCreateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "name": zod.string().nullish(),
@@ -72,11 +72,11 @@ export const PostApiIdentityRolesResponse = zod.object({
   "creationTime": zod.iso.datetime({"offset":true}).optional()
 })
 
-export const GetApiIdentityRolesIdParams = zod.object({
+export const RoleGetParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiIdentityRolesIdResponse = zod.object({
+export const RoleGetResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "name": zod.string().nullish(),
@@ -87,23 +87,23 @@ export const GetApiIdentityRolesIdResponse = zod.object({
   "creationTime": zod.iso.datetime({"offset":true}).optional()
 })
 
-export const PutApiIdentityRolesIdParams = zod.object({
+export const RoleUpdateParams = zod.object({
   "id": zod.uuid()
 })
 
-export const putApiIdentityRolesIdBodyNameMin = 0;
-export const putApiIdentityRolesIdBodyNameMax = 256;
+export const roleUpdateBodyNameMin = 0;
+export const roleUpdateBodyNameMax = 256;
 
 
 
-export const PutApiIdentityRolesIdBody = zod.object({
-  "name": zod.string().min(putApiIdentityRolesIdBodyNameMin).max(putApiIdentityRolesIdBodyNameMax),
+export const RoleUpdateBody = zod.object({
+  "name": zod.string().min(roleUpdateBodyNameMin).max(roleUpdateBodyNameMax),
   "isDefault": zod.boolean().optional(),
   "isPublic": zod.boolean().optional(),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const PutApiIdentityRolesIdResponse = zod.object({
+export const RoleUpdateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "id": zod.uuid().optional(),
   "name": zod.string().nullish(),
@@ -114,9 +114,9 @@ export const PutApiIdentityRolesIdResponse = zod.object({
   "creationTime": zod.iso.datetime({"offset":true}).optional()
 })
 
-export const DeleteApiIdentityRolesIdParams = zod.object({
+export const RoleDeleteParams = zod.object({
   "id": zod.uuid()
 })
 
-export const DeleteApiIdentityRolesIdResponse = zod.unknown()
+export const RoleDeleteResponse = zod.unknown()
 

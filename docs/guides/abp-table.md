@@ -23,10 +23,10 @@ npx jc-abp gen
 
 跑完后应该能在这三处看到目标实体的产物（下面以 `Book` 为例）：
 
-- `src/api/endpoints/book/book.ts`：orval 生成的 CRUD 函数与 react-query hooks，如 `getApiAppBook`（list，函数形态）、`useGetApiAppBook`（list hook）、`usePostApiAppBook`（create）、`usePutApiAppBookId`（update）、`useDeleteApiAppBookId`（delete）。
-- `src/api/models/`：`AbpSwaggerBooksBookDto`（行/详情 DTO）、`AbpSwaggerBooksCreateUpdateBookDto`（create/update 共用的写入 DTO）。
-- `src/api/schemas/book/book.ts`：`postApiAppBookBody`（zod schema，第③步表单校验的基底）。
-- 如果目标实体的关联字段要做远程下拉（`Book.authorId` → `Author`），对应的 `getApiAppAuthor` 也会一并生成，第③步会用到。
+- `src/api/endpoints/book/book.ts`：orval 生成的 CRUD 函数与 react-query hooks，如 `bookGetList`（list，函数形态）、`useBookGetList`（list hook）、`useBookCreate`（create）、`useBookUpdate`（update）、`useBookDelete`（delete）。
+- `src/api/models/`：`BookDto`（行/详情 DTO）、`CreateUpdateBookDto`（create/update 共用的写入 DTO）。
+- `src/api/schemas/book/book.ts`：`BookCreateBody`（zod schema，第③步表单校验的基底）。
+- 如果目标实体的关联字段要做远程下拉（`Book.authorId` → `Author`），对应的 `authorGetList` 也会一并生成，第③步会用到。
 
 如果 swagger 里还没有目标端点，先补后端应用服务；`jc-abp gen` 只做「swagger → 前端客户端」这一层转换，不会替你造端点。
 
@@ -53,24 +53,24 @@ import type { TableColumnDef } from "@/components/data-table/table-core"
 
 ```ts
 import {
-  getGetApiAppBookQueryKey,
-  useDeleteApiAppBookId,
-  useGetApiAppBook,
-  usePostApiAppBook,
-  usePutApiAppBookId,
+  getBookGetListQueryKey,
+  useBookDelete,
+  useBookGetList,
+  useBookCreate,
+  useBookUpdate,
 } from "@/api/endpoints/book/book";
 
 const bookService = createCrudService({
-  useList: useGetApiAppBook,
-  useCreate: usePostApiAppBook,
-  useUpdate: usePutApiAppBookId,
-  useDelete: useDeleteApiAppBookId,
-  listKey: getGetApiAppBookQueryKey,   // 失效前缀，保存/删除后一次清所有分页态
+  useList: useBookGetList,
+  useCreate: useBookCreate,
+  useUpdate: useBookUpdate,
+  useDelete: useBookDelete,
+  listKey: getBookGetListQueryKey,   // 失效前缀，保存/删除后一次清所有分页态
   supportsFilter: false,               // book 端点无 Filter 参数，此处必填且只能是 false（编译期强制，见下文）
 });
 ```
 
-**为什么是 hook 引用，不是裸函数**：descriptor 直接透传 orval 生成的 react-query hooks，`useAbpTable`/`useAbpSheet` 内部消费——不再手写 `queryFn`/`mutationFn`；`listKey` 落进 orval 的查询键命名空间（`getGetApiAppBookQueryKey()` 是该端点全部分页态共享的前缀），保存/删除成功后两个 hook 都用它一次性使所有分页/排序/过滤组合的缓存失效，不需要页面自己拼 key。
+**为什么是 hook 引用，不是裸函数**：descriptor 直接透传 orval 生成的 react-query hooks，`useAbpTable`/`useAbpSheet` 内部消费——不再手写 `queryFn`/`mutationFn`；`listKey` 落进 orval 的查询键命名空间（`getBookGetListQueryKey()` 是该端点全部分页态共享的前缀），保存/删除成功后两个 hook 都用它一次性使所有分页/排序/过滤组合的缓存失效，不需要页面自己拼 key。
 
 ### 只读列表页：不传任何 mutation
 
@@ -78,8 +78,8 @@ const bookService = createCrudService({
 
 ```ts
 const bookListOnlyService = createCrudService({
-  useList: useGetApiAppBook,
-  listKey: getGetApiAppBookQueryKey,
+  useList: useBookGetList,
+  listKey: getBookGetListQueryKey,
   supportsFilter: false,
 });
 
@@ -90,7 +90,7 @@ return <t.Table />;
 三个要点：
 
 - **`policy` 怎么定**：`policy` 是一个前缀字符串，`createCrudService` 会按 ABP 约定派生出 `resolvedPolicies.create/update/delete`（`X` → `X.Create`/`X.Update`/`X.Delete`），`useAbpTable`/`useAbpSheet` 用它们判断新建/编辑/删除按钮要不要渲染。如果目标应用服务确实挂了权限特性（如 Identity 的用户服务要 `AbpIdentity.Users`），就传 `policy: IdentityPermissions.Users.Default`；如果后端没给这个应用服务定义策略（demo 后端的 `BookAppService` 就是这样），**不传 `policy`**——`source.can.*` 全部解析为 `true`，跟 `books/index.tsx` 一致。三个粒度不对齐（比如只有 delete 单独一个策略名）就用 `policies: { create, update, delete }` 逐个覆盖，不走前缀派生。策略名不写裸字符串：先在 `src/permissions.ts` 照 ABP 定义类格式给业务模块追加常量（如 `BookPermissions`），再在此引用。
-- **`supportsFilter` 怎么判断**：不再是纯眼力活——只要用推断形式调用 `createCrudService`（不传显式类型参数），这个字段的取值就由 `useList` 绑定的端点参数类型编译期约束：端点参数没有 `Filter` 字段时 `supportsFilter` **必填且只能是 `false`**，漏填或填 `true` 都编译报错；端点参数带 `Filter` 字段时保持可选，缺省 `true`。`GetApiAppBookParams` 没有 `Filter` 字段（它有 `Name`/`MinPublishDate`，第⑥步会用到），所以 `bookService` 必须传 `supportsFilter: false`——`t.Table` 因此直接隐藏搜索框，而不是渲染一个点了也不生效的死输入框。对比 `GetApiIdentityUsersParams` 带 `Filter?: string`，`identity/users.tsx` 的 `supportsFilter` 可以不传。**这道约束依赖推断**：一旦给 `createCrudService` 补回显式类型参数，约束会静默回落到宽松默认（相当于端点总有 `Filter`），这不是修复，是把检查关掉。
+- **`supportsFilter` 怎么判断**：不再是纯眼力活——只要用推断形式调用 `createCrudService`（不传显式类型参数），这个字段的取值就由 `useList` 绑定的端点参数类型编译期约束：端点参数没有 `Filter` 字段时 `supportsFilter` **必填且只能是 `false`**，漏填或填 `true` 都编译报错；端点参数带 `Filter` 字段时保持可选，缺省 `true`。`BookGetListParams` 没有 `Filter` 字段（它有 `Name`/`MinPublishDate`，第⑥步会用到），所以 `bookService` 必须传 `supportsFilter: false`——`t.Table` 因此直接隐藏搜索框，而不是渲染一个点了也不生效的死输入框。对比 `UserGetListParams` 带 `Filter?: string`，`identity/users.tsx` 的 `supportsFilter` 可以不传。**这道约束依赖推断**：一旦给 `createCrudService` 补回显式类型参数，约束会静默回落到宽松默认（相当于端点总有 `Filter`），这不是修复，是把检查关掉。
 - **service 是纯数据描述符**，`useAbpTable`/`useAbpSheet` 各自只读它需要的那部分——同一个 `bookService` 可以同时喂给两个 hook（`books/index.tsx` 就是这样），也可以只喂给 `useAbpTable`（只读页不需要 `useAbpSheet`）。
 
 ## ③ `useAbpSheet`：表单侧接线
@@ -115,7 +115,7 @@ const EMPTY_VALUES: BookFormValues = {
 };
 
 /** 不能走默认：SelectField 是 string 值域（枚举 String/Number 往返）、publishDate 需 date-only 切片。 */
-function toRecordValues(record: AbpSwaggerBooksBookDto): BookFormValues {
+function toRecordValues(record: BookDto): BookFormValues {
   return {
     name: record.name ?? "",
     authorId: record.authorId ?? "",
@@ -127,10 +127,10 @@ function toRecordValues(record: AbpSwaggerBooksBookDto): BookFormValues {
 
 /** 不能走默认：SelectField 是 string 值域（枚举 String/Number 往返）、publishDate 需 date-only 切片；
  *  create/update 共用同一映射，故命名为 toInput 而非 toCreateInput/toUpdateInput。 */
-function toInput(value: BookFormValues): AbpSwaggerBooksCreateUpdateBookDto {
+function toInput(value: BookFormValues): CreateUpdateBookDto {
   return {
     ...value,
-    type: Number(value.type) as AbpSwaggerBooksCreateUpdateBookDto["type"],
+    type: Number(value.type) as CreateUpdateBookDto["type"],
   };
 }
 
@@ -139,7 +139,7 @@ function BooksPage() {
 
   // 以生成的 body schema 为基底：max(128) 这类后端约束免费继承；`type` 是表单 SelectField 的
   // string 值域，与生成侧的 number literal union 冲突，omit 后重声明。
-  const bookSchema = postApiAppBookBody.omit({ type: true }).extend({
+  const bookSchema = BookCreateBody.omit({ type: true }).extend({
     type: z.string(),
     name: z.string().trim().min(1, L("App::BookNameRequired")).max(/* … */),
     authorId: z.string().min(1, L("App::BookAuthorRequired")),
@@ -149,7 +149,7 @@ function BooksPage() {
 
   const sheet = useAbpSheet(bookService, {
     emptyValues: EMPTY_VALUES,
-    toValues: (record: AbpSwaggerBooksBookDto) => toRecordValues(record),
+    toValues: (record: BookDto) => toRecordValues(record),
     toCreate: toInput,
     toUpdate: toInput,
     schema: () => bookSchema,
@@ -211,19 +211,19 @@ function BooksPage() {
 
 ### 校验 schema：以生成的 body schema 为基底
 
-不要从 `z.object({...})` 手写空白 schema——`jc-abp gen` 已经把后端 DTO 的校验特性（`[Required]`/`[StringLength]` 等）编译进 `@/api/schemas/<module>/<module>` 的 body schema（如 `postApiIdentityRolesBody`）。手写 schema 只照抄了必填，漏掉 `max` 这类长度约束，超长输入会一路提交到后端才收到 400——用生成的 schema 当基底、`.extend()` 只覆盖 UI 层需要而生成侧没有的语义（`trim`、必填的本地化消息），`max` 等约束原样继承：
+不要从 `z.object({...})` 手写空白 schema——`jc-abp gen` 已经把后端 DTO 的校验特性（`[Required]`/`[StringLength]` 等）编译进 `@/api/schemas/<module>/<module>` 的 body schema（如 `RoleCreateBody`）。手写 schema 只照抄了必填，漏掉 `max` 这类长度约束，超长输入会一路提交到后端才收到 400——用生成的 schema 当基底、`.extend()` 只覆盖 UI 层需要而生成侧没有的语义（`trim`、必填的本地化消息），`max` 等约束原样继承：
 
 ```tsx
 // roles.tsx 的 name 校验规则单独落到同目录的 -role-schema.ts（见下方说明），导出成具名工厂
 // 而不是页面组件内的局部变量——校验规则是页面对外行为的一部分，测试要挂真实产物，不能只测
 // 一份复刻。
 export function buildRoleSchema(L: Localize) {
-  return postApiIdentityRolesBody.extend({
+  return RoleCreateBody.extend({
     name: z
       .string()
       .trim()
       .min(1, L("Form:Required"))
-      .max(postApiIdentityRolesBodyNameMax, L("Form:MaxLength", postApiIdentityRolesBodyNameMax)),
+      .max(roleCreateBodyNameMax, L("Form:MaxLength", roleCreateBodyNameMax)),
   });
 }
 
@@ -244,7 +244,7 @@ const roleSchema = buildRoleSchema(L);
 用 `createAbpColumns<TDto>()`。它把 v9 原生的 `accessor` / `display` / `group` 原样透出，另加八个后台常见列型的预设，**第二个参数是词条 key 而不是已翻译的字符串**：
 
 ```ts
-const col = createAbpColumns<AbpSwaggerBooksBookDto>();
+const col = createAbpColumns<BookDto>();
 
 const columns = [
   col.text("name", "App::BookName"),
@@ -374,7 +374,7 @@ const t = useAbpTable(bookService, {
 </t.QueryForm>
 ```
 
-跟 [`books/index.tsx`](../../examples/starter/src/routes/_layout/_authed/books/index.tsx) 完全一致——这就是整份查询区所需的全部代码。`GetApiAppBookParams` 只有 `Name`/`MinPublishDate` 两个端点自有查询参数，没有上界字段，所以 books 页只声明这两个真实字段，不伪造一个后端会静默丢弃的 `MaxPublishDate`。
+跟 [`books/index.tsx`](../../examples/starter/src/routes/_layout/_authed/books/index.tsx) 完全一致——这就是整份查询区所需的全部代码。`BookGetListParams` 只有 `Name`/`MinPublishDate` 两个端点自有查询参数，没有上界字段，所以 books 页只声明这两个真实字段，不伪造一个后端会静默丢弃的 `MaxPublishDate`。
 
 查询区不是独立卡片——`t.QueryForm` 的字段整体渲染进表格卡片内的**高级筛选面板**：带正常标签、三列网格，底部是面板自己的「重置 / 查询」按钮行。面板默认收起，由顶部条右侧功能组里的漏斗钮开合（与刷新/密度/列设置同组，勾选行进入批量态时也不会消失）。面板展开时左区的快速搜索框会让位——面板里是精确的字段筛选，同屏再摆一个模糊搜索是重复入口；收起后若仍有筛选生效，漏斗钮带一个圆点提示（读屏另有「已应用 N 个筛选条件」）。
 
@@ -551,7 +551,7 @@ const t = useAbpTable(roleService, {
 ```tsx
 // 引用必须稳定：进 useAbpTable 的 columns memo 依赖，内联箭头会让列模型每渲染重建（DEV 有 churn 告警）。
 const permissionMenuItem = useCallback(
-  (row: VoloAbpIdentityIdentityRoleDto) =>
+  (row: IdentityRoleDto) =>
     canManagePermissions ? (
       <DropdownMenuItem onSelect={() => setPermissionsFor(row)}>
         <KeyRound />
@@ -648,8 +648,8 @@ const t = useAbpTable(userService, {
 
 ```ts
 const bookService = createCrudService({
-  useList: useGetApiAppBook,
-  fetchList: getApiAppBook, // orval 生成的同名普通函数
+  useList: useBookGetList,
+  fetchList: bookGetList, // orval 生成的同名普通函数
   // …
 });
 ```
@@ -876,10 +876,10 @@ export interface AbpTableSource<TDto> {
 `books-l1-demo.tsx` 的写法：
 
 ```tsx
-const t = useAbpTable<AbpSwaggerBooksBookDto>(
+const t = useAbpTable<BookDto>(
   (params) => {
     // biome-ignore lint/correctness/useHookAtTopLevel: source 回调种类跨渲染不变，分支 lifetime 稳定
-    const listQuery = useGetApiAppBook(params, {
+    const listQuery = useBookGetList(params, {
       query: { placeholderData: keepPreviousData, select: toPagedResult },
     });
     const totalCount = listQuery.data?.totalCount ?? 0;
@@ -908,7 +908,7 @@ return <t.Table />;
 
 ```tsx
 const state = useDataTableState();
-const listQuery = useGetApiAppBook(toAbpListParams(state.params), {
+const listQuery = useBookGetList(toAbpListParams(state.params), {
   query: { placeholderData: keepPreviousData },
 });
 const dt = useDataTable({
@@ -1027,7 +1027,7 @@ import { Book } from "lucide-react";
 
    ```ts
    async function loadAuthorOptions(search: string): Promise<ComboboxOption[]> {
-     const result = await getApiAppAuthor({ SkipCount: 0, MaxResultCount: AUTHOR_PAGE_SIZE });
+     const result = await authorGetList({ SkipCount: 0, MaxResultCount: AUTHOR_PAGE_SIZE });
      const items = result.items ?? [];
      const query = search.trim().toLowerCase();
      const filtered = query ? items.filter((a) => (a.name ?? "").toLowerCase().includes(query)) : items;

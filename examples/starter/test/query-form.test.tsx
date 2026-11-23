@@ -43,7 +43,7 @@ interface Book {
 }
 
 /** 端点自有参数（Name/MinPublishDate/MaxPublishDate）+ ABP 分页协议 4 字段，
- * 形状照抄 GetApiAppBookParams（外加一个 MaxPublishDate 给 QueryDateRange 用）。 */
+ * 形状照抄 BookGetListParams（外加一个 MaxPublishDate 给 QueryDateRange 用）。 */
 interface BookParams {
   Name?: string;
   MinPublishDate?: string;

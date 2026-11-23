@@ -3,13 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { lazy, Suspense, useCallback, useState } from "react";
 import {
-  getGetApiIdentityRolesQueryKey,
-  useDeleteApiIdentityRolesId,
-  useGetApiIdentityRoles,
-  usePostApiIdentityRoles,
-  usePutApiIdentityRolesId,
+  getRoleGetListQueryKey,
+  useRoleCreate,
+  useRoleDelete,
+  useRoleGetList,
+  useRoleUpdate,
 } from "@/api/endpoints/role/role";
-import type { VoloAbpIdentityIdentityRoleDto } from "@/api/models";
+import type { IdentityRoleDto } from "@/api/models";
 import { requirePermission } from "@/auth";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
@@ -29,7 +29,7 @@ const PermissionSheet = lazy(() =>
 );
 
 // 列走词条 key，不依赖 L，故留在模块级：引用天然稳定，不必包 useMemo。
-const col = createAbpColumns<VoloAbpIdentityIdentityRoleDto>();
+const col = createAbpColumns<IdentityRoleDto>();
 const columns = [
   col.text("name", "AbpIdentity::DisplayName:RoleName"),
   col.bool("isDefault", "AbpIdentity::DisplayName:IsDefault", { enableSorting: false }),
@@ -44,11 +44,11 @@ export const Route = createFileRoute("/_layout/_authed/identity/roles")({
 });
 
 const roleService = createCrudService({
-  useList: useGetApiIdentityRoles,
-  useCreate: usePostApiIdentityRoles,
-  useUpdate: usePutApiIdentityRolesId,
-  useDelete: useDeleteApiIdentityRolesId,
-  listKey: getGetApiIdentityRolesQueryKey,
+  useList: useRoleGetList,
+  useCreate: useRoleCreate,
+  useUpdate: useRoleUpdate,
+  useDelete: useRoleDelete,
+  listKey: getRoleGetListQueryKey,
   policy: IdentityPermissions.Roles.Default,
 });
 
@@ -66,13 +66,13 @@ function RolesPage() {
   const L = useLocalization();
   const can = usePermissionChecker();
   const canManagePermissions = can(IdentityPermissions.Roles.ManagePermissions);
-  const [permissionsFor, setPermissionsFor] = useState<VoloAbpIdentityIdentityRoleDto | null>(null);
+  const [permissionsFor, setPermissionsFor] = useState<IdentityRoleDto | null>(null);
 
   const roleSchema = buildRoleSchema(L);
 
   // 引用必须稳定：进 AbpTable 的 columns memo 依赖，内联箭头会让列模型每渲染重建（DEV 有 churn 告警）。
   const permissionMenuItem = useCallback(
-    (row: VoloAbpIdentityIdentityRoleDto) =>
+    (row: IdentityRoleDto) =>
       canManagePermissions ? (
         <DropdownMenuItem onSelect={() => setPermissionsFor(row)}>
           <KeyRound />

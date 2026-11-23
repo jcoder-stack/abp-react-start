@@ -14,7 +14,7 @@ The browser never talks to ABP directly, and files are no exception: they cross 
 An ABP endpoint whose parameter is `IRemoteStreamContent` (or a DTO with such a property) shows up in swagger as `multipart/form-data`. The function `jc-abp gen` generates builds the `FormData` itself; pass the `File` straight in:
 
 ```tsx
-const upload = usePostApiAppEmployeeIdAttachment();
+const upload = useEmployeeUploadAttachment();
 
 upload.mutate({ id, data: { Category: "contract", Content: file } });
 ```
@@ -32,7 +32,7 @@ import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { downloadAbpFile } from "@/api/abp-download";
-import { getGetApiAppFileIdDownloadUrl } from "@/api/endpoints/file/file";
+import { getFileDownloadUrl } from "@/api/endpoints/file/file";
 import { abpErrorMessage } from "@/components/abp/crud/abp-form-errors";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -45,7 +45,7 @@ function DownloadButton({ id, label }: { id: string; label: string }) {
   async function onDownload() {
     setPercent(undefined);
     try {
-      await downloadAbpFile(getGetApiAppFileIdDownloadUrl(id), {
+      await downloadAbpFile(getFileDownloadUrl(id), {
         onProgress: ({ loaded, total }) =>
           setPercent(total ? Math.round((loaded / total) * 100) : undefined),
       });
@@ -72,7 +72,7 @@ function DownloadButton({ id, label }: { id: string; label: string }) {
 - `total` in `onProgress` may be `null`: the upstream sent no length, or the body was compressed. Pass `null` to `<Progress>` then: Radix marks it `data-state="indeterminate"` with no `aria-valuenow`, so screen readers don't announce a wrong percentage; visually it is an empty track, and an animation can be added in the theme layer under `[data-slot="progress"][data-state="indeterminate"]`.
 - To get the file without saving it (previewing an image, parsing Excel in the browser), use `fetchAbpFile`, which returns a `File` / `Blob`.
 
-The generated download function (e.g. `getApiAppFileIdDownload`) still works and also returns a named `File`, but it goes through a server function: the body crosses as base64 and is fully buffered on the server, so keep it for small files.
+The generated download function (e.g. `fileDownload`) still works and also returns a named `File`, but it goes through a server function: the body crosses as base64 and is fully buffered on the server, so keep it for small files.
 
 ### What the streaming route does
 

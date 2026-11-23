@@ -1,8 +1,8 @@
-import type { VoloAbpPermissionManagementPermissionGrantInfoDto } from "@/api/models";
+import type { PermissionGrantInfoDto } from "@/api/models";
 import { collectSubtreeIds, findParentChain, type TreeNode } from "@/components/tree/tree-helpers";
 
 /** 单个权限授予信息，直接复用生成 DTO（`voloAbpPermissionManagementPermissionGrantInfoDto`），字段名以后端为准：`name`/`displayName`/`parentName`/`isGranted`/`grantedProviders`。 */
-export type PermissionLike = VoloAbpPermissionManagementPermissionGrantInfoDto;
+export type PermissionLike = PermissionGrantInfoDto;
 
 /** 由 `parentName` 建树（`label` 直接取后端已本地化的 `displayName`），根节点=`parentName` 为空的权限；同组内构建，不跨组。 */
 export function buildPermissionTree(permissions: PermissionLike[]): TreeNode[] {

@@ -7,11 +7,11 @@
 import * as zod from 'zod';
 
 
-export const GetApiIdentityUsersLookupIdParams = zod.object({
+export const UserLookupFindByIdParams = zod.object({
   "id": zod.uuid()
 })
 
-export const GetApiIdentityUsersLookupIdResponse = zod.object({
+export const UserLookupFindByIdResponse = zod.object({
   "id": zod.uuid().optional(),
   "tenantId": zod.uuid().nullish(),
   "userName": zod.string().nullish(),
@@ -25,11 +25,11 @@ export const GetApiIdentityUsersLookupIdResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish()
 })
 
-export const GetApiIdentityUsersLookupByUsernameUserNameParams = zod.object({
+export const UserLookupFindByUserNameParams = zod.object({
   "userName": zod.string()
 })
 
-export const GetApiIdentityUsersLookupByUsernameUserNameResponse = zod.object({
+export const UserLookupFindByUserNameResponse = zod.object({
   "id": zod.uuid().optional(),
   "tenantId": zod.uuid().nullish(),
   "userName": zod.string().nullish(),
@@ -43,23 +43,23 @@ export const GetApiIdentityUsersLookupByUsernameUserNameResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish()
 })
 
-export const getApiIdentityUsersLookupSearchQuerySkipCountMin = 0;
-export const getApiIdentityUsersLookupSearchQuerySkipCountMax = 2147483647;
+export const userLookupSearchQuerySkipCountMin = 0;
+export const userLookupSearchQuerySkipCountMax = 2147483647;
 
-export const getApiIdentityUsersLookupSearchQueryMaxResultCountMin = 1;
-export const getApiIdentityUsersLookupSearchQueryMaxResultCountMax = 2147483647;
+export const userLookupSearchQueryMaxResultCountMin = 1;
+export const userLookupSearchQueryMaxResultCountMax = 2147483647;
 
 
 
-export const GetApiIdentityUsersLookupSearchQueryParams = zod.object({
+export const UserLookupSearchQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
-  "SkipCount": zod.int().min(getApiIdentityUsersLookupSearchQuerySkipCountMin).max(getApiIdentityUsersLookupSearchQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(getApiIdentityUsersLookupSearchQueryMaxResultCountMin).max(getApiIdentityUsersLookupSearchQueryMaxResultCountMax).optional(),
+  "SkipCount": zod.int().min(userLookupSearchQuerySkipCountMin).max(userLookupSearchQuerySkipCountMax).optional(),
+  "MaxResultCount": zod.int().min(userLookupSearchQueryMaxResultCountMin).max(userLookupSearchQueryMaxResultCountMax).optional(),
   "ExtraProperties": zod.record(zod.string(), zod.unknown()).optional()
 })
 
-export const GetApiIdentityUsersLookupSearchResponse = zod.object({
+export const UserLookupSearchResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.uuid().optional(),
   "tenantId": zod.uuid().nullish(),
@@ -75,9 +75,9 @@ export const GetApiIdentityUsersLookupSearchResponse = zod.object({
 })).nullish()
 })
 
-export const GetApiIdentityUsersLookupCountQueryParams = zod.object({
+export const UserLookupGetCountQueryParams = zod.object({
   "Filter": zod.string().optional()
 })
 
-export const GetApiIdentityUsersLookupCountResponse = zod.int()
+export const UserLookupGetCountResponse = zod.int()
 

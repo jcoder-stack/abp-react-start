@@ -3,11 +3,18 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
 
-/** One jc-abp gen target: swagger source, output root, and the zod-schemas toggle. */
+/** One jc-abp gen target: swagger source, output root, the zod-schemas toggle, and how generated
+ *  names are derived. `naming: "abp"` names operations after the backend's C# methods
+ *  (`useRoleGetList`) and models after their type (`IdentityRoleDto`); `"legacy"` keeps orval's
+ *  path- and namespace-derived names (`useGetApi…`, `VoloAbp…Dto`) for projects generated before
+ *  the option existed. `apiDefinition` is the URL or file holding ABP's api-definition document; it
+ *  defaults to `/api/abp/api-definition` on a remote input's origin. */
 export const apiTargetSchema = z.object({
   input: z.string().min(1),
   output: z.string().default("src/api"),
   zod: z.boolean().default(true),
+  naming: z.enum(["abp", "legacy"]).default("abp"),
+  apiDefinition: z.string().min(1).optional(),
 });
 export type ApiTarget = z.infer<typeof apiTargetSchema>;
 export type ApiTargetInput = z.input<typeof apiTargetSchema>;

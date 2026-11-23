@@ -9,9 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -19,13 +24,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetApiMultiTenancyTenantsParams,
   PagedResultDtoOfTenantDto,
-  PutApiMultiTenancyTenantsIdDefaultConnectionStringParams,
-  VoloAbpHttpRemoteServiceErrorResponse,
-  VoloAbpTenantManagementTenantCreateDto,
-  VoloAbpTenantManagementTenantDto,
-  VoloAbpTenantManagementTenantUpdateDto
+  RemoteServiceErrorResponse,
+  TenantCreateDto,
+  TenantDto,
+  TenantGetListParams,
+  TenantUpdateDefaultConnectionStringParams,
+  TenantUpdateDto
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -102,7 +107,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiMultiTenancyTenantsIdUrl = (id: string,) => {
+export const getTenantGetUrl = (id: string,) => {
 
 
 
@@ -110,9 +115,9 @@ export const getGetApiMultiTenancyTenantsIdUrl = (id: string,) => {
   return `/api/multi-tenancy/tenants/${id}`
 }
 
-export const getApiMultiTenancyTenantsId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpTenantManagementTenantDto> => {
+export const tenantGet = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<TenantDto> => {
 
-  return abpMutator<VoloAbpTenantManagementTenantDto>(getGetApiMultiTenancyTenantsIdUrl(id),
+  return abpMutator<TenantDto>(getTenantGetUrl(id),
   {
     ...options,
     method: 'GET'
@@ -125,43 +130,67 @@ export const getApiMultiTenancyTenantsId = async (id: string, options?: Paramete
 
 
 
-export const getGetApiMultiTenancyTenantsIdQueryKey = (id: string,) => {
+export const getTenantGetQueryKey = (id: string,) => {
     return [
     `/api/multi-tenancy/tenants/${id}`
     ] as const;
     }
 
 
-export const getGetApiMultiTenancyTenantsIdQueryOptions = <TData = Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getTenantGetQueryOptions = <TData = Awaited<ReturnType<typeof tenantGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiMultiTenancyTenantsIdQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getTenantGetQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>> = ({ signal }) => getApiMultiTenancyTenantsId(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tenantGet>>> = ({ signal }) => tenantGet(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tenantGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiMultiTenancyTenantsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>>
-export type GetApiMultiTenancyTenantsIdQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type TenantGetQueryResult = NonNullable<Awaited<ReturnType<typeof tenantGet>>>
+export type TenantGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiMultiTenancyTenantsId<TData = Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenantsId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useTenantGet<TData = Awaited<ReturnType<typeof tenantGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof tenantGet>>,
+          TError,
+          Awaited<ReturnType<typeof tenantGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGet<TData = Awaited<ReturnType<typeof tenantGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof tenantGet>>,
+          TError,
+          Awaited<ReturnType<typeof tenantGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGet<TData = Awaited<ReturnType<typeof tenantGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGet<TData = Awaited<ReturnType<typeof tenantGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTenantGetQueryOptions(id,options)
 
-  const queryOptions = getGetApiMultiTenancyTenantsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -171,7 +200,7 @@ export function useGetApiMultiTenancyTenantsId<TData = Awaited<ReturnType<typeof
 
 
 
-export const getPutApiMultiTenancyTenantsIdUrl = (id: string,) => {
+export const getTenantUpdateUrl = (id: string,) => {
 
 
 
@@ -179,15 +208,15 @@ export const getPutApiMultiTenancyTenantsIdUrl = (id: string,) => {
   return `/api/multi-tenancy/tenants/${id}`
 }
 
-export const putApiMultiTenancyTenantsId = async (id: string,
-    voloAbpTenantManagementTenantUpdateDto?: NonReadonly<VoloAbpTenantManagementTenantUpdateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpTenantManagementTenantDto> => {
+export const tenantUpdate = async (id: string,
+    tenantUpdateDto?: NonReadonly<TenantUpdateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<TenantDto> => {
 
-  return abpMutator<VoloAbpTenantManagementTenantDto>(getPutApiMultiTenancyTenantsIdUrl(id),
+  return abpMutator<TenantDto>(getTenantUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpTenantManagementTenantUpdateDto)
+    body: JSON.stringify(tenantUpdateDto)
   }
 );}
 
@@ -195,13 +224,13 @@ export const putApiMultiTenancyTenantsId = async (id: string,
 
 
 
-export const getPutApiMultiTenancyTenantsIdMutationKey = () => ['putApiMultiTenancyTenantsId'] as const;
+export const getTenantUpdateMutationKey = () => ['tenantUpdate'] as const;
 
-export const getPutApiMultiTenancyTenantsIdMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiMultiTenancyTenantsId>>, TError,PutApiMultiTenancyTenantsIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiMultiTenancyTenantsId>>, TError,PutApiMultiTenancyTenantsIdMutationVariables, TContext> => {
+export const getTenantUpdateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantUpdate>>, TError,TenantUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof tenantUpdate>>, TError,TenantUpdateMutationVariables, TContext> => {
 
-const mutationKey = getPutApiMultiTenancyTenantsIdMutationKey();
+const mutationKey = getTenantUpdateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -211,10 +240,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiMultiTenancyTenantsId>>, PutApiMultiTenancyTenantsIdMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tenantUpdate>>, TenantUpdateMutationVariables> = (props) => {
           const {id,data} = props ?? {};
 
-          return  putApiMultiTenancyTenantsId(id,data,requestOptions)
+          return  tenantUpdate(id,data,requestOptions)
         }
 
 
@@ -224,22 +253,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiMultiTenancyTenantsIdMutationResult = NonNullable<Awaited<ReturnType<typeof putApiMultiTenancyTenantsId>>>
-    export type PutApiMultiTenancyTenantsIdMutationBody = NonReadonly<VoloAbpTenantManagementTenantUpdateDto> | undefined
-    export type PutApiMultiTenancyTenantsIdMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiMultiTenancyTenantsIdMutationVariables = {id: string;data?: NonReadonly<VoloAbpTenantManagementTenantUpdateDto>}
+    export type TenantUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof tenantUpdate>>>
+    export type TenantUpdateMutationBody = NonReadonly<TenantUpdateDto> | undefined
+    export type TenantUpdateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type TenantUpdateMutationVariables = {id: string;data?: NonReadonly<TenantUpdateDto>}
 
-    export const usePutApiMultiTenancyTenantsId = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiMultiTenancyTenantsId>>, TError,PutApiMultiTenancyTenantsIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiMultiTenancyTenantsId>>,
+    export const useTenantUpdate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantUpdate>>, TError,TenantUpdateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof tenantUpdate>>,
         TError,
-        PutApiMultiTenancyTenantsIdMutationVariables,
+        TenantUpdateMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiMultiTenancyTenantsIdMutationOptions(options));
+      return useMutation(getTenantUpdateMutationOptions(options), queryClient);
     }
-    export const getDeleteApiMultiTenancyTenantsIdUrl = (id: string,) => {
+    export const getTenantDeleteUrl = (id: string,) => {
 
 
 
@@ -247,9 +276,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/multi-tenancy/tenants/${id}`
 }
 
-export const deleteApiMultiTenancyTenantsId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const tenantDelete = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getDeleteApiMultiTenancyTenantsIdUrl(id),
+  return abpMutator<void>(getTenantDeleteUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -262,13 +291,13 @@ export const deleteApiMultiTenancyTenantsId = async (id: string, options?: Param
 
 
 
-export const getDeleteApiMultiTenancyTenantsIdMutationKey = () => ['deleteApiMultiTenancyTenantsId'] as const;
+export const getTenantDeleteMutationKey = () => ['tenantDelete'] as const;
 
-export const getDeleteApiMultiTenancyTenantsIdMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsId>>, TError,DeleteApiMultiTenancyTenantsIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsId>>, TError,DeleteApiMultiTenancyTenantsIdMutationVariables, TContext> => {
+export const getTenantDeleteMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantDelete>>, TError,TenantDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof tenantDelete>>, TError,TenantDeleteMutationVariables, TContext> => {
 
-const mutationKey = getDeleteApiMultiTenancyTenantsIdMutationKey();
+const mutationKey = getTenantDeleteMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -278,10 +307,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsId>>, DeleteApiMultiTenancyTenantsIdMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tenantDelete>>, TenantDeleteMutationVariables> = (props) => {
           const {id} = props ?? {};
 
-          return  deleteApiMultiTenancyTenantsId(id,requestOptions)
+          return  tenantDelete(id,requestOptions)
         }
 
 
@@ -291,22 +320,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteApiMultiTenancyTenantsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsId>>>
+    export type TenantDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof tenantDelete>>>
 
-    export type DeleteApiMultiTenancyTenantsIdMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type DeleteApiMultiTenancyTenantsIdMutationVariables = {id: string}
+    export type TenantDeleteMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type TenantDeleteMutationVariables = {id: string}
 
-    export const useDeleteApiMultiTenancyTenantsId = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsId>>, TError,DeleteApiMultiTenancyTenantsIdMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsId>>,
+    export const useTenantDelete = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantDelete>>, TError,TenantDeleteMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof tenantDelete>>,
         TError,
-        DeleteApiMultiTenancyTenantsIdMutationVariables,
+        TenantDeleteMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiMultiTenancyTenantsIdMutationOptions(options));
+      return useMutation(getTenantDeleteMutationOptions(options), queryClient);
     }
-    export const getGetApiMultiTenancyTenantsUrl = (params?: GetApiMultiTenancyTenantsParams,) => {
+    export const getTenantGetListUrl = (params?: TenantGetListParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -321,9 +350,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return stringifiedParams.length > 0 ? `/api/multi-tenancy/tenants?${stringifiedParams}` : `/api/multi-tenancy/tenants`
 }
 
-export const getApiMultiTenancyTenants = async (params?: GetApiMultiTenancyTenantsParams, options?: Parameters<typeof abpMutator>[1]): Promise<PagedResultDtoOfTenantDto> => {
+export const tenantGetList = async (params?: TenantGetListParams, options?: Parameters<typeof abpMutator>[1]): Promise<PagedResultDtoOfTenantDto> => {
 
-  return abpMutator<PagedResultDtoOfTenantDto>(getGetApiMultiTenancyTenantsUrl(params),
+  return abpMutator<PagedResultDtoOfTenantDto>(getTenantGetListUrl(params),
   {
     ...options,
     method: 'GET'
@@ -336,43 +365,67 @@ export const getApiMultiTenancyTenants = async (params?: GetApiMultiTenancyTenan
 
 
 
-export const getGetApiMultiTenancyTenantsQueryKey = (params?: GetApiMultiTenancyTenantsParams,) => {
+export const getTenantGetListQueryKey = (params?: TenantGetListParams,) => {
     return [
     `/api/multi-tenancy/tenants`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiMultiTenancyTenantsQueryOptions = <TData = Awaited<ReturnType<typeof getApiMultiTenancyTenants>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiMultiTenancyTenantsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenants>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getTenantGetListQueryOptions = <TData = Awaited<ReturnType<typeof tenantGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: TenantGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiMultiTenancyTenantsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getTenantGetListQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiMultiTenancyTenants>>> = ({ signal }) => getApiMultiTenancyTenants(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tenantGetList>>> = ({ signal }) => tenantGetList(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenants>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tenantGetList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiMultiTenancyTenantsQueryResult = NonNullable<Awaited<ReturnType<typeof getApiMultiTenancyTenants>>>
-export type GetApiMultiTenancyTenantsQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type TenantGetListQueryResult = NonNullable<Awaited<ReturnType<typeof tenantGetList>>>
+export type TenantGetListQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiMultiTenancyTenants<TData = Awaited<ReturnType<typeof getApiMultiTenancyTenants>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiMultiTenancyTenantsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenants>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useTenantGetList<TData = Awaited<ReturnType<typeof tenantGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  TenantGetListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof tenantGetList>>,
+          TError,
+          Awaited<ReturnType<typeof tenantGetList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGetList<TData = Awaited<ReturnType<typeof tenantGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: TenantGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof tenantGetList>>,
+          TError,
+          Awaited<ReturnType<typeof tenantGetList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGetList<TData = Awaited<ReturnType<typeof tenantGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: TenantGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGetList<TData = Awaited<ReturnType<typeof tenantGetList>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: TenantGetListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetList>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTenantGetListQueryOptions(params,options)
 
-  const queryOptions = getGetApiMultiTenancyTenantsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -382,7 +435,7 @@ export function useGetApiMultiTenancyTenants<TData = Awaited<ReturnType<typeof g
 
 
 
-export const getPostApiMultiTenancyTenantsUrl = () => {
+export const getTenantCreateUrl = () => {
 
 
 
@@ -390,14 +443,14 @@ export const getPostApiMultiTenancyTenantsUrl = () => {
   return `/api/multi-tenancy/tenants`
 }
 
-export const postApiMultiTenancyTenants = async (voloAbpTenantManagementTenantCreateDto?: NonReadonly<VoloAbpTenantManagementTenantCreateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpTenantManagementTenantDto> => {
+export const tenantCreate = async (tenantCreateDto?: NonReadonly<TenantCreateDto>, options?: Parameters<typeof abpMutator>[1]): Promise<TenantDto> => {
 
-  return abpMutator<VoloAbpTenantManagementTenantDto>(getPostApiMultiTenancyTenantsUrl(),
+  return abpMutator<TenantDto>(getTenantCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(voloAbpTenantManagementTenantCreateDto)
+    body: JSON.stringify(tenantCreateDto)
   }
 );}
 
@@ -405,13 +458,13 @@ export const postApiMultiTenancyTenants = async (voloAbpTenantManagementTenantCr
 
 
 
-export const getPostApiMultiTenancyTenantsMutationKey = () => ['postApiMultiTenancyTenants'] as const;
+export const getTenantCreateMutationKey = () => ['tenantCreate'] as const;
 
-export const getPostApiMultiTenancyTenantsMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiMultiTenancyTenants>>, TError,PostApiMultiTenancyTenantsMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postApiMultiTenancyTenants>>, TError,PostApiMultiTenancyTenantsMutationVariables, TContext> => {
+export const getTenantCreateMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantCreate>>, TError,TenantCreateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof tenantCreate>>, TError,TenantCreateMutationVariables, TContext> => {
 
-const mutationKey = getPostApiMultiTenancyTenantsMutationKey();
+const mutationKey = getTenantCreateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -421,10 +474,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiMultiTenancyTenants>>, PostApiMultiTenancyTenantsMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tenantCreate>>, TenantCreateMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiMultiTenancyTenants(data,requestOptions)
+          return  tenantCreate(data,requestOptions)
         }
 
 
@@ -434,22 +487,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiMultiTenancyTenantsMutationResult = NonNullable<Awaited<ReturnType<typeof postApiMultiTenancyTenants>>>
-    export type PostApiMultiTenancyTenantsMutationBody = NonReadonly<VoloAbpTenantManagementTenantCreateDto> | undefined
-    export type PostApiMultiTenancyTenantsMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PostApiMultiTenancyTenantsMutationVariables = {data?: NonReadonly<VoloAbpTenantManagementTenantCreateDto>}
+    export type TenantCreateMutationResult = NonNullable<Awaited<ReturnType<typeof tenantCreate>>>
+    export type TenantCreateMutationBody = NonReadonly<TenantCreateDto> | undefined
+    export type TenantCreateMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type TenantCreateMutationVariables = {data?: NonReadonly<TenantCreateDto>}
 
-    export const usePostApiMultiTenancyTenants = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiMultiTenancyTenants>>, TError,PostApiMultiTenancyTenantsMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postApiMultiTenancyTenants>>,
+    export const useTenantCreate = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantCreate>>, TError,TenantCreateMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof tenantCreate>>,
         TError,
-        PostApiMultiTenancyTenantsMutationVariables,
+        TenantCreateMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiMultiTenancyTenantsMutationOptions(options));
+      return useMutation(getTenantCreateMutationOptions(options), queryClient);
     }
-    export const getGetApiMultiTenancyTenantsIdDefaultConnectionStringUrl = (id: string,) => {
+    export const getTenantGetDefaultConnectionStringUrl = (id: string,) => {
 
 
 
@@ -457,9 +510,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/multi-tenancy/tenants/${id}/default-connection-string`
 }
 
-export const getApiMultiTenancyTenantsIdDefaultConnectionString = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<string> => {
+export const tenantGetDefaultConnectionString = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<string> => {
 
-  return abpMutator<string>(getGetApiMultiTenancyTenantsIdDefaultConnectionStringUrl(id),
+  return abpMutator<string>(getTenantGetDefaultConnectionStringUrl(id),
   {
     ...options,
     method: 'GET'
@@ -472,43 +525,67 @@ export const getApiMultiTenancyTenantsIdDefaultConnectionString = async (id: str
 
 
 
-export const getGetApiMultiTenancyTenantsIdDefaultConnectionStringQueryKey = (id: string,) => {
+export const getTenantGetDefaultConnectionStringQueryKey = (id: string,) => {
     return [
     `/api/multi-tenancy/tenants/${id}/default-connection-string`
     ] as const;
     }
 
 
-export const getGetApiMultiTenancyTenantsIdDefaultConnectionStringQueryOptions = <TData = Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getTenantGetDefaultConnectionStringQueryOptions = <TData = Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiMultiTenancyTenantsIdDefaultConnectionStringQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getTenantGetDefaultConnectionStringQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>> = ({ signal }) => getApiMultiTenancyTenantsIdDefaultConnectionString(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>> = ({ signal }) => tenantGetDefaultConnectionString(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiMultiTenancyTenantsIdDefaultConnectionStringQueryResult = NonNullable<Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>>
-export type GetApiMultiTenancyTenantsIdDefaultConnectionStringQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type TenantGetDefaultConnectionStringQueryResult = NonNullable<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>>
+export type TenantGetDefaultConnectionStringQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiMultiTenancyTenantsIdDefaultConnectionString<TData = Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiMultiTenancyTenantsIdDefaultConnectionString>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useTenantGetDefaultConnectionString<TData = Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>,
+          TError,
+          Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGetDefaultConnectionString<TData = Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>,
+          TError,
+          Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGetDefaultConnectionString<TData = Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useTenantGetDefaultConnectionString<TData = Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof tenantGetDefaultConnectionString>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getTenantGetDefaultConnectionStringQueryOptions(id,options)
 
-  const queryOptions = getGetApiMultiTenancyTenantsIdDefaultConnectionStringQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -518,8 +595,8 @@ export function useGetApiMultiTenancyTenantsIdDefaultConnectionString<TData = Aw
 
 
 
-export const getPutApiMultiTenancyTenantsIdDefaultConnectionStringUrl = (id: string,
-    params?: PutApiMultiTenancyTenantsIdDefaultConnectionStringParams,) => {
+export const getTenantUpdateDefaultConnectionStringUrl = (id: string,
+    params?: TenantUpdateDefaultConnectionStringParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -534,10 +611,10 @@ export const getPutApiMultiTenancyTenantsIdDefaultConnectionStringUrl = (id: str
   return stringifiedParams.length > 0 ? `/api/multi-tenancy/tenants/${id}/default-connection-string?${stringifiedParams}` : `/api/multi-tenancy/tenants/${id}/default-connection-string`
 }
 
-export const putApiMultiTenancyTenantsIdDefaultConnectionString = async (id: string,
-    params?: PutApiMultiTenancyTenantsIdDefaultConnectionStringParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const tenantUpdateDefaultConnectionString = async (id: string,
+    params?: TenantUpdateDefaultConnectionStringParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getPutApiMultiTenancyTenantsIdDefaultConnectionStringUrl(id,params),
+  return abpMutator<void>(getTenantUpdateDefaultConnectionStringUrl(id,params),
   {
     ...options,
     method: 'PUT'
@@ -550,13 +627,13 @@ export const putApiMultiTenancyTenantsIdDefaultConnectionString = async (id: str
 
 
 
-export const getPutApiMultiTenancyTenantsIdDefaultConnectionStringMutationKey = () => ['putApiMultiTenancyTenantsIdDefaultConnectionString'] as const;
+export const getTenantUpdateDefaultConnectionStringMutationKey = () => ['tenantUpdateDefaultConnectionString'] as const;
 
-export const getPutApiMultiTenancyTenantsIdDefaultConnectionStringMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiMultiTenancyTenantsIdDefaultConnectionString>>, TError,PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putApiMultiTenancyTenantsIdDefaultConnectionString>>, TError,PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables, TContext> => {
+export const getTenantUpdateDefaultConnectionStringMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantUpdateDefaultConnectionString>>, TError,TenantUpdateDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof tenantUpdateDefaultConnectionString>>, TError,TenantUpdateDefaultConnectionStringMutationVariables, TContext> => {
 
-const mutationKey = getPutApiMultiTenancyTenantsIdDefaultConnectionStringMutationKey();
+const mutationKey = getTenantUpdateDefaultConnectionStringMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -566,10 +643,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiMultiTenancyTenantsIdDefaultConnectionString>>, PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tenantUpdateDefaultConnectionString>>, TenantUpdateDefaultConnectionStringMutationVariables> = (props) => {
           const {id,params} = props ?? {};
 
-          return  putApiMultiTenancyTenantsIdDefaultConnectionString(id,params,requestOptions)
+          return  tenantUpdateDefaultConnectionString(id,params,requestOptions)
         }
 
 
@@ -579,22 +656,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationResult = NonNullable<Awaited<ReturnType<typeof putApiMultiTenancyTenantsIdDefaultConnectionString>>>
+    export type TenantUpdateDefaultConnectionStringMutationResult = NonNullable<Awaited<ReturnType<typeof tenantUpdateDefaultConnectionString>>>
 
-    export type PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables = {id: string;params?: PutApiMultiTenancyTenantsIdDefaultConnectionStringParams}
+    export type TenantUpdateDefaultConnectionStringMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type TenantUpdateDefaultConnectionStringMutationVariables = {id: string;params?: TenantUpdateDefaultConnectionStringParams}
 
-    export const usePutApiMultiTenancyTenantsIdDefaultConnectionString = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiMultiTenancyTenantsIdDefaultConnectionString>>, TError,PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putApiMultiTenancyTenantsIdDefaultConnectionString>>,
+    export const useTenantUpdateDefaultConnectionString = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantUpdateDefaultConnectionString>>, TError,TenantUpdateDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof tenantUpdateDefaultConnectionString>>,
         TError,
-        PutApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables,
+        TenantUpdateDefaultConnectionStringMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiMultiTenancyTenantsIdDefaultConnectionStringMutationOptions(options));
+      return useMutation(getTenantUpdateDefaultConnectionStringMutationOptions(options), queryClient);
     }
-    export const getDeleteApiMultiTenancyTenantsIdDefaultConnectionStringUrl = (id: string,) => {
+    export const getTenantDeleteDefaultConnectionStringUrl = (id: string,) => {
 
 
 
@@ -602,9 +679,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return `/api/multi-tenancy/tenants/${id}/default-connection-string`
 }
 
-export const deleteApiMultiTenancyTenantsIdDefaultConnectionString = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
+export const tenantDeleteDefaultConnectionString = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-  return abpMutator<void>(getDeleteApiMultiTenancyTenantsIdDefaultConnectionStringUrl(id),
+  return abpMutator<void>(getTenantDeleteDefaultConnectionStringUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -617,13 +694,13 @@ export const deleteApiMultiTenancyTenantsIdDefaultConnectionString = async (id: 
 
 
 
-export const getDeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationKey = () => ['deleteApiMultiTenancyTenantsIdDefaultConnectionString'] as const;
+export const getTenantDeleteDefaultConnectionStringMutationKey = () => ['tenantDeleteDefaultConnectionString'] as const;
 
-export const getDeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationOptions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsIdDefaultConnectionString>>, TError,DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsIdDefaultConnectionString>>, TError,DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables, TContext> => {
+export const getTenantDeleteDefaultConnectionStringMutationOptions = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantDeleteDefaultConnectionString>>, TError,TenantDeleteDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof tenantDeleteDefaultConnectionString>>, TError,TenantDeleteDefaultConnectionStringMutationVariables, TContext> => {
 
-const mutationKey = getDeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationKey();
+const mutationKey = getTenantDeleteDefaultConnectionStringMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -633,10 +710,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsIdDefaultConnectionString>>, DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tenantDeleteDefaultConnectionString>>, TenantDeleteDefaultConnectionStringMutationVariables> = (props) => {
           const {id} = props ?? {};
 
-          return  deleteApiMultiTenancyTenantsIdDefaultConnectionString(id,requestOptions)
+          return  tenantDeleteDefaultConnectionString(id,requestOptions)
         }
 
 
@@ -646,18 +723,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsIdDefaultConnectionString>>>
+    export type TenantDeleteDefaultConnectionStringMutationResult = NonNullable<Awaited<ReturnType<typeof tenantDeleteDefaultConnectionString>>>
 
-    export type DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
-    export type DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables = {id: string}
+    export type TenantDeleteDefaultConnectionStringMutationError = ErrorType<RemoteServiceErrorResponse>
+    export type TenantDeleteDefaultConnectionStringMutationVariables = {id: string}
 
-    export const useDeleteApiMultiTenancyTenantsIdDefaultConnectionString = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsIdDefaultConnectionString>>, TError,DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteApiMultiTenancyTenantsIdDefaultConnectionString>>,
+    export const useTenantDeleteDefaultConnectionString = <TError = ErrorType<RemoteServiceErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tenantDeleteDefaultConnectionString>>, TError,TenantDeleteDefaultConnectionStringMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof tenantDeleteDefaultConnectionString>>,
         TError,
-        DeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationVariables,
+        TenantDeleteDefaultConnectionStringMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiMultiTenancyTenantsIdDefaultConnectionStringMutationOptions(options));
+      return useMutation(getTenantDeleteDefaultConnectionStringMutationOptions(options), queryClient);
     }

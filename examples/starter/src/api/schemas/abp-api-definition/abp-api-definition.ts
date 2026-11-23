@@ -7,12 +7,12 @@
 import * as zod from 'zod';
 
 
-export const GetApiAbpApiDefinitionQueryParams = zod.object({
+export const AbpApiDefinitionGetQueryParams = zod.object({
   "IncludeTypes": zod.boolean().optional(),
   "IncludeDescriptions": zod.boolean().optional()
 })
 
-export const GetApiAbpApiDefinitionResponse = zod.object({
+export const AbpApiDefinitionGetResponse = zod.object({
   "modules": zod.record(zod.string(), zod.object({
   "rootPath": zod.string().nullish(),
   "remoteServiceName": zod.string().nullish(),

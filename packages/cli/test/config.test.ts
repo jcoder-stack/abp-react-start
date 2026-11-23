@@ -13,7 +13,12 @@ describe("loadApiConfig", () => {
     const cwd = tempDir();
     writeFileSync(join(cwd, "abp.api.config.ts"), `export default { input: "./swagger.json" };\n`);
     const [target] = await loadApiConfig({ cwd });
-    expect(target).toEqual({ input: "./swagger.json", output: "src/api", zod: true });
+    expect(target).toEqual({
+      input: "./swagger.json",
+      output: "src/api",
+      zod: true,
+      naming: "abp",
+    });
   });
 
   it("falls back to abp.api.config.json and merges flag overrides (undefined ignored)", async () => {

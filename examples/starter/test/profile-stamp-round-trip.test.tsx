@@ -2,7 +2,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { VoloAbpAccountUpdateProfileDto } from "@/api/models";
+import type { UpdateProfileDto } from "@/api/models";
 import { configureAbpMutator, resetAbpMutator } from "@/api/mutator";
 import crudMessages from "@/components/abp/crud/crud-messages.json";
 import formMessages from "@/components/form/form-messages.json";
@@ -11,7 +11,7 @@ import { renderWithProviders } from "./test-utils";
 
 // 渲染真实的 profile 页面（Route.options.component 就是 index.tsx 的 ProfilePage）。取数与写入
 // 都不 mock 到 hook 层：只把 abpMutator 的 fetchFn 换成一个记账的假后端，页面用的
-// useGetApiAccountMyProfile / putApiAccountMyProfile / setQueryData 全是真件，「保存后表单换上
+// useProfileGet / profileUpdate / setQueryData 全是真件，「保存后表单换上
 // 新 stamp」这条契约同时经由 form.reset 与查询缓存回流两条路，任一条被 mock 掉都测不出真话。
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -24,7 +24,7 @@ const PROFILE_URL = "/api/account/my-profile";
 
 /** 假后端：像 ABP 那样每次 UpdateAsync 都换一枚新 stamp，并记下每次 PUT 的 body 供断言。 */
 function startFakeBackend() {
-  const putBodies: VoloAbpAccountUpdateProfileDto[] = [];
+  const putBodies: UpdateProfileDto[] = [];
   let stamp = "stamp-1";
   const profile = () => ({
     userName: "alice",
@@ -43,7 +43,7 @@ function startFakeBackend() {
       const method = init?.method ?? "GET";
       if (url === PROFILE_URL && method === "GET") return json(profile());
       if (url === PROFILE_URL && method === "PUT") {
-        putBodies.push(JSON.parse(String(init?.body)) as VoloAbpAccountUpdateProfileDto);
+        putBodies.push(JSON.parse(String(init?.body)) as UpdateProfileDto);
         stamp = `stamp-${putBodies.length + 1}`;
         return json(profile());
       }

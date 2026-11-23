@@ -4,20 +4,20 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-  postApiSettingManagementEmailing,
-  postApiSettingManagementEmailingSendTestEmail,
-  useGetApiSettingManagementEmailing,
+  emailSettingsSendTestEmail,
+  emailSettingsUpdate,
+  useEmailSettingsGet,
 } from "@/api/endpoints/email-settings/email-settings";
 import {
-  postApiSettingManagementTimezone,
-  useGetApiSettingManagementTimezone,
-  useGetApiSettingManagementTimezoneTimezones,
+  timeZoneSettingsUpdate,
+  useTimeZoneSettingsGet,
+  useTimeZoneSettingsGetTimezones,
 } from "@/api/endpoints/time-zone-settings/time-zone-settings";
 import type {
-  VoloAbpNameValue,
-  VoloAbpSettingManagementEmailSettingsDto,
-  VoloAbpSettingManagementSendTestEmailInput,
-  VoloAbpSettingManagementUpdateEmailSettingsDto,
+  EmailSettingsDto,
+  NameValue,
+  SendTestEmailInput,
+  UpdateEmailSettingsDto,
 } from "@/api/models";
 import { requirePermission } from "@/auth";
 import { abpFormOptions } from "@/components/abp/crud/abp-form-options";
@@ -82,7 +82,7 @@ interface EmailingFormValues {
   defaultFromDisplayName: string;
 }
 
-function toEmailingValues(dto: VoloAbpSettingManagementEmailSettingsDto): EmailingFormValues {
+function toEmailingValues(dto: EmailSettingsDto): EmailingFormValues {
   return {
     smtpHost: dto.smtpHost ?? "",
     smtpPort: dto.smtpPort ?? 25,
@@ -96,9 +96,7 @@ function toEmailingValues(dto: VoloAbpSettingManagementEmailSettingsDto): Emaili
   };
 }
 
-function toUpdateEmailingInput(
-  value: EmailingFormValues,
-): VoloAbpSettingManagementUpdateEmailSettingsDto {
+function toUpdateEmailingInput(value: EmailingFormValues): UpdateEmailSettingsDto {
   return {
     smtpHost: value.smtpHost || undefined,
     smtpPort: value.smtpPort,
@@ -114,7 +112,7 @@ function toUpdateEmailingInput(
 
 function EmailingTab() {
   const L = useLocalization();
-  const emailingQuery = useGetApiSettingManagementEmailing();
+  const emailingQuery = useEmailSettingsGet();
 
   if (emailingQuery.isError) {
     return <FormErrorSummary errors={[L("Crud:OperationFailed")]} />;
@@ -137,7 +135,7 @@ function EmailingTab() {
   return <EmailingFormCard emailing={emailingQuery.data} />;
 }
 
-function EmailingFormCard({ emailing }: { emailing: VoloAbpSettingManagementEmailSettingsDto }) {
+function EmailingFormCard({ emailing }: { emailing: EmailSettingsDto }) {
   const L = useLocalization();
   const [testEmailOpen, setTestEmailOpen] = useState(false);
 
@@ -162,7 +160,7 @@ function EmailingFormCard({ emailing }: { emailing: VoloAbpSettingManagementEmai
       defaultValues: toEmailingValues(emailing),
       schema: emailingSchema,
       submit: async (value: EmailingFormValues) => {
-        await postApiSettingManagementEmailing(toUpdateEmailingInput(value));
+        await emailSettingsUpdate(toUpdateEmailingInput(value));
         form.reset(value);
       },
       onSuccess: () => toast.success(L("Crud:Saved")),
@@ -277,9 +275,7 @@ interface SendTestEmailFormValues {
   body: string;
 }
 
-function toSendTestEmailInput(
-  value: SendTestEmailFormValues,
-): VoloAbpSettingManagementSendTestEmailInput {
+function toSendTestEmailInput(value: SendTestEmailFormValues): SendTestEmailInput {
   return {
     senderEmailAddress: value.senderEmailAddress,
     targetEmailAddress: value.targetEmailAddress,
@@ -327,7 +323,7 @@ function SendTestEmailDialogContent({
       schema: sendTestEmailSchema,
       submit: async (value: SendTestEmailFormValues) => {
         try {
-          await postApiSettingManagementEmailingSendTestEmail(toSendTestEmailInput(value));
+          await emailSettingsSendTestEmail(toSendTestEmailInput(value));
         } catch {
           // 重新 throw 使本次提交判定失败,避免误触发成功回调关闭弹窗/重置表单;错误已由 toast 展示。
           toast.error(L("AbpSettingManagement::MailSendingFailed"));
@@ -401,8 +397,8 @@ function SendTestEmailDialogContent({
 
 function TimeZoneTab() {
   const L = useLocalization();
-  const timezonesQuery = useGetApiSettingManagementTimezoneTimezones();
-  const currentQuery = useGetApiSettingManagementTimezone();
+  const timezonesQuery = useTimeZoneSettingsGetTimezones();
+  const currentQuery = useTimeZoneSettingsGet();
 
   if (timezonesQuery.isError || currentQuery.isError) {
     return <FormErrorSummary errors={[L("Crud:OperationFailed")]} />;
@@ -427,7 +423,7 @@ function TimeZoneFormCard({
   timezones,
   currentTimezone,
 }: {
-  timezones: VoloAbpNameValue[];
+  timezones: NameValue[];
   currentTimezone: string;
 }) {
   const L = useLocalization();
@@ -445,7 +441,7 @@ function TimeZoneFormCard({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await postApiSettingManagementTimezone({ timezone: value });
+      await timeZoneSettingsUpdate({ timezone: value });
       toast.success(L("Crud:Saved"));
     } catch {
       toast.error(L("Crud:OperationFailed"));

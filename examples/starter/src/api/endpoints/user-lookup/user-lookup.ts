@@ -8,18 +8,23 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  GetApiIdentityUsersLookupCountParams,
-  GetApiIdentityUsersLookupSearchParams,
   ListResultDtoOfUserData,
-  VoloAbpHttpRemoteServiceErrorResponse,
-  VoloAbpUsersUserData
+  RemoteServiceErrorResponse,
+  UserData,
+  UserLookupGetCountParams,
+  UserLookupSearchParams
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -49,7 +54,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiIdentityUsersLookupIdUrl = (id: string,) => {
+export const getUserLookupFindByIdUrl = (id: string,) => {
 
 
 
@@ -57,9 +62,9 @@ export const getGetApiIdentityUsersLookupIdUrl = (id: string,) => {
   return `/api/identity/users/lookup/${id}`
 }
 
-export const getApiIdentityUsersLookupId = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpUsersUserData> => {
+export const userLookupFindById = async (id: string, options?: Parameters<typeof abpMutator>[1]): Promise<UserData> => {
 
-  return abpMutator<VoloAbpUsersUserData>(getGetApiIdentityUsersLookupIdUrl(id),
+  return abpMutator<UserData>(getUserLookupFindByIdUrl(id),
   {
     ...options,
     method: 'GET'
@@ -72,43 +77,67 @@ export const getApiIdentityUsersLookupId = async (id: string, options?: Paramete
 
 
 
-export const getGetApiIdentityUsersLookupIdQueryKey = (id: string,) => {
+export const getUserLookupFindByIdQueryKey = (id: string,) => {
     return [
     `/api/identity/users/lookup/${id}`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersLookupIdQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserLookupFindByIdQueryOptions = <TData = Awaited<ReturnType<typeof userLookupFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindById>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersLookupIdQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getUserLookupFindByIdQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>> = ({ signal }) => getApiIdentityUsersLookupId(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userLookupFindById>>> = ({ signal }) => userLookupFindById(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userLookupFindById>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersLookupIdQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>>
-export type GetApiIdentityUsersLookupIdQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserLookupFindByIdQueryResult = NonNullable<Awaited<ReturnType<typeof userLookupFindById>>>
+export type UserLookupFindByIdQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersLookupId<TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupId>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserLookupFindById<TData = Awaited<ReturnType<typeof userLookupFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindById>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupFindById>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupFindById>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupFindById<TData = Awaited<ReturnType<typeof userLookupFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindById>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupFindById>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupFindById>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupFindById<TData = Awaited<ReturnType<typeof userLookupFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindById>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupFindById<TData = Awaited<ReturnType<typeof userLookupFindById>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindById>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserLookupFindByIdQueryOptions(id,options)
 
-  const queryOptions = getGetApiIdentityUsersLookupIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -118,7 +147,7 @@ export function useGetApiIdentityUsersLookupId<TData = Awaited<ReturnType<typeof
 
 
 
-export const getGetApiIdentityUsersLookupByUsernameUserNameUrl = (userName: string,) => {
+export const getUserLookupFindByUserNameUrl = (userName: string,) => {
 
 
 
@@ -126,9 +155,9 @@ export const getGetApiIdentityUsersLookupByUsernameUserNameUrl = (userName: stri
   return `/api/identity/users/lookup/by-username/${userName}`
 }
 
-export const getApiIdentityUsersLookupByUsernameUserName = async (userName: string, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpUsersUserData> => {
+export const userLookupFindByUserName = async (userName: string, options?: Parameters<typeof abpMutator>[1]): Promise<UserData> => {
 
-  return abpMutator<VoloAbpUsersUserData>(getGetApiIdentityUsersLookupByUsernameUserNameUrl(userName),
+  return abpMutator<UserData>(getUserLookupFindByUserNameUrl(userName),
   {
     ...options,
     method: 'GET'
@@ -141,43 +170,67 @@ export const getApiIdentityUsersLookupByUsernameUserName = async (userName: stri
 
 
 
-export const getGetApiIdentityUsersLookupByUsernameUserNameQueryKey = (userName: string,) => {
+export const getUserLookupFindByUserNameQueryKey = (userName: string,) => {
     return [
     `/api/identity/users/lookup/by-username/${userName}`
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersLookupByUsernameUserNameQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(userName: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserLookupFindByUserNameQueryOptions = <TData = Awaited<ReturnType<typeof userLookupFindByUserName>>, TError = ErrorType<RemoteServiceErrorResponse>>(userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindByUserName>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersLookupByUsernameUserNameQueryKey(userName);
+  const queryKey =  queryOptions?.queryKey ?? getUserLookupFindByUserNameQueryKey(userName);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>> = ({ signal }) => getApiIdentityUsersLookupByUsernameUserName(userName, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userLookupFindByUserName>>> = ({ signal }) => userLookupFindByUserName(userName, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: userName !== null && userName !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: userName !== null && userName !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userLookupFindByUserName>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersLookupByUsernameUserNameQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>>
-export type GetApiIdentityUsersLookupByUsernameUserNameQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserLookupFindByUserNameQueryResult = NonNullable<Awaited<ReturnType<typeof userLookupFindByUserName>>>
+export type UserLookupFindByUserNameQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersLookupByUsernameUserName<TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- userName: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupByUsernameUserName>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserLookupFindByUserName<TData = Awaited<ReturnType<typeof userLookupFindByUserName>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindByUserName>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupFindByUserName>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupFindByUserName>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupFindByUserName<TData = Awaited<ReturnType<typeof userLookupFindByUserName>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindByUserName>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupFindByUserName>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupFindByUserName>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupFindByUserName<TData = Awaited<ReturnType<typeof userLookupFindByUserName>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindByUserName>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupFindByUserName<TData = Awaited<ReturnType<typeof userLookupFindByUserName>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ userName: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupFindByUserName>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserLookupFindByUserNameQueryOptions(userName,options)
 
-  const queryOptions = getGetApiIdentityUsersLookupByUsernameUserNameQueryOptions(userName,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -187,7 +240,7 @@ export function useGetApiIdentityUsersLookupByUsernameUserName<TData = Awaited<R
 
 
 
-export const getGetApiIdentityUsersLookupSearchUrl = (params?: GetApiIdentityUsersLookupSearchParams,) => {
+export const getUserLookupSearchUrl = (params?: UserLookupSearchParams,) => {
   const normalizedParams = new URLSearchParams();
   const formObjectParameters = new Map<string, string>([["ExtraProperties","flatten"]]);
 
@@ -220,9 +273,9 @@ export const getGetApiIdentityUsersLookupSearchUrl = (params?: GetApiIdentityUse
   return stringifiedParams.length > 0 ? `/api/identity/users/lookup/search?${stringifiedParams}` : `/api/identity/users/lookup/search`
 }
 
-export const getApiIdentityUsersLookupSearch = async (params?: GetApiIdentityUsersLookupSearchParams, options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfUserData> => {
+export const userLookupSearch = async (params?: UserLookupSearchParams, options?: Parameters<typeof abpMutator>[1]): Promise<ListResultDtoOfUserData> => {
 
-  return abpMutator<ListResultDtoOfUserData>(getGetApiIdentityUsersLookupSearchUrl(params),
+  return abpMutator<ListResultDtoOfUserData>(getUserLookupSearchUrl(params),
   {
     ...options,
     method: 'GET'
@@ -235,43 +288,67 @@ export const getApiIdentityUsersLookupSearch = async (params?: GetApiIdentityUse
 
 
 
-export const getGetApiIdentityUsersLookupSearchQueryKey = (params?: GetApiIdentityUsersLookupSearchParams,) => {
+export const getUserLookupSearchQueryKey = (params?: UserLookupSearchParams,) => {
     return [
     `/api/identity/users/lookup/search`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersLookupSearchQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiIdentityUsersLookupSearchParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserLookupSearchQueryOptions = <TData = Awaited<ReturnType<typeof userLookupSearch>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: UserLookupSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupSearch>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersLookupSearchQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getUserLookupSearchQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>> = ({ signal }) => getApiIdentityUsersLookupSearch(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userLookupSearch>>> = ({ signal }) => userLookupSearch(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userLookupSearch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersLookupSearchQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>>
-export type GetApiIdentityUsersLookupSearchQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserLookupSearchQueryResult = NonNullable<Awaited<ReturnType<typeof userLookupSearch>>>
+export type UserLookupSearchQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersLookupSearch<TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiIdentityUsersLookupSearchParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupSearch>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserLookupSearch<TData = Awaited<ReturnType<typeof userLookupSearch>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  UserLookupSearchParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupSearch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupSearch>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupSearch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupSearch<TData = Awaited<ReturnType<typeof userLookupSearch>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserLookupSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupSearch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupSearch>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupSearch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupSearch<TData = Awaited<ReturnType<typeof userLookupSearch>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserLookupSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupSearch>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupSearch<TData = Awaited<ReturnType<typeof userLookupSearch>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserLookupSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupSearch>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserLookupSearchQueryOptions(params,options)
 
-  const queryOptions = getGetApiIdentityUsersLookupSearchQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -281,7 +358,7 @@ export function useGetApiIdentityUsersLookupSearch<TData = Awaited<ReturnType<ty
 
 
 
-export const getGetApiIdentityUsersLookupCountUrl = (params?: GetApiIdentityUsersLookupCountParams,) => {
+export const getUserLookupGetCountUrl = (params?: UserLookupGetCountParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -296,9 +373,9 @@ export const getGetApiIdentityUsersLookupCountUrl = (params?: GetApiIdentityUser
   return stringifiedParams.length > 0 ? `/api/identity/users/lookup/count?${stringifiedParams}` : `/api/identity/users/lookup/count`
 }
 
-export const getApiIdentityUsersLookupCount = async (params?: GetApiIdentityUsersLookupCountParams, options?: Parameters<typeof abpMutator>[1]): Promise<number> => {
+export const userLookupGetCount = async (params?: UserLookupGetCountParams, options?: Parameters<typeof abpMutator>[1]): Promise<number> => {
 
-  return abpMutator<number>(getGetApiIdentityUsersLookupCountUrl(params),
+  return abpMutator<number>(getUserLookupGetCountUrl(params),
   {
     ...options,
     method: 'GET'
@@ -311,43 +388,67 @@ export const getApiIdentityUsersLookupCount = async (params?: GetApiIdentityUser
 
 
 
-export const getGetApiIdentityUsersLookupCountQueryKey = (params?: GetApiIdentityUsersLookupCountParams,) => {
+export const getUserLookupGetCountQueryKey = (params?: UserLookupGetCountParams,) => {
     return [
     `/api/identity/users/lookup/count`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiIdentityUsersLookupCountQueryOptions = <TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiIdentityUsersLookupCountParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getUserLookupGetCountQueryOptions = <TData = Awaited<ReturnType<typeof userLookupGetCount>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: UserLookupGetCountParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupGetCount>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiIdentityUsersLookupCountQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getUserLookupGetCountQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>> = ({ signal }) => getApiIdentityUsersLookupCount(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof userLookupGetCount>>> = ({ signal }) => userLookupGetCount(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof userLookupGetCount>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiIdentityUsersLookupCountQueryResult = NonNullable<Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>>
-export type GetApiIdentityUsersLookupCountQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type UserLookupGetCountQueryResult = NonNullable<Awaited<ReturnType<typeof userLookupGetCount>>>
+export type UserLookupGetCountQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiIdentityUsersLookupCount<TData = Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiIdentityUsersLookupCountParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiIdentityUsersLookupCount>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useUserLookupGetCount<TData = Awaited<ReturnType<typeof userLookupGetCount>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  UserLookupGetCountParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupGetCount>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupGetCount>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupGetCount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupGetCount<TData = Awaited<ReturnType<typeof userLookupGetCount>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserLookupGetCountParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupGetCount>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userLookupGetCount>>,
+          TError,
+          Awaited<ReturnType<typeof userLookupGetCount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupGetCount<TData = Awaited<ReturnType<typeof userLookupGetCount>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserLookupGetCountParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupGetCount>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserLookupGetCount<TData = Awaited<ReturnType<typeof userLookupGetCount>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: UserLookupGetCountParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof userLookupGetCount>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getUserLookupGetCountQueryOptions(params,options)
 
-  const queryOptions = getGetApiIdentityUsersLookupCountQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

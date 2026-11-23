@@ -4,9 +4,9 @@
  * AbpSwagger API
  * OpenAPI spec version: v1
  */
-import type { VoloAbpUsersUserData } from './voloAbpUsersUserData';
+import type { UserData } from './userData';
 
 export interface ListResultDtoOfUserData {
   /** @nullable */
-  items?: VoloAbpUsersUserData[] | null;
+  items?: UserData[] | null;
 }

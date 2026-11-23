@@ -7,12 +7,12 @@
 import * as zod from 'zod';
 
 
-export const GetApiPermissionManagementPermissionsQueryParams = zod.object({
+export const PermissionsGetQueryParams = zod.object({
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const GetApiPermissionManagementPermissionsResponse = zod.object({
+export const PermissionsGetResponse = zod.object({
   "entityDisplayName": zod.string().nullish(),
   "groups": zod.array(zod.object({
   "name": zod.string().nullish(),
@@ -34,27 +34,27 @@ export const GetApiPermissionManagementPermissionsResponse = zod.object({
 })).nullish()
 })
 
-export const PutApiPermissionManagementPermissionsQueryParams = zod.object({
+export const PermissionsUpdateQueryParams = zod.object({
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const PutApiPermissionManagementPermissionsBody = zod.object({
+export const PermissionsUpdateBody = zod.object({
   "permissions": zod.array(zod.object({
   "name": zod.string().nullish(),
   "isGranted": zod.boolean().optional()
 })).nullish()
 })
 
-export const PutApiPermissionManagementPermissionsResponse = zod.unknown()
+export const PermissionsUpdateResponse = zod.unknown()
 
-export const GetApiPermissionManagementPermissionsByGroupQueryParams = zod.object({
+export const PermissionsGetByGroupQueryParams = zod.object({
   "groupName": zod.string().optional(),
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const GetApiPermissionManagementPermissionsByGroupResponse = zod.object({
+export const PermissionsGetByGroupResponse = zod.object({
   "entityDisplayName": zod.string().nullish(),
   "groups": zod.array(zod.object({
   "name": zod.string().nullish(),
@@ -76,48 +76,48 @@ export const GetApiPermissionManagementPermissionsByGroupResponse = zod.object({
 })).nullish()
 })
 
-export const GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesQueryParams = zod.object({
+export const PermissionsGetResourceProviderKeyLookupServicesQueryParams = zod.object({
   "resourceName": zod.string().optional()
 })
 
-export const GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesResponse = zod.object({
+export const PermissionsGetResourceProviderKeyLookupServicesResponse = zod.object({
   "providers": zod.array(zod.object({
   "name": zod.string().nullish(),
   "displayName": zod.string().nullish()
 })).nullish()
 })
 
-export const GetApiPermissionManagementPermissionsSearchResourceProviderKeysQueryParams = zod.object({
+export const PermissionsSearchResourceProviderKeyQueryParams = zod.object({
   "resourceName": zod.string().optional(),
   "serviceName": zod.string().optional(),
   "filter": zod.string().optional(),
   "page": zod.int().optional()
 })
 
-export const GetApiPermissionManagementPermissionsSearchResourceProviderKeysResponse = zod.object({
+export const PermissionsSearchResourceProviderKeyResponse = zod.object({
   "keys": zod.array(zod.object({
   "providerKey": zod.string().nullish(),
   "providerDisplayName": zod.string().nullish()
 })).nullish()
 })
 
-export const GetApiPermissionManagementPermissionsResourceDefinitionsQueryParams = zod.object({
+export const PermissionsGetResourceDefinitionsQueryParams = zod.object({
   "resourceName": zod.string().optional()
 })
 
-export const GetApiPermissionManagementPermissionsResourceDefinitionsResponse = zod.object({
+export const PermissionsGetResourceDefinitionsResponse = zod.object({
   "permissions": zod.array(zod.object({
   "name": zod.string().nullish(),
   "displayName": zod.string().nullish()
 })).nullish()
 })
 
-export const GetApiPermissionManagementPermissionsResourceQueryParams = zod.object({
+export const PermissionsGetResourceQueryParams = zod.object({
   "resourceName": zod.string().optional(),
   "resourceKey": zod.string().optional()
 })
 
-export const GetApiPermissionManagementPermissionsResourceResponse = zod.object({
+export const PermissionsGetResourceResponse = zod.object({
   "permissions": zod.array(zod.object({
   "providerName": zod.string().nullish(),
   "providerKey": zod.string().nullish(),
@@ -130,36 +130,36 @@ export const GetApiPermissionManagementPermissionsResourceResponse = zod.object(
 })).nullish()
 })
 
-export const PutApiPermissionManagementPermissionsResourceQueryParams = zod.object({
+export const PermissionsUpdateResourceQueryParams = zod.object({
   "resourceName": zod.string().optional(),
   "resourceKey": zod.string().optional()
 })
 
-export const PutApiPermissionManagementPermissionsResourceBody = zod.object({
+export const PermissionsUpdateResourceBody = zod.object({
   "providerName": zod.string().nullish(),
   "providerKey": zod.string().nullish(),
   "permissions": zod.array(zod.string()).nullish()
 })
 
-export const PutApiPermissionManagementPermissionsResourceResponse = zod.unknown()
+export const PermissionsUpdateResourceResponse = zod.unknown()
 
-export const DeleteApiPermissionManagementPermissionsResourceQueryParams = zod.object({
+export const PermissionsDeleteResourceQueryParams = zod.object({
   "resourceName": zod.string().optional(),
   "resourceKey": zod.string().optional(),
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const DeleteApiPermissionManagementPermissionsResourceResponse = zod.unknown()
+export const PermissionsDeleteResourceResponse = zod.unknown()
 
-export const GetApiPermissionManagementPermissionsResourceByProviderQueryParams = zod.object({
+export const PermissionsGetResourceByProviderQueryParams = zod.object({
   "resourceName": zod.string().optional(),
   "resourceKey": zod.string().optional(),
   "providerName": zod.string().optional(),
   "providerKey": zod.string().optional()
 })
 
-export const GetApiPermissionManagementPermissionsResourceByProviderResponse = zod.object({
+export const PermissionsGetResourceByProviderResponse = zod.object({
   "permissions": zod.array(zod.object({
   "name": zod.string().nullish(),
   "displayName": zod.string().nullish(),

@@ -8,16 +8,21 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  GetApiAbpApiDefinitionParams,
-  VoloAbpHttpModelingApplicationApiDescriptionModel,
-  VoloAbpHttpRemoteServiceErrorResponse
+  AbpApiDefinitionGetParams,
+  ApplicationApiDescriptionModel,
+  RemoteServiceErrorResponse
 } from '../../models';
 
 import { abpMutator } from '../../mutator';
@@ -47,7 +52,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getGetApiAbpApiDefinitionUrl = (params?: GetApiAbpApiDefinitionParams,) => {
+export const getAbpApiDefinitionGetUrl = (params?: AbpApiDefinitionGetParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -62,9 +67,9 @@ export const getGetApiAbpApiDefinitionUrl = (params?: GetApiAbpApiDefinitionPara
   return stringifiedParams.length > 0 ? `/api/abp/api-definition?${stringifiedParams}` : `/api/abp/api-definition`
 }
 
-export const getApiAbpApiDefinition = async (params?: GetApiAbpApiDefinitionParams, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpHttpModelingApplicationApiDescriptionModel> => {
+export const abpApiDefinitionGet = async (params?: AbpApiDefinitionGetParams, options?: Parameters<typeof abpMutator>[1]): Promise<ApplicationApiDescriptionModel> => {
 
-  return abpMutator<VoloAbpHttpModelingApplicationApiDescriptionModel>(getGetApiAbpApiDefinitionUrl(params),
+  return abpMutator<ApplicationApiDescriptionModel>(getAbpApiDefinitionGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -77,43 +82,67 @@ export const getApiAbpApiDefinition = async (params?: GetApiAbpApiDefinitionPara
 
 
 
-export const getGetApiAbpApiDefinitionQueryKey = (params?: GetApiAbpApiDefinitionParams,) => {
+export const getAbpApiDefinitionGetQueryKey = (params?: AbpApiDefinitionGetParams,) => {
     return [
     `/api/abp/api-definition`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiAbpApiDefinitionQueryOptions = <TData = Awaited<ReturnType<typeof getApiAbpApiDefinition>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiAbpApiDefinitionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApiDefinition>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export const getAbpApiDefinitionGetQueryOptions = <TData = Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(params?: AbpApiDefinitionGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiAbpApiDefinitionQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getAbpApiDefinitionGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiAbpApiDefinition>>> = ({ signal }) => getApiAbpApiDefinition(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof abpApiDefinitionGet>>> = ({ signal }) => abpApiDefinitionGet(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApiDefinition>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiAbpApiDefinitionQueryResult = NonNullable<Awaited<ReturnType<typeof getApiAbpApiDefinition>>>
-export type GetApiAbpApiDefinitionQueryError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>
+export type AbpApiDefinitionGetQueryResult = NonNullable<Awaited<ReturnType<typeof abpApiDefinitionGet>>>
+export type AbpApiDefinitionGetQueryError = ErrorType<RemoteServiceErrorResponse>
 
 
-export function useGetApiAbpApiDefinition<TData = Awaited<ReturnType<typeof getApiAbpApiDefinition>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiAbpApiDefinitionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAbpApiDefinition>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
+export function useAbpApiDefinitionGet<TData = Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params: undefined |  AbpApiDefinitionGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof abpApiDefinitionGet>>,
+          TError,
+          Awaited<ReturnType<typeof abpApiDefinitionGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAbpApiDefinitionGet<TData = Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: AbpApiDefinitionGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof abpApiDefinitionGet>>,
+          TError,
+          Awaited<ReturnType<typeof abpApiDefinitionGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAbpApiDefinitionGet<TData = Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: AbpApiDefinitionGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAbpApiDefinitionGet<TData = Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError = ErrorType<RemoteServiceErrorResponse>>(
+ params?: AbpApiDefinitionGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof abpApiDefinitionGet>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAbpApiDefinitionGetQueryOptions(params,options)
 
-  const queryOptions = getGetApiAbpApiDefinitionQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

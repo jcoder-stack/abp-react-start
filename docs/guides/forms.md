@@ -38,7 +38,7 @@ const form = useAppForm(
   abpFormOptions({
     defaultValues: { name: "" },
     schema: mySchema,                    // zod,落 onDynamic
-    submit: (value) => postApiXxx(value), // 抛出的 ABP 错误自动落字段/表单级
+    submit: (value) => xxxCreate(value), // 抛出的 ABP 错误自动落字段/表单级
     onSuccess: () => toast.success(L("Crud:Saved")),
   }),
 );

@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -11,6 +12,9 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generate } from "orval";
+import { type AbpAction, nameAbpOperations, readAbpActions } from "./abp-operation-names";
+import { shortenAbpSchemaNames, simplifyAbpGenericSchemaNames } from "./abp-schema-names";
+import { ABP_STANDARD_ACTIONS } from "./abp-standard-actions";
 import { type ApiTargetInput, loadApiConfig } from "./config";
 import { installExtraCaFromEnv } from "./extra-ca";
 import { createOrvalConfig } from "./orval-config";
@@ -83,11 +87,42 @@ async function localizeSpec(input: string): Promise<{ target: string; cleanup: (
   return { target, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-/** What runGen produced for one target: its name (multi-target only), output dir, and whether the mutator template was (first-)written. */
+/** Where a target's operation names came from: `abp` = C# method names from the backend's
+ *  api-definition; `path` = that document was not available, so only ABP's stock modules got method
+ *  names and the app's own endpoints fell back to path-derived ones; `legacy` = orval's default
+ *  (`naming: "legacy"`). */
+export type OperationNaming = "abp" | "path" | "legacy";
+
+/** 读 ABP 的 api-definition。显式配置的来源读不到就抛错；从 swagger 地址推出来的默认来源读不到则返回
+ *  undefined 走路径兜底——网关后面的后端未必暴露这个端点，不该因此挡住整次生成。 */
+async function loadAbpActions(
+  cwd: string,
+  input: string,
+  explicit: string | undefined,
+): Promise<AbpAction[] | undefined> {
+  if (explicit !== undefined && !isRemote(explicit)) {
+    return readAbpActions(JSON.parse(readFileSync(resolve(cwd, explicit), "utf8")));
+  }
+  const url =
+    explicit ?? (isRemote(input) ? new URL("/api/abp/api-definition", input).href : undefined);
+  if (url === undefined) return undefined;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return readAbpActions(await response.json());
+  } catch (error) {
+    if (explicit === undefined) return undefined;
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`failed to read the ABP api-definition: ${url} (${message})`, { cause: error });
+  }
+}
+
+/** What runGen produced for one target: its name (multi-target only), output dir, whether the mutator template was (first-)written, and where its operation names came from. */
 export interface GenTargetResult {
   name?: string;
   outputDir: string;
   mutatorWritten: boolean;
+  operationNaming: OperationNaming;
 }
 
 /** What runGen did across all resolved targets. */
@@ -119,9 +154,30 @@ export async function runGen(opts: {
       copyFileSync(TEMPLATE_PATH, mutatorPath);
       mutatorWritten = true;
     }
-    const spec = await localizeSpec(resolveInput(opts.cwd, config.input));
+    const input = resolveInput(opts.cwd, config.input);
+    const actions =
+      config.naming === "abp"
+        ? await loadAbpActions(opts.cwd, input, config.apiDefinition)
+        : undefined;
+    const operationNaming: OperationNaming =
+      config.naming === "legacy" ? "legacy" : actions === undefined ? "path" : "abp";
+    const transformer =
+      config.naming === "legacy"
+        ? simplifyAbpGenericSchemaNames
+        : <T>(doc: T): T =>
+            // 靠前的条目在同一路由上被靠后的覆盖：在线读到的 api-definition 压过内置快照。
+            nameAbpOperations(shortenAbpSchemaNames(doc), [
+              ...ABP_STANDARD_ACTIONS,
+              ...(actions ?? []),
+            ]);
+    const spec = await localizeSpec(input);
     try {
-      const orvalConfig = createOrvalConfig({ input: spec.target, outputDir, zod: config.zod });
+      const orvalConfig = createOrvalConfig({
+        input: spec.target,
+        outputDir,
+        zod: config.zod,
+        transformer,
+      });
       // orval's programmatic generate() only accepts a single project's Options (or a config file
       // path) as its first argument, not the multi-project map createOrvalConfig produces, so each
       // project ("api", optionally "apiZod") is resolved and generated with its own call.
@@ -138,7 +194,7 @@ export async function runGen(opts: {
         `gen produced no endpoints in ${endpointsDir}; check the input spec (orval can exit 0 without generating from an invalid or empty swagger)`,
       );
     }
-    results.push({ name: config.name, outputDir, mutatorWritten });
+    results.push({ name: config.name, outputDir, mutatorWritten, operationNaming });
   }
   return { targets: results };
 }

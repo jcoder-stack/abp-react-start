@@ -7,7 +7,7 @@
 import * as zod from 'zod';
 
 
-export const GetApiAccountMyProfileResponse = zod.object({
+export const ProfileGetResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "userName": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -19,33 +19,33 @@ export const GetApiAccountMyProfileResponse = zod.object({
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const putApiAccountMyProfileBodyUserNameMin = 0;
-export const putApiAccountMyProfileBodyUserNameMax = 256;
+export const profileUpdateBodyUserNameMin = 0;
+export const profileUpdateBodyUserNameMax = 256;
 
-export const putApiAccountMyProfileBodyEmailMin = 0;
-export const putApiAccountMyProfileBodyEmailMax = 256;
+export const profileUpdateBodyEmailMin = 0;
+export const profileUpdateBodyEmailMax = 256;
 
-export const putApiAccountMyProfileBodyNameMin = 0;
-export const putApiAccountMyProfileBodyNameMax = 64;
+export const profileUpdateBodyNameMin = 0;
+export const profileUpdateBodyNameMax = 64;
 
-export const putApiAccountMyProfileBodySurnameMin = 0;
-export const putApiAccountMyProfileBodySurnameMax = 64;
+export const profileUpdateBodySurnameMin = 0;
+export const profileUpdateBodySurnameMax = 64;
 
-export const putApiAccountMyProfileBodyPhoneNumberMin = 0;
-export const putApiAccountMyProfileBodyPhoneNumberMax = 16;
+export const profileUpdateBodyPhoneNumberMin = 0;
+export const profileUpdateBodyPhoneNumberMax = 16;
 
 
 
-export const PutApiAccountMyProfileBody = zod.object({
-  "userName": zod.string().min(putApiAccountMyProfileBodyUserNameMin).max(putApiAccountMyProfileBodyUserNameMax).nullish(),
-  "email": zod.string().min(putApiAccountMyProfileBodyEmailMin).max(putApiAccountMyProfileBodyEmailMax).nullish(),
-  "name": zod.string().min(putApiAccountMyProfileBodyNameMin).max(putApiAccountMyProfileBodyNameMax).nullish(),
-  "surname": zod.string().min(putApiAccountMyProfileBodySurnameMin).max(putApiAccountMyProfileBodySurnameMax).nullish(),
-  "phoneNumber": zod.string().min(putApiAccountMyProfileBodyPhoneNumberMin).max(putApiAccountMyProfileBodyPhoneNumberMax).nullish(),
+export const ProfileUpdateBody = zod.object({
+  "userName": zod.string().min(profileUpdateBodyUserNameMin).max(profileUpdateBodyUserNameMax).nullish(),
+  "email": zod.string().min(profileUpdateBodyEmailMin).max(profileUpdateBodyEmailMax).nullish(),
+  "name": zod.string().min(profileUpdateBodyNameMin).max(profileUpdateBodyNameMax).nullish(),
+  "surname": zod.string().min(profileUpdateBodySurnameMin).max(profileUpdateBodySurnameMax).nullish(),
+  "phoneNumber": zod.string().min(profileUpdateBodyPhoneNumberMin).max(profileUpdateBodyPhoneNumberMax).nullish(),
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const PutApiAccountMyProfileResponse = zod.object({
+export const ProfileUpdateResponse = zod.object({
   "extraProperties": zod.record(zod.string(), zod.unknown()).nullish(),
   "userName": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -57,18 +57,18 @@ export const PutApiAccountMyProfileResponse = zod.object({
   "concurrencyStamp": zod.string().nullish()
 })
 
-export const postApiAccountMyProfileChangePasswordBodyCurrentPasswordMin = 0;
-export const postApiAccountMyProfileChangePasswordBodyCurrentPasswordMax = 128;
+export const profileChangePasswordBodyCurrentPasswordMin = 0;
+export const profileChangePasswordBodyCurrentPasswordMax = 128;
 
-export const postApiAccountMyProfileChangePasswordBodyNewPasswordMin = 0;
-export const postApiAccountMyProfileChangePasswordBodyNewPasswordMax = 128;
+export const profileChangePasswordBodyNewPasswordMin = 0;
+export const profileChangePasswordBodyNewPasswordMax = 128;
 
 
 
-export const PostApiAccountMyProfileChangePasswordBody = zod.object({
-  "currentPassword": zod.string().min(postApiAccountMyProfileChangePasswordBodyCurrentPasswordMin).max(postApiAccountMyProfileChangePasswordBodyCurrentPasswordMax).nullish(),
-  "newPassword": zod.string().min(postApiAccountMyProfileChangePasswordBodyNewPasswordMin).max(postApiAccountMyProfileChangePasswordBodyNewPasswordMax)
+export const ProfileChangePasswordBody = zod.object({
+  "currentPassword": zod.string().min(profileChangePasswordBodyCurrentPasswordMin).max(profileChangePasswordBodyCurrentPasswordMax).nullish(),
+  "newPassword": zod.string().min(profileChangePasswordBodyNewPasswordMin).max(profileChangePasswordBodyNewPasswordMax)
 })
 
-export const PostApiAccountMyProfileChangePasswordResponse = zod.unknown()
+export const ProfileChangePasswordResponse = zod.unknown()
 

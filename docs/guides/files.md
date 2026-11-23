@@ -14,7 +14,7 @@
 ABP 里参数是 `IRemoteStreamContent`（或 DTO 里带这类属性）的接口，在 swagger 里是 `multipart/form-data`。`jc-abp gen` 生成的函数自己拼 `FormData`，直接把 `File` 传进去：
 
 ```tsx
-const upload = usePostApiAppEmployeeIdAttachment();
+const upload = useEmployeeUploadAttachment();
 
 upload.mutate({ id, data: { Category: "contract", Content: file } });
 ```
@@ -32,7 +32,7 @@ import { useLocalization } from "@jcoder-stack/abp-react/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { downloadAbpFile } from "@/api/abp-download";
-import { getGetApiAppFileIdDownloadUrl } from "@/api/endpoints/file/file";
+import { getFileDownloadUrl } from "@/api/endpoints/file/file";
 import { abpErrorMessage } from "@/components/abp/crud/abp-form-errors";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -45,7 +45,7 @@ function DownloadButton({ id, label }: { id: string; label: string }) {
   async function onDownload() {
     setPercent(undefined);
     try {
-      await downloadAbpFile(getGetApiAppFileIdDownloadUrl(id), {
+      await downloadAbpFile(getFileDownloadUrl(id), {
         onProgress: ({ loaded, total }) =>
           setPercent(total ? Math.round((loaded / total) * 100) : undefined),
       });
@@ -72,7 +72,7 @@ function DownloadButton({ id, label }: { id: string; label: string }) {
 - `onProgress` 的 `total` 可能是 `null`：上游没给长度，或者正文被压缩过。这时给 `<Progress>` 传 `null`：Radix 把它标成 `data-state="indeterminate"`、不带 `aria-valuenow`，读屏器不会念出错误的百分比；视觉上是一条空轨道，要动画可以在主题层按 `[data-slot="progress"][data-state="indeterminate"]` 加。
 - 只要拿到文件、不落盘（预览图片、在浏览器里解析 Excel），用 `fetchAbpFile`，它返回 `File` / `Blob`。
 
-生成的下载函数（如 `getApiAppFileIdDownload`）也能用，返回的同样是带文件名的 `File`，但它走 server fn，正文经 base64 过桥、在服务端整份缓冲，只适合小文件。
+生成的下载函数（如 `fileDownload`）也能用，返回的同样是带文件名的 `File`，但它走 server fn，正文经 base64 过桥、在服务端整份缓冲，只适合小文件。
 
 ### 流式路由做了什么
 
