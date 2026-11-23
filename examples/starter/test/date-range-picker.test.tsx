@@ -79,7 +79,9 @@ describe("DateRangePicker", () => {
     const trigger = await screen.findByRole("button", {
       name: new RegExp(`${from.getFullYear()}`),
     });
-    expect(trigger.getAttribute("title")).toBe(`${format(from, "PP")} – ${format(to, "PP")}`);
+    expect(trigger.getAttribute("title")).toBe(
+      `${format(from, "yyyy-MM-dd")} – ${format(to, "yyyy-MM-dd")}`,
+    );
     unmount();
 
     renderWithProviders(<DateRangePicker onChange={vi.fn()} />, { messages: datePickerMessages });

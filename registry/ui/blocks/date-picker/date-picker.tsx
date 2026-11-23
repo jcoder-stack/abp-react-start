@@ -5,6 +5,7 @@ import { zhCN } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { calendarFormatters, useCalendarBounds } from "@/components/date-picker/calendar-bounds";
+import { DISPLAY_DATE } from "@/components/date-picker/date-io";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -37,7 +38,7 @@ export function DatePicker(props: DatePickerProps) {
   const locale = dateFnsLocale(culture);
   const bounds = useCalendarBounds(props.value, props.value, props);
   const label = props.value
-    ? format(props.value, "PPP", { locale })
+    ? format(props.value, DISPLAY_DATE)
     : (props.placeholder ?? L("DatePicker:Placeholder"));
   return (
     <Popover open={open} onOpenChange={setOpen}>

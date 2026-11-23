@@ -55,6 +55,11 @@ export interface SheetFormProps {
   pending?: boolean;
   /** 表单是否有未保存的改动。为真时，任何关闭动作都先过一道确认。 */
   dirty?: boolean;
+  /** 给了就表示这次编辑是从查看态进来的：取消与 Esc 回到查看态（有改动先确认），
+   *  只有右上角 × 和点遮罩才关掉整个抽屉。 */
+  onBack?: () => void;
+  /** 透传给 `SheetContent`，用来在关闭后把焦点还给打开者。 */
+  onCloseAutoFocus?: (event: Event) => void;
   /** 抽屉宽度，默认 `sm`。见 `SheetFormSize`。 */
   size?: SheetFormSize;
   children: ReactNode;
@@ -64,17 +69,21 @@ export interface SheetFormProps {
 export function SheetForm(props: SheetFormProps) {
   const L = useLocalization();
   const editable = props.mode !== "view";
-  const [confirming, setConfirming] = useState(false);
+  // 确认框通过后要执行的离开动作：关掉抽屉，或退回查看态。
+  const [confirming, setConfirming] = useState<(() => void) | null>(null);
 
-  // 所有关闭路径都收敛到这里：Esc、右上角 ×、点遮罩、取消按钮。分散判断迟早漏掉一条，
+  // 所有离开编辑的路径都收敛到这里：Esc、右上角 ×、点遮罩、取消按钮。分散判断迟早漏掉一条，
   // 而「哪一条漏了」只有用户丢了数据才会发现。
-  const requestClose = () => {
+  const guard = (leave: () => void) => {
     if (props.dirty === true) {
-      setConfirming(true);
+      setConfirming(() => leave);
       return;
     }
-    props.onOpenChange(false);
+    leave();
   };
+  const requestClose = () => guard(() => props.onOpenChange(false));
+  const onBack = props.onBack;
+  const requestBack = onBack ? () => guard(onBack) : requestClose;
 
   return (
     <Sheet
@@ -83,13 +92,14 @@ export function SheetForm(props: SheetFormProps) {
     >
       <SheetContent
         className={cn("flex w-full flex-col gap-0 p-0", SHEET_SIZE_CLASS[props.size ?? "sm"])}
+        onCloseAutoFocus={props.onCloseAutoFocus}
         // Esc 自己兜一层，不依赖 Radix 的默认路径：焦点落在文本框里时浏览器会先消费掉这个键
         // （事件到达 document 时已 defaultPrevented），而表单一打开就自动聚焦第一个字段——
         // 于是模态最标准的退出键在实际使用中从来没生效过。
         onKeyDown={(event) => {
           if (event.key !== "Escape") return;
           event.stopPropagation();
-          requestClose();
+          requestBack();
         }}
       >
         <SheetHeader className="gap-0 px-5 pt-5 pb-4 pr-12">
@@ -136,7 +146,7 @@ export function SheetForm(props: SheetFormProps) {
             // 单行右对齐、primary 最右，与整页表单同一套语法；取消用 ghost——它是退路，
             // 不是与保存并列的选项，不该也带一圈边框去争视觉重量。
             <div className="flex items-center justify-end gap-2 border-t px-5 py-3">
-              <Button type="button" variant="ghost" onClick={requestClose}>
+              <Button type="button" variant="ghost" onClick={requestBack}>
                 {L("Form:Cancel")}
               </Button>
               <SubmitButton pending={props.pending} />
@@ -144,7 +154,12 @@ export function SheetForm(props: SheetFormProps) {
           )}
         </form>
       </SheetContent>
-      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+      <AlertDialog
+        open={confirming !== null}
+        onOpenChange={(next) => {
+          if (!next) setConfirming(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{L("Form:DiscardTitle")}</AlertDialogTitle>
@@ -156,8 +171,9 @@ export function SheetForm(props: SheetFormProps) {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                setConfirming(false);
-                props.onOpenChange(false);
+                const leave = confirming;
+                setConfirming(null);
+                leave?.();
               }}
             >
               {L("Form:Discard")}

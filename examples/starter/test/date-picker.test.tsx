@@ -45,7 +45,7 @@ describe("DatePicker", () => {
     const trigger = await screen.findByRole("button", {
       name: new RegExp(`${value.getFullYear()}`),
     });
-    expect(trigger.getAttribute("title")).toBe(format(value, "PPP"));
+    expect(trigger.getAttribute("title")).toBe(format(value, "yyyy-MM-dd"));
     unmount();
 
     renderWithProviders(<DatePicker onChange={vi.fn()} />, { messages: datePickerMessages });

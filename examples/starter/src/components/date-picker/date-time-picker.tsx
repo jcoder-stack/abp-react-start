@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { calendarFormatters, useCalendarBounds } from "@/components/date-picker/calendar-bounds";
+import { DISPLAY_DATE_TIME } from "@/components/date-picker/date-io";
 import type { DatePickerProps } from "@/components/date-picker/date-picker";
 import { dateFnsLocale } from "@/components/date-picker/date-picker";
 import { TimeInput } from "@/components/date-picker/time-input";
@@ -27,8 +28,7 @@ export function DateTimePicker(props: DatePickerProps) {
   const bounds = useCalendarBounds(props.value, props.value, props);
   const timeValue = props.value ? format(props.value, "HH:mm") : "";
   const label = props.value
-    ? // 时分固定 24 小时制：locale 的 `p` 在中文下是「上午 12:00」，与全站的 `HH:mm` 不是一套读法
-      `${format(props.value, "PP", { locale })} ${format(props.value, "HH:mm")}`
+    ? format(props.value, DISPLAY_DATE_TIME)
     : (props.placeholder ?? L("DatePicker:Placeholder"));
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -331,6 +331,7 @@ function BooksPage() {
               label={L("App::BookPrice")}
               placeholder={L("App::BookPricePlaceholder")}
               step="0.01"
+              digits={2}
               required
               disabled={sheet.readOnly}
             />
