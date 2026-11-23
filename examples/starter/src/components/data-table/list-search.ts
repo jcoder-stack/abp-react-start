@@ -120,7 +120,9 @@ function isEmptyValue(value: unknown): boolean {
  *  原始值是标量就原样收下。 */
 function coerceLike(raw: unknown, sample: unknown): unknown {
   if (typeof sample === "string") {
-    return typeof raw === "string" || typeof raw === "number" ? String(raw) : undefined;
+    // 路由把手写链接里的 `?InStock=true`、`?Type=7` 解析成布尔和数字；表单字段是字符串值域，
+    // 转回字符串才能和选项对上，丢掉的话深链就静默失效。
+    return ["string", "number", "boolean"].includes(typeof raw) ? String(raw) : undefined;
   }
   if (typeof sample === "number") return typeof raw === "number" ? raw : undefined;
   if (typeof sample === "boolean") return typeof raw === "boolean" ? raw : undefined;

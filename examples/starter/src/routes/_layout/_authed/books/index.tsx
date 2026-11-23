@@ -1,7 +1,9 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { CopyPlus, FileText, PackageCheck, PackageX } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { createCrudService } from "@/components/abp/crud/crud-service";
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet";
 import { createAbpColumns } from "@/components/abp/table/column-presets";
@@ -15,26 +17,38 @@ import {
   queryStore,
   searchListStore,
 } from "@/components/data-table/list-search";
+import { asBaseTable } from "@/components/data-table/table-core";
+import { QueryDateRange } from "@/components/date-picker/query-date-range";
+import { FieldHint, FieldLayout } from "@/components/form/field-layout";
+import { FormCard } from "@/components/form/form-card";
 import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getApiAppAuthor,
   getApiAppBook,
   getGetApiAppBookQueryKey,
+  putApiAppBookId,
+  setBookDemoScenario,
   useDeleteApiAppBookId,
   useGetApiAppAuthorId,
   useGetApiAppBook,
   usePostApiAppBook,
   usePutApiAppBookId,
 } from "@/routes/_layout/_authed/books/-book-api";
-import type {
-  AbpSwaggerBooksBookDto,
-  AbpSwaggerBooksCreateUpdateBookDto,
-} from "@/routes/_layout/_authed/books/-book-models";
+import { exportBooksCsv } from "@/routes/_layout/_authed/books/-book-export";
 import {
-  postApiAppBookBody,
-  postApiAppBookBodyNameMax,
-} from "@/routes/_layout/_authed/books/-book-models";
+  BOOK_TAG_KEYS,
+  BOOK_TYPE_KEYS,
+  BOOK_TYPE_VALUES,
+  bookSchema,
+  bookTypeLabelKey,
+  EMPTY_BOOK_VALUES,
+  toBookInput,
+  toBookValues,
+} from "@/routes/_layout/_authed/books/-book-form";
+import type { AbpSwaggerBooksBookDto } from "@/routes/_layout/_authed/books/-book-models";
+import { type BookScenario, BookScenarioBar } from "@/routes/_layout/_authed/books/-book-scenarios";
 import { BooksL1Demo } from "@/routes/_layout/_authed/books/-tiers/books-l1-demo";
 import { BooksL2Demo } from "@/routes/_layout/_authed/books/-tiers/books-l2-demo";
 
@@ -57,7 +71,13 @@ async function loadAuthorOptions(search: string): Promise<ComboboxOption[]> {
   return filtered.map((a) => ({ value: a.id ?? "", label: a.name ?? "" }));
 }
 
-const QUERY_DEFAULTS = { Name: "", MinPublishDate: "" };
+const QUERY_DEFAULTS = {
+  Name: "",
+  Type: "",
+  MinPublishDate: "",
+  MaxPublishDate: "",
+  InStock: "",
+};
 
 /** demo 后端未给 book 端点定义权限策略,故 service 描述符省略 `policy`、每个 `source.can.*` 门都为 true。 */
 export const Route = createFileRoute("/_layout/_authed/books/")({
@@ -78,24 +98,6 @@ const bookService = createCrudService({
   supportsFilter: false,
 });
 
-/** ABP demo BookStore 的图书类型枚举（0–8）；文案取自 App:: 词条桶。 */
-const BOOK_TYPE_KEYS: Record<number, string> = {
-  0: "App::BookTypeUndefined",
-  1: "App::BookTypeAdventure",
-  2: "App::BookTypeBiography",
-  3: "App::BookTypeDystopia",
-  4: "App::BookTypeFantastic",
-  5: "App::BookTypeHorror",
-  6: "App::BookTypeScience",
-  7: "App::BookTypeScienceFiction",
-  8: "App::BookTypePoetry",
-};
-const BOOK_TYPE_VALUES = Object.keys(BOOK_TYPE_KEYS).map(Number);
-
-function bookTypeLabelKey(value: number | undefined): string {
-  return BOOK_TYPE_KEYS[value ?? 0] ?? "App::BookTypeUndefined";
-}
-
 // 列定义走词条 key 而非 L()，因此不依赖 hook，可以留在模块级：引用天然稳定，
 // 不必再包 useMemo，也就不存在「每渲染新数组重建列模型」那类退化。
 const col = createAbpColumns<AbpSwaggerBooksBookDto>();
@@ -107,48 +109,32 @@ const columns = [
     fallback: "App::BookTypeUndefined",
     enableSorting: false,
   }),
+  // 「在售」是记录当前所处的状态，配得上徽章；缺货用 neutral 而不是红色——它不是错误。
+  col.bool("inStock", "App::BookInStock", { trueStatus: "success" }),
+  col.number("stock", "App::BookStock"),
   col.date("publishDate", "App::BookPublishDate"),
   col.money("price", "App::BookPrice", { digits: 2 }),
+  col.text("description", "App::BookDescription", { truncate: true, enableSorting: false }),
+  col.datetime("lastModificationTime", "App::BookLastModified"),
 ];
 
-interface BookFormValues {
-  name: string;
-  authorId: string;
-  type: string;
-  publishDate: string;
-  price: number;
-}
-
-const EMPTY_VALUES: BookFormValues = {
-  name: "",
-  authorId: "",
-  type: "0",
-  publishDate: "",
-  // 不预填 0：它能通过非空校验，那个必填标记就永远不会触发，用户还得先把 0 删掉。
-  // NumberField 把空输入映射成 NaN，默认值同样给 NaN，字段才是真的空。
-  price: Number.NaN,
+// 「最后修改」默认收起：视图设置里勾上就出现，「恢复默认视图」再把它藏回去。
+const TABLE_OPTIONS = {
+  initialState: { columnVisibility: { lastModificationTime: false } },
 };
 
-/** 不能走默认：SelectField 是 string 值域（枚举 String/Number 往返）、publishDate 需 date-only 切片。 */
-function toRecordValues(record: AbpSwaggerBooksBookDto): BookFormValues {
-  return {
-    name: record.name ?? "",
-    authorId: record.authorId ?? "",
-    type: String(record.type ?? 0),
-    // publishDate 回来的是完整 ISO datetime，而 <input type="date"> 与 create/update 的 body
-    // schema（zod.iso.date()）都只要 "YYYY-MM-DD" 这段日期切片。
-    publishDate: record.publishDate ? record.publishDate.slice(0, 10) : "",
-    price: record.price ?? 0,
-  };
+const TAG_VALUES = Object.keys(BOOK_TAG_KEYS);
+
+/** 在售的书先下架才能删：行菜单里不出「删除」，批量删除也会跳过它并在提示里交代。 */
+function canDeleteBook(row: AbpSwaggerBooksBookDto): boolean {
+  return row.inStock !== true;
 }
 
-/** 不能走默认：SelectField 是 string 值域（枚举 String/Number 往返）、publishDate 需 date-only 切片；
- *  create/update 共用同一映射，故命名为 toInput 而非 toCreateInput/toUpdateInput。 */
-function toInput(value: BookFormValues): AbpSwaggerBooksCreateUpdateBookDto {
-  return {
-    ...value,
-    type: Number(value.type) as AbpSwaggerBooksCreateUpdateBookDto["type"],
-  };
+function setInStock(row: AbpSwaggerBooksBookDto, inStock: boolean) {
+  const values = toBookValues(row);
+  // 上架却没有库存的书，库存补成 1：与表单里「在售必须有库存」的规则保持一致。
+  const stock = inStock && (values.stock ?? 0) <= 0 ? 1 : values.stock;
+  return putApiAppBookId(row.id ?? "", toBookInput({ ...values, inStock, stock }));
 }
 
 function BooksPage() {
@@ -156,31 +142,14 @@ function BooksPage() {
   const navigate = Route.useNavigate();
   const L = useLocalization();
 
-  // 以生成的 body schema 为基底：max(128) 这类后端约束免费继承；`type` 是表单 SelectField 的
-  // string 值域，与生成侧的 number literal union 冲突，omit 后重声明；authorId/publishDate 用
-  // `.extend()` 整键替换成 z.string().min(1, 词条)，extend 是替换不是叠加，生成侧的
-  // uuid()/iso.date() 校验随之让位；这里可以接受：值域由 Combobox 选项与 date input 保证，
-  // 表单侧只需必填语义。
-  const bookSchema = postApiAppBookBody.omit({ type: true }).extend({
-    type: z.string(),
-    name: z
-      .string()
-      .trim()
-      .min(1, L("App::BookNameRequired"))
-      .max(postApiAppBookBodyNameMax, L("Form:MaxLength", postApiAppBookBodyNameMax)),
-    authorId: z.string().min(1, L("App::BookAuthorRequired")),
-    publishDate: z.string().min(1, L("App::BookPublishDateRequired")),
-    price: z.number(L("App::BookPriceRequired")).min(0, L("App::BookPriceInvalid")),
-  });
-
   const sheet = useAbpSheet(bookService, {
-    emptyValues: EMPTY_VALUES,
+    emptyValues: EMPTY_BOOK_VALUES,
     // TDto 在 sheet 块里只有回调参数（逆变）位，调用点推不出具体 DTO 类型；本页在回调外读
     // sheet.record.authorId/authorName，故必须在此显式标注。
-    toValues: (record: AbpSwaggerBooksBookDto) => toRecordValues(record),
-    toCreate: toInput,
-    toUpdate: toInput,
-    schema: () => bookSchema,
+    toValues: (record: AbpSwaggerBooksBookDto) => toBookValues(record),
+    toCreate: toBookInput,
+    toUpdate: toBookInput,
+    schema: () => bookSchema(L),
     title: (mode, record) => (mode === "create" ? L("App::BookCreateTitle") : (record?.name ?? "")),
     subtitle: (mode, record) =>
       mode === "create" || record === undefined
@@ -204,11 +173,35 @@ function BooksPage() {
       ]
     : [];
 
-  // `GetApiAppBookParams` 只有 Name/MinPublishDate 两个端点自有查询参数，没有 MaxPublishDate
-  // 上界字段（`docs/guides/abp-table.md` 的 QueryDateRange 示例特地注明那是假设端点多一个字段
-  // 才用得上的演示），故这里只声明这两个真实字段，不伪造一个后端会静默丢弃的 MaxPublishDate。
+  const typeOptions = BOOK_TYPE_VALUES.map((value) => ({
+    value: String(value),
+    label: L(bookTypeLabelKey(value)),
+  }));
+  const tagOptions = TAG_VALUES.map((value) => ({
+    value,
+    label: L(BOOK_TAG_KEYS[value] ?? value),
+  }));
+
+  // 引用必须稳定：进 useAbpTable 的列 memo 依赖，内联箭头会让列模型每渲染重建。
+  // 「复制为新书」用 create 模式打开、带上这条记录的值：保存走的是新建，不会改到原书。
+  const { open } = sheet;
+  const duplicateMenuItem = useCallback(
+    (row: AbpSwaggerBooksBookDto) => (
+      <DropdownMenuItem
+        onSelect={() =>
+          void open("create", { ...row, name: L("App::BookCopyName", row.name ?? "") })
+        }
+      >
+        <CopyPlus />
+        {L("App::BookDuplicate")}
+      </DropdownMenuItem>
+    ),
+    [open, L],
+  );
+
   const t = useAbpTable(bookService, {
     columns,
+    tableOptions: TABLE_OPTIONS,
     selectable: true,
     query: {
       defaults: QUERY_DEFAULTS,
@@ -217,50 +210,150 @@ function BooksPage() {
       ),
       summary: {
         Name: { label: L("App::BookName") },
+        Type: { label: L("App::BookType"), format: (value) => L(bookTypeLabelKey(Number(value))) },
         MinPublishDate: { label: L("App::BookPublishedAfter") },
+        MaxPublishDate: { label: L("App::BookPublishedBefore") },
+        InStock: {
+          label: L("App::BookInStock"),
+          format: (value) => L(value === "true" ? "App::BookOnSale" : "App::BookOffSale"),
+        },
       },
     },
+    row: {
+      menu: duplicateMenuItem,
+      canDelete: canDeleteBook,
+      deleteConfirm: L("App::BookDeleteConfirm"),
+    },
     onOpen: sheet.open,
+    onExport: (context) => {
+      void exportBooksCsv(context, [
+        L("App::BookName"),
+        L("App::BookAuthor"),
+        L("App::BookPublishDate"),
+        L("App::BookPrice"),
+        L("App::BookStock"),
+        L("App::BookInStock"),
+      ]).then((count) => toast.success(L("App::BookExported", count)));
+    },
     list: searchListStore(search, (patch) =>
       navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true }),
     ),
     preferences: localStoragePreferences("books"),
   });
 
+  // 「跨页选择」要等新一页数据渲染出来才能勾：重取是异步的，勾选得落在那之后。
+  const queryClient = useQueryClient();
+  const pendingSelectAll = useRef(false);
+  const pageItems = t.source.listQuery.data?.items;
+  useEffect(() => {
+    if (!pendingSelectAll.current || !pageItems?.length) return;
+    pendingSelectAll.current = false;
+    asBaseTable(t.table).getToggleAllPageRowsSelectedHandler()({ target: { checked: true } });
+  }, [pageItems, t.table]);
+
+  // 每个场景都从干净状态出发：清掉筛选、选择和视图改动，再叠上这个场景自己的那一步。
+  const applyScenario = async (scenario: BookScenario) => {
+    const table = asBaseTable(t.table);
+    t.clearSelection();
+    table.resetColumnVisibility();
+    t.state.resetViewDefaults();
+    setBookDemoScenario(scenario === "empty" ? "empty" : scenario === "long" ? "long" : "normal");
+    const nextSearch =
+      scenario === "filtered"
+        ? { Type: "7", InStock: "true" }
+        : scenario === "noMatch"
+          ? { Name: L("App::BookScenarioNoMatchName") }
+          : scenario === "long"
+            ? { size: 50 }
+            : {};
+    await navigate({ search: nextSearch, replace: true });
+    pendingSelectAll.current = scenario === "selectAll";
+    await queryClient.resetQueries({ queryKey: getGetApiAppBookQueryKey() });
+    if (scenario === "view") {
+      t.state.setDensity("compact");
+      table.getColumn("description")?.toggleVisibility(false);
+    }
+    if (scenario === "failing") {
+      // 先有一份数据，再让刷新失败：这才是「旧数据还在、刷新没成功」的那个状态。
+      setBookDemoScenario("failing");
+      void t.source.listQuery.refetch?.();
+    }
+  };
+
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-normal">{L("App::Books")}</h1>
       <Tabs defaultValue="standard">
-        <TabsList variant="line">
-          <TabsTrigger value="standard">{L("App::BooksTierStandard")}</TabsTrigger>
-          <TabsTrigger value="l1">{L("App::BooksTierL1")}</TabsTrigger>
-          <TabsTrigger value="l2">{L("App::BooksTierL2")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="standard">
-          <t.Table>
+        {/* 三个层级名都长，窄屏放不下：外层自己横向滚，不撑出整页的横向滚动。滚动放在外层而不是
+            TabsList 上：line 变体的下划线比页签条低出 2px，条本身一设 overflow，纵向也跟着变成
+            可滚动，就多出一根竖滚动条；外层的 pb-1 把这 2px 收在内边距里。 */}
+        <div className="overflow-x-auto overflow-y-hidden pb-1">
+          <TabsList variant="line">
+            <TabsTrigger value="standard">{L("App::BooksTierStandard")}</TabsTrigger>
+            <TabsTrigger value="l1">{L("App::BooksTierL1")}</TabsTrigger>
+            <TabsTrigger value="l2">{L("App::BooksTierL2")}</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="standard" className="space-y-4">
+          <BookScenarioBar onApply={(scenario) => void applyScenario(scenario)} />
+          <t.Table stickyHeader>
             <t.QueryForm>
               <t.queryForm.AppField name="Name">
                 {(f) => <f.TextField label={L("App::BookName")} />}
               </t.queryForm.AppField>
-              <t.queryForm.AppField name="MinPublishDate">
-                {(f) => <f.DateField label={L("App::BookPublishedAfter")} />}
+              <t.queryForm.AppField name="Type">
+                {(f) => (
+                  <f.SelectField
+                    label={L("App::BookType")}
+                    options={[{ value: "", label: L("App::All") }, ...typeOptions]}
+                  />
+                )}
+              </t.queryForm.AppField>
+              <QueryDateRange
+                form={t.queryForm}
+                from="MinPublishDate"
+                to="MaxPublishDate"
+                label={L("App::BookPublishDate")}
+              />
+              <t.queryForm.AppField name="InStock">
+                {(f) => (
+                  <f.SelectField
+                    label={L("App::BookInStock")}
+                    options={[
+                      { value: "", label: L("App::All") },
+                      { value: "true", label: L("App::BookOnSale") },
+                      { value: "false", label: L("App::BookOffSale") },
+                    ]}
+                  />
+                )}
               </t.queryForm.AppField>
             </t.QueryForm>
 
             <t.BulkBar>
-              <t.SelectedCount>
-                {(count) => (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toast.success(L("App::ExportSelected", count))}
-                  >
-                    {L("App::ExportSelected", count)}
-                  </Button>
-                )}
-              </t.SelectedCount>
+              <t.BulkAction
+                label={L("App::BookPutOnSale")}
+                icon={<PackageCheck />}
+                run={(row) => setInStock(row, true)}
+                canRun={(row) => row.inStock !== true}
+              />
+              <t.BulkAction
+                label={L("App::BookTakeOffSale")}
+                icon={<PackageX />}
+                run={(row) => setInStock(row, false)}
+                canRun={(row) => row.inStock === true}
+              />
               <t.BulkDelete />
             </t.BulkBar>
+
+            <t.Toolbar>
+              {/* 整页表单入口：长表单或要深链分享的录入，不走抽屉。 */}
+              <Button variant="outline" size="sm" className="max-md:hidden" asChild>
+                <Link to="/books/new">
+                  <FileText />
+                  {L("App::BookFullPageForm")}
+                </Link>
+              </Button>
+            </t.Toolbar>
 
             <t.Utility>
               <DataTableSortMenu table={t} />
@@ -276,67 +369,135 @@ function BooksPage() {
           <BooksL2Demo />
         </TabsContent>
       </Tabs>
-      <sheet.Sheet>
+      <sheet.Sheet size="md">
         <sheet.form.AppForm>
           <sheet.form.FormErrors />
         </sheet.form.AppForm>
 
-        <sheet.form.AppField name="name">
-          {(field) => (
-            <field.TextField
-              label={L("App::BookName")}
-              placeholder={L("App::BookNamePlaceholder")}
-              required
-              disabled={sheet.readOnly}
-            />
-          )}
-        </sheet.form.AppField>
+        <FormCard title={L("App::BookSectionBasics")}>
+          <sheet.form.AppField name="name">
+            {(field) => (
+              <field.TextField
+                label={L("App::BookName")}
+                placeholder={L("App::BookNamePlaceholder")}
+                required
+                disabled={sheet.readOnly}
+              />
+            )}
+          </sheet.form.AppField>
 
-        <sheet.form.AppField name="authorId">
-          {(field) => (
-            <field.ComboboxField
-              label={L("App::BookAuthor")}
-              required
-              options={authorSeed}
-              loadOptions={loadAuthorOptions}
-              placeholder={L("App::BookAuthorPlaceholder")}
-              disabled={sheet.readOnly}
-            />
-          )}
-        </sheet.form.AppField>
+          <FieldLayout className="grid gap-4 sm:grid-cols-2">
+            <sheet.form.AppField name="authorId">
+              {(field) => (
+                <field.ComboboxField
+                  label={L("App::BookAuthor")}
+                  required
+                  options={authorSeed}
+                  loadOptions={loadAuthorOptions}
+                  placeholder={L("App::BookAuthorPlaceholder")}
+                  disabled={sheet.readOnly}
+                />
+              )}
+            </sheet.form.AppField>
 
-        <sheet.form.AppField name="type">
-          {(field) => (
-            <field.SelectField
-              label={L("App::BookType")}
-              description={L("App::BookTypeHint")}
-              options={BOOK_TYPE_VALUES.map((value) => ({
-                value: String(value),
-                label: L(bookTypeLabelKey(value)),
-              }))}
-              disabled={sheet.readOnly}
-            />
-          )}
-        </sheet.form.AppField>
+            <sheet.form.AppField name="type">
+              {(field) => (
+                <field.SelectField
+                  label={L("App::BookType")}
+                  description={L("App::BookTypeHint")}
+                  options={typeOptions}
+                  disabled={sheet.readOnly}
+                />
+              )}
+            </sheet.form.AppField>
+          </FieldLayout>
 
-        <sheet.form.AppField name="publishDate">
-          {(field) => (
-            <field.DateField label={L("App::BookPublishDate")} required disabled={sheet.readOnly} />
-          )}
-        </sheet.form.AppField>
+          <sheet.form.AppField name="tags">
+            {(field) => (
+              <field.MultiComboboxField
+                label={L("App::BookTags")}
+                options={tagOptions}
+                placeholder={L("App::BookTagsPlaceholder")}
+              />
+            )}
+          </sheet.form.AppField>
 
-        <sheet.form.AppField name="price">
-          {(field) => (
-            <field.NumberField
-              label={L("App::BookPrice")}
-              placeholder={L("App::BookPricePlaceholder")}
-              step="0.01"
-              digits={2}
-              required
-              disabled={sheet.readOnly}
-            />
-          )}
-        </sheet.form.AppField>
+          <sheet.form.AppField name="description">
+            {(field) => (
+              <field.TextareaField
+                label={L("App::BookDescription")}
+                placeholder={L("App::BookDescriptionPlaceholder")}
+                rows={3}
+                disabled={sheet.readOnly}
+              />
+            )}
+          </sheet.form.AppField>
+        </FormCard>
+
+        <FormCard title={L("App::BookSectionPricing")}>
+          <FieldLayout className="grid gap-4 sm:grid-cols-2">
+            <sheet.form.AppField name="publishDate">
+              {(field) => (
+                <field.DateField
+                  label={L("App::BookPublishDate")}
+                  required
+                  disabled={sheet.readOnly}
+                />
+              )}
+            </sheet.form.AppField>
+
+            <sheet.form.AppField name="price">
+              {(field) => (
+                <field.NumberField
+                  label={L("App::BookPrice")}
+                  placeholder={L("App::BookPricePlaceholder")}
+                  step="0.01"
+                  digits={2}
+                  required
+                  disabled={sheet.readOnly}
+                />
+              )}
+            </sheet.form.AppField>
+          </FieldLayout>
+        </FormCard>
+
+        <FormCard title={L("App::BookSectionSales")} description={L("App::BookSectionSalesHint")}>
+          <sheet.form.AppField name="inStock">
+            {(field) => (
+              <field.SwitchField
+                label={L("App::BookInStock")}
+                description={L("App::BookInStockHint")}
+                disabled={sheet.readOnly}
+              />
+            )}
+          </sheet.form.AppField>
+
+          <sheet.form.AppField name="stock">
+            {(field) => (
+              <field.NumberField
+                label={L("App::BookStock")}
+                step="1"
+                nullable
+                disabled={sheet.readOnly}
+              />
+            )}
+          </sheet.form.AppField>
+
+          <FieldLayout className="grid gap-4 sm:grid-cols-2">
+            <sheet.form.AppField name="saleStartsAt">
+              {(field) => (
+                <field.DateTimeField label={L("App::BookSaleStartsAt")} disabled={sheet.readOnly} />
+              )}
+            </sheet.form.AppField>
+
+            <sheet.form.AppField name="promo">
+              {(field) => (
+                <field.DateRangeField label={L("App::BookPromo")} disabled={sheet.readOnly} />
+              )}
+            </sheet.form.AppField>
+          </FieldLayout>
+          <FieldHint>{L("App::BookPromoHint")}</FieldHint>
+        </FormCard>
       </sheet.Sheet>
     </section>
   );

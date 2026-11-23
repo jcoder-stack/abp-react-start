@@ -52,34 +52,167 @@ const AUTHORS: AbpSwaggerAuthorsAuthorDto[] = [
   { id: "a1000000-0000-4000-8000-000000000005", name: "Jane Austen", birthDate: "1775-12-16" },
 ];
 
+/** 标签的取值；文案走 `App::BookTag*` 词条。 */
+export const BOOK_TAGS = ["classic", "award", "bestseller", "series"] as const;
+
+type SeedRow = [
+  name: string,
+  authorIndex: number,
+  type: number,
+  publishDate: string,
+  price: number,
+  stock: number | null,
+  tags: string[],
+  description: string,
+];
+
 function seedBooks(): AbpSwaggerBooksBookDto[] {
-  const rows: [string, number, number, string, number][] = [
-    ["1984", 0, 3, "1949-06-08", 19.9],
-    ["Animal Farm", 0, 3, "1945-08-17", 12.5],
-    ["Foundation", 1, 7, "1951-06-01", 24],
-    ["I, Robot", 1, 7, "1950-12-02", 21.5],
-    ["The Left Hand of Darkness", 2, 7, "1969-03-01", 18],
-    ["A Wizard of Earthsea", 2, 4, "1968-11-01", 15.75],
-    ["The Hitchhiker's Guide to the Galaxy", 3, 7, "1979-10-12", 14.99],
-    ["Dirk Gently's Holistic Detective Agency", 3, 1, "1987-06-01", 16.4],
-    ["Pride and Prejudice", 4, 1, "1813-01-28", 9.99],
-    ["Emma", 4, 1, "1815-12-23", 11.2],
-    ["Persuasion", 4, 1, "1817-12-20", 10.5],
-    ["The Dispossessed", 2, 7, "1974-05-01", 20.25],
+  const rows: SeedRow[] = [
+    [
+      "1984",
+      0,
+      3,
+      "1949-06-08",
+      19.9,
+      42,
+      ["classic", "bestseller"],
+      "A dystopian novel about surveillance, totalitarianism and the manipulation of truth in the superstate of Oceania.",
+    ],
+    [
+      "Animal Farm",
+      0,
+      3,
+      "1945-08-17",
+      12.5,
+      18,
+      ["classic"],
+      "A satirical allegory in which farm animals overthrow their human farmer, only to see the revolution betrayed.",
+    ],
+    [
+      "Foundation",
+      1,
+      7,
+      "1951-06-01",
+      24,
+      7,
+      ["classic", "series"],
+      "A mathematician foresees the fall of the Galactic Empire and sets out to shorten the dark age that follows.",
+    ],
+    [
+      "I, Robot",
+      1,
+      7,
+      "1950-12-02",
+      21.5,
+      0,
+      ["classic"],
+      "Linked stories exploring the Three Laws of Robotics and the unexpected ways machines interpret them.",
+    ],
+    [
+      "The Left Hand of Darkness",
+      2,
+      7,
+      "1969-03-01",
+      18,
+      12,
+      ["award"],
+      "An envoy visits a world whose inhabitants have no fixed sex, and has to rethink every assumption he brought.",
+    ],
+    [
+      "A Wizard of Earthsea",
+      2,
+      4,
+      "1968-11-01",
+      15.75,
+      25,
+      ["classic", "series"],
+      "A young wizard unleashes a shadow upon the world and must hunt it across the archipelago of Earthsea.",
+    ],
+    [
+      "The Hitchhiker's Guide to the Galaxy",
+      3,
+      7,
+      "1979-10-12",
+      14.99,
+      64,
+      ["bestseller", "series"],
+      "Seconds before Earth is demolished for a hyperspace bypass, Arthur Dent is rescued by a friend from Betelgeuse.",
+    ],
+    [
+      "Dirk Gently's Holistic Detective Agency",
+      3,
+      1,
+      "1987-06-01",
+      16.4,
+      null,
+      [],
+      "A detective who believes in the fundamental interconnectedness of all things takes on a case involving a ghost and a time machine.",
+    ],
+    [
+      "Pride and Prejudice",
+      4,
+      1,
+      "1813-01-28",
+      9.99,
+      30,
+      ["classic", "bestseller"],
+      "Elizabeth Bennet and Mr. Darcy misjudge each other badly before they finally learn to see clearly.",
+    ],
+    [
+      "Emma",
+      4,
+      1,
+      "1815-12-23",
+      11.2,
+      0,
+      ["classic"],
+      "A well-meaning matchmaker meddles in the love lives of her friends with mixed results.",
+    ],
+    [
+      "Persuasion",
+      4,
+      1,
+      "1817-12-20",
+      10.5,
+      5,
+      [],
+      "Years after being persuaded to break off an engagement, Anne Elliot meets the man she refused again.",
+    ],
+    [
+      "The Dispossessed",
+      2,
+      7,
+      "1974-05-01",
+      20.25,
+      9,
+      ["award"],
+      "A physicist travels between an anarchist moon and its capitalist twin planet, belonging fully to neither.",
+    ],
   ];
-  return rows.map(([name, authorIndex, type, publishDate, price], index) => {
-    const author = AUTHORS[authorIndex];
-    return {
-      id: `b1000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
-      creationTime: `${publishDate}T00:00:00Z`,
-      name,
-      authorId: author?.id,
-      authorName: author?.name,
-      type: type as AbpSwaggerBooksBookType,
-      publishDate: `${publishDate}T00:00:00Z`,
-      price,
-    };
-  });
+  return rows.map(
+    ([name, authorIndex, type, publishDate, price, stock, tags, description], index) => {
+      const author = AUTHORS[authorIndex];
+      const stamp = `2026-0${(index % 9) + 1}-1${index % 9}T0${index % 10}:30:00Z`;
+      return {
+        id: `b1000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+        creationTime: `${publishDate}T00:00:00Z`,
+        name,
+        authorId: author?.id,
+        authorName: author?.name,
+        type: type as AbpSwaggerBooksBookType,
+        publishDate: `${publishDate}T00:00:00Z`,
+        price,
+        inStock: stock !== null && stock > 0,
+        stock,
+        description,
+        tags,
+        saleStartsAt: null,
+        promoStartDate: index % 4 === 0 ? "2026-12-01" : null,
+        promoEndDate: index % 4 === 0 ? "2026-12-31" : null,
+        lastModificationTime: stamp,
+      };
+    },
+  );
 }
 
 // 进程内数据集：改动活到进程退出为止，重启即回到种子状态。演示要的是「请求真的过了服务端」
@@ -120,9 +253,31 @@ function applySorting(
   });
 }
 
+// 查询参数从查询表单与 URL 来，都是字符串；真实 ABP 端点走 GET 查询串，模型绑定同样会做这层转换。
+/** 长列表演示用的生成行：沿用种子的作者与类型，名字带序号，一眼能看出是补的。 */
+function paddingBooks(): AbpSwaggerBooksBookDto[] {
+  const seed = seedBooks();
+  return Array.from({ length: 48 }, (_, i) => {
+    const base = seed[i % seed.length] as AbpSwaggerBooksBookDto;
+    return {
+      ...base,
+      id: `b2000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
+      name: `${base.name} #${i + 2}`,
+    };
+  });
+}
+
 const listBooksSchema = z.object({
   Name: z.string().optional(),
+  Type: z.coerce.number().optional(),
   MinPublishDate: z.string().optional(),
+  MaxPublishDate: z.string().optional(),
+  InStock: z
+    .union([z.boolean(), z.enum(["true", "false"])])
+    .transform((value) => value === true || value === "true")
+    .optional(),
+  /** 演示「长列表」场景：在真实数据后面补一批生成的行。不属于端点契约。 */
+  DemoPadding: z.boolean().optional(),
   Sorting: z.string().optional(),
   SkipCount: z.number().optional(),
   MaxResultCount: z.number().optional(),
@@ -133,9 +288,16 @@ export const listBooksFn = createServerFn({ method: "GET" })
   .handler(({ data }) => {
     const name = data.Name?.trim().toLowerCase();
     const minPublishDate = data.MinPublishDate?.trim();
-    let rows = books;
+    const maxPublishDate = data.MaxPublishDate?.trim();
+    let rows = data.DemoPadding ? [...books, ...paddingBooks()] : books;
     if (name) rows = rows.filter((b) => (b.name ?? "").toLowerCase().includes(name));
+    if (data.Type !== undefined) rows = rows.filter((b) => b.type === data.Type);
     if (minPublishDate) rows = rows.filter((b) => (b.publishDate ?? "") >= minPublishDate);
+    // 上界含当天：publishDate 带时刻，按日期段比较。
+    if (maxPublishDate)
+      rows = rows.filter((b) => (b.publishDate ?? "").slice(0, 10) <= maxPublishDate);
+    if (data.InStock !== undefined)
+      rows = rows.filter((b) => (b.inStock ?? false) === data.InStock);
     rows = applySorting(rows, data.Sorting);
     const skip = data.SkipCount ?? 0;
     const take = data.MaxResultCount ?? 10;
@@ -148,7 +310,28 @@ const bookBodySchema = z.object({
   type: z.number().optional(),
   publishDate: z.string().optional(),
   price: z.number().optional(),
+  inStock: z.boolean().optional(),
+  stock: z.number().nullish(),
+  description: z.string().nullish(),
+  tags: z.array(z.string()).optional(),
+  saleStartsAt: z.string().nullish(),
+  promoStartDate: z.string().nullish(),
+  promoEndDate: z.string().nullish(),
 });
+
+/** 请求体里与「写」有关的可选字段；create/update 共用，缺省值与种子一致。 */
+function extras(body: z.infer<typeof bookBodySchema>) {
+  return {
+    inStock: body.inStock ?? false,
+    stock: body.stock ?? null,
+    description: body.description ?? null,
+    tags: body.tags ?? [],
+    saleStartsAt: body.saleStartsAt ?? null,
+    promoStartDate: body.promoStartDate ?? null,
+    promoEndDate: body.promoEndDate ?? null,
+    lastModificationTime: new Date().toISOString(),
+  };
+}
 
 /** 复刻 ABP 的必填校验：`new.tsx` 只提交 name，靠这里退回的 members 演示服务端错误落到字段上。 */
 function validate(body: z.infer<typeof bookBodySchema>): AbpValidationError[] {
@@ -187,6 +370,7 @@ export const createBookFn = createServerFn({ method: "POST" })
       type: data.type as AbpSwaggerBooksBookType,
       publishDate: data.publishDate,
       price: data.price,
+      ...extras(data),
     };
     books = [created, ...books];
     return { ok: true, data: created };
@@ -212,6 +396,7 @@ export const updateBookFn = createServerFn({ method: "POST" })
       type: data.body.type as AbpSwaggerBooksBookType,
       publishDate: data.body.publishDate,
       price: data.body.price,
+      ...extras(data.body),
     };
     books = books.map((b) => (b.id === data.id ? updated : b));
     return { ok: true, data: updated };
@@ -241,12 +426,31 @@ function unwrap(result: WriteResult): AbpSwaggerBooksBookDto {
   throw result.error;
 }
 
+/**
+ * 页面顶部「场景」按钮用的演示开关，只在浏览器里生效：空列表、刷新失败、长列表这几种状态
+ * 靠真实数据很难随手造出来。它不是 orval 产物的一部分，真实项目里没有这一层。
+ */
+export type BookDemoScenario = "normal" | "empty" | "failing" | "long";
+let demoScenario: BookDemoScenario = "normal";
+
+export function setBookDemoScenario(next: BookDemoScenario): void {
+  demoScenario = next;
+}
+
+class SimulatedFailure extends Error {}
+
+async function listBooks(params: GetApiAppBookParams) {
+  if (demoScenario === "failing") throw new SimulatedFailure("Simulated network failure");
+  if (demoScenario === "empty") return { items: [] as AbpSwaggerBooksBookDto[], totalCount: 0 };
+  return listBooksFn({ data: { ...params, DemoPadding: demoScenario === "long" } });
+}
+
 /** 以下导出与 orval 产物同名同形：页面代码因此与真实项目里的写法逐字一致。 */
 
 export const getGetApiAppBookQueryKey = (params?: GetApiAppBookParams) =>
   ["/api/app/book", ...(params ? [params] : [])] as const;
 
-export const getApiAppBook = (params: GetApiAppBookParams) => listBooksFn({ data: params });
+export const getApiAppBook = (params: GetApiAppBookParams) => listBooks(params);
 
 export function useGetApiAppBook<TData = { items: AbpSwaggerBooksBookDto[]; totalCount: number }>(
   params: GetApiAppBookParams,
@@ -258,7 +462,9 @@ export function useGetApiAppBook<TData = { items: AbpSwaggerBooksBookDto[]; tota
 ) {
   return useQuery({
     queryKey: getGetApiAppBookQueryKey(params),
-    queryFn: () => listBooksFn({ data: params }),
+    queryFn: () => listBooks(params),
+    // 演示的「刷新失败」要立刻出现，不必等默认的三次重试。
+    retry: (count, error) => !(error instanceof SimulatedFailure) && count < 3,
     ...options?.query,
   });
 }
@@ -278,6 +484,9 @@ export function usePostApiAppBook(options?: {
   });
 }
 
+export const putApiAppBookId = async (id: string, body: AbpSwaggerBooksCreateUpdateBookDto) =>
+  unwrap(await updateBookFn({ data: { id, body } }));
+
 export function usePutApiAppBookId(options?: {
   mutation?: Partial<
     UseMutationOptions<
@@ -289,7 +498,7 @@ export function usePutApiAppBookId(options?: {
 }) {
   return useMutation({
     mutationFn: async (variables: { id: string; data: AbpSwaggerBooksCreateUpdateBookDto }) =>
-      unwrap(await updateBookFn({ data: { id: variables.id, body: variables.data } })),
+      putApiAppBookId(variables.id, variables.data),
     ...options?.mutation,
   });
 }
