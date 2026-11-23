@@ -37,6 +37,8 @@ export type AbpSheetOptions<
   /** 保存成功后调用，此时列表已失效、抽屉已按规则关闭或回到查看态。`saved` 是服务端返回的记录，
    *  没回（或回的不是对象）时为 undefined。用来接「创建后跳详情」这类页面自己的后续动作。 */
   onSaved?: (saved: TDto | undefined, mode: "create" | "edit") => void;
+  /** 新建态底栏多一个「保存并继续新建」：保存成功后抽屉不关，表单清空、焦点回到第一个字段。 */
+  continueCreate?: boolean;
 } & (TValues extends TCreate
   ? { toCreate?: (value: TValues) => TCreate }
   : { toCreate: (value: TValues) => TCreate }) &
@@ -84,10 +86,12 @@ export function useAbpSheet<
 
   // fromView：编辑是从查看态点进来的。这时取消回到查看、保存后也回到查看并换上新记录——
   // 用户是来看这一条的，改完一处不该被整个踢回列表。
+  // loading：toValues 还在预取，抽屉已经滑出、先显示骨架。
   const [sheet, setSheet] = useState<{
     mode: SheetFormMode;
     record?: TDto;
     fromView?: boolean;
+    loading?: boolean;
   } | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const isOpen = useRef(false);
@@ -99,6 +103,8 @@ export function useAbpSheet<
   // 只认最后一次，晚到的旧结果直接丢掉，抽屉里才不会显示错的那一条。
   const openSeq = useRef(0);
   const sheetForm = useRef<SheetFormHandle>(null);
+  // 这一次提交是「保存并继续新建」触发的；由两个提交入口写、onSuccess 读。
+  const continueAfter = useRef(false);
   // defaultValues 必须由 state 驱动:useForm 每渲染 formApi.update(opts) 会把稳定常量
   // defaultValues 拍回刚 reset 的记录值。
   const [formDefaults, setFormDefaults] = useState<TValues>(opts.emptyValues);
@@ -155,8 +161,16 @@ export function useAbpSheet<
         const saved = savedWith.current;
         reopenWith.current = null;
         savedWith.current = null;
+        const again = continueAfter.current && saved?.mode === "create";
+        continueAfter.current = false;
         if (next) void open("view", next, { fromView: false });
-        else dismiss();
+        else if (again) {
+          const empty = optsRef.current.emptyValues;
+          setFormDefaults(empty);
+          form.reset(empty);
+          // 等清空后的表单画出来再聚焦，否则焦点落到即将被替换的旧节点上。
+          requestAnimationFrame(() => sheetForm.current?.focusFirstField());
+        } else dismiss();
         if (saved) optsRef.current.onSaved?.(saved.record, saved.mode);
       },
     }),
@@ -187,6 +201,12 @@ export function useAbpSheet<
     return next as TValues;
   }, []);
 
+  // 只用于已经过了未保存确认（或本就无需确认）的路径；同时作废还在路上的 open。
+  const dismiss = useCallback(() => {
+    openSeq.current++;
+    setSheet(null);
+  }, []);
+
   /** 打开（或在已开的抽屉里切换）到某一态。返回是否真的打开了：没有新建权限、toValues 返回 null
    *  或抛错、被更晚的一次 open/close 取代，都返回 false 且不动当前抽屉。没有编辑权限时 edit 降级为
    *  view——行菜单之外的入口（深链、快捷键）也不该绕过权限。 */
@@ -210,15 +230,28 @@ export function useAbpSheet<
       if (nextRecord) {
         let resolved: TValues | null;
         try {
-          resolved = o.toValues
-            ? await o.toValues(nextRecord, nextMode)
+          const pending = o.toValues
+            ? o.toValues(nextRecord, nextMode)
             : defaultToValues(nextRecord);
+          // 真要等（预取关联数据）时先把抽屉滑出来显示骨架，不让点击之后毫无反应。抽屉已开着
+          // （查看与编辑互切）就保持原内容，等值到了再换，免得闪一下骨架。
+          if (pending instanceof Promise && !isOpen.current) {
+            setSheet({ mode: nextMode, record: nextRecord, loading: true });
+          }
+          resolved = await pending;
         } catch {
           // 行点击是 fire-and-forget，这里不兜住，用户只看到「点了没反应」外加一条未处理的 rejection。
-          if (seq === openSeq.current) toast.error(env.L("Crud:OperationFailed"));
+          if (seq === openSeq.current) {
+            toast.error(env.L("Crud:OperationFailed"));
+            dismiss();
+          }
           return false;
         }
-        if (seq !== openSeq.current || resolved === null) return false;
+        if (seq !== openSeq.current) return false;
+        if (resolved === null) {
+          dismiss();
+          return false;
+        }
         values = resolved;
       }
       setFormDefaults(values);
@@ -226,14 +259,8 @@ export function useAbpSheet<
       setSheet({ mode: nextMode, record: nextRecord, fromView: options?.fromView });
       return true;
     },
-    [form, defaultToValues],
+    [form, defaultToValues, dismiss],
   );
-
-  // 只用于已经过了未保存确认（或本就无需确认）的路径；同时作废还在路上的 open。
-  const dismiss = () => {
-    openSeq.current++;
-    setSheet(null);
-  };
 
   const allow = (policy: string | undefined) => (policy === undefined ? true : can(policy));
 
@@ -254,8 +281,17 @@ export function useAbpSheet<
       ),
     subtitle: opts.subtitle?.(shownMode, shown?.record),
     onSubmit: () => {
+      continueAfter.current = false;
       void form.handleSubmit();
     },
+    onSubmitAndContinue:
+      opts.continueCreate === true
+        ? () => {
+            continueAfter.current = true;
+            void form.handleSubmit();
+          }
+        : undefined,
+    loading: sheet?.loading === true,
     pending: isSubmitting,
     dirty: isDirty && mode !== "view",
     canEdit: allow(service.resolvedPolicies.update),
@@ -283,11 +319,20 @@ export function useAbpSheet<
 
   const bound = useBoundComponents({ sheetProps }, (read) => ({
     // size 由调用方在渲染处给，不进 opts：它只影响外观，没有必要跟着 opts 走 ref 那一层。
-    Sheet: (p: { title?: string; size?: SheetFormSize; children: ReactNode }) => (
+    Sheet: (
+      p: {
+        title?: string;
+        size?: SheetFormSize;
+        children: ReactNode;
+      } & Pick<SheetFormProps, "headerActions" | "footerStart" | "footerEnd">,
+    ) => (
       <SheetForm
         {...read().sheetProps}
         {...(p.title !== undefined ? { title: p.title } : {})}
         {...(p.size !== undefined ? { size: p.size } : {})}
+        headerActions={p.headerActions}
+        footerStart={p.footerStart}
+        footerEnd={p.footerEnd}
       >
         {p.children}
       </SheetForm>

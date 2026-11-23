@@ -361,6 +361,36 @@ input:-webkit-autofill:focus {
   animation-duration: 200ms;
 }
 
+/* 并排的字段（FieldLayout 写成栅格时）让控件落在同一条线上。字段本是「标签 → 说明 → 控件 → 错误」
+ * 的纵向 flex，一列有说明、另一列没有时，两个输入框就上下错开。改成跨四行的 subgrid，四个部件
+ * 各占固定一行，缺的那行在这一列留空、高度由邻列撑起。行距改由部件自己的外边距给：空行不该
+ * 再贡献两道间距；外边距取字段自己的 6px 间距（见上）。 */
+[data-slot="field-layout"].grid > [data-slot="field"][data-orientation="vertical"] {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+}
+
+[data-slot="field-layout"].grid > [data-slot="field"][data-orientation="vertical"] > * {
+  grid-row: 3;
+}
+
+[data-slot="field-layout"].grid > [data-slot="field"][data-orientation="vertical"] > [data-slot="field-label"] {
+  grid-row: 1;
+  margin-bottom: 0.375rem;
+}
+
+[data-slot="field-layout"].grid > [data-slot="field"][data-orientation="vertical"] > [data-slot="field-description"] {
+  grid-row: 2;
+  margin-bottom: 0.375rem;
+}
+
+[data-slot="field-layout"].grid > [data-slot="field"][data-orientation="vertical"] > [data-slot="field-error"] {
+  grid-row: 4;
+  margin-top: 0.375rem;
+}
+
 /* 表头的字号按文字系统分开给。
  *
  * 西文表头用 12px 全大写：大写字母的 cap-height 约为字号的 0.72，而混排文本的 x-height

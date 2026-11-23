@@ -977,6 +977,7 @@ const panelId = useId();
 - **`sheet.open` 自带权限判定**：没有新建权限时 `open("create")` 不打开；没有编辑权限时 `open("edit")` 降级为查看。深链、快捷键这类行菜单之外的入口也不会绕过权限。
 - **查看与编辑互切会按目标态重跑 `toValues`**：按 mode 给不同值（如编辑态清空密码）的页面在这条路径上同样拿到对的值。
 - **`sheet.close()` 与抽屉内的 ×、Esc 走同一道未保存确认**；确实要无条件关闭时传 `{ force: true }`。保存后的后续动作（跳详情、联动别的缓存）接 `onSaved(saved, mode)`，不用改块。
+- **抽屉的扩展位**：`<sheet.Sheet headerActions={…} footerStart={…} footerEnd={…}>`。`headerActions` 在标题栏「编辑」左侧；查看态底栏只在给了 `footerStart`（删除这类危险操作，靠左）或 `footerEnd`（其余操作，靠右）时出现。连续录入的页给 `useAbpSheet` 传 `continueCreate: true`，新建态底栏多一个「保存并继续新建」。`books/index.tsx` 三者都用到了。
 
 ## 菜单项 + 词条
 

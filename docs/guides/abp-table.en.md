@@ -980,6 +980,7 @@ These invariants are maintained inside the framework; page code neither needs to
 - **`sheet.open` checks permissions**: without the create permission `open("create")` doesn't open; without the update permission `open("edit")` falls back to view. Entry points outside the row menu (deep links, shortcuts) can't bypass permissions either.
 - **Switching between view and edit re-runs `toValues` for the target mode**, so pages that return different values per mode (such as clearing a password in edit) get the right ones on this path too.
 - **`sheet.close()` goes through the same unsaved-changes confirmation as the sheet's × and Esc**; pass `{ force: true }` to close unconditionally. Follow-up work after a save (navigating to a detail page, updating another cache) goes in `onSaved(saved, mode)` without changing the block.
+- **Sheet extension points**: `<sheet.Sheet headerActions={…} footerStart={…} footerEnd={…}>`. `headerActions` sits left of Edit in the header; the view-mode footer appears only when you pass `footerStart` (destructive actions, left) or `footerEnd` (everything else, right). For pages that enter records in a row, pass `continueCreate: true` to `useAbpSheet` to get "Save and add another" in create mode. `books/index.tsx` uses all three.
 
 ## Menu items + messages
 

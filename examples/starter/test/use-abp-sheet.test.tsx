@@ -365,6 +365,7 @@ function ApiHarness(props: {
   apiRef: { current: SheetApi | null };
   toValues?: (record: Dto, mode: SheetFormMode) => Values | Promise<Values | null>;
   onSaved?: (saved: Dto | undefined, mode: "create" | "edit") => void;
+  continueCreate?: boolean;
 }) {
   const sheet = useAbpSheet<Dto, Values, { name: string }, UpdateInput>(props.service, {
     emptyValues: { name: "" },
@@ -372,10 +373,14 @@ function ApiHarness(props: {
     toCreate: (value) => ({ name: value.name }),
     toUpdate: (value) => ({ name: value.name }),
     onSaved: props.onSaved,
+    continueCreate: props.continueCreate,
   });
   props.apiRef.current = sheet;
   return (
-    <sheet.Sheet>
+    <sheet.Sheet
+      footerStart={<button type="button">Remove record</button>}
+      footerEnd={<button type="button">Duplicate record</button>}
+    >
       <sheet.form.AppField name="name">
         {(field) => <field.TextField label="Name" disabled={sheet.readOnly} />}
       </sheet.form.AppField>
@@ -512,6 +517,103 @@ describe("useAbpSheet 打开与关闭的边界", () => {
     });
     expect(screen.getByText("Locked")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("toValues 要等时先滑出抽屉显示加载，值到了再显示字段", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(
+      <ApiHarness
+        service={makeService()}
+        apiRef={apiRef}
+        toValues={async (record) => {
+          await gate;
+          return { name: record.name ?? "" };
+        }}
+      />,
+      { messages },
+    );
+    const api = await ready(apiRef);
+    let opening: Promise<boolean> = Promise.resolve(false);
+    act(() => {
+      opening = api.open("view", { id: "1", name: "Arrived" });
+    });
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.queryByText("Arrived")).toBeNull();
+    await act(async () => {
+      release();
+      await opening;
+    });
+    expect(screen.getByText("Arrived")).toBeTruthy();
+  });
+
+  it("查看态底栏显示页面给的操作，编辑态不显示", async () => {
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={makeService()} apiRef={apiRef} />, { messages });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("view", { id: "1", name: "R" });
+    });
+    expect(screen.getByRole("button", { name: "Remove record" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Duplicate record" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByLabelText(/Name/);
+    expect(screen.queryByRole("button", { name: "Remove record" })).toBeNull();
+  });
+
+  it("打开新建时焦点在第一个字段；从查看态点编辑后焦点也接到第一个字段", async () => {
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={makeService()} apiRef={apiRef} />, { messages });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("create");
+    });
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(/Name/)));
+    act(() => api.close({ force: true }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(async () => {
+      await api.open("view", { id: "1", name: "R" });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(/Name/)));
+  });
+
+  it("⌘/Ctrl+Enter 提交表单", async () => {
+    const service = makeService();
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={service} apiRef={apiRef} />, { messages });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("create");
+    });
+    const input = await screen.findByLabelText(/Name/);
+    fireEvent.change(input, { target: { value: "Quick" } });
+    fireEvent.keyDown(input, { key: "Enter", ctrlKey: true });
+    await waitFor(() =>
+      expect(service.useCreate().mutateAsync).toHaveBeenCalledWith({ data: { name: "Quick" } }),
+    );
+  });
+
+  it("保存并继续新建：抽屉不关，表单清空，可以接着录下一条", async () => {
+    const service = makeService();
+    const apiRef: { current: SheetApi | null } = { current: null };
+    renderWithProviders(<ApiHarness service={service} apiRef={apiRef} continueCreate />, {
+      messages,
+    });
+    const api = await ready(apiRef);
+    await act(async () => {
+      await api.open("create");
+    });
+    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: "First" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save and add another" }));
+    await waitFor(() =>
+      expect(service.useCreate().mutateAsync).toHaveBeenCalledWith({ data: { name: "First" } }),
+    );
+    await waitFor(() => expect((screen.getByLabelText(/Name/) as HTMLInputElement).value).toBe(""));
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
   it("保存成功后把服务端记录交给 onSaved", async () => {

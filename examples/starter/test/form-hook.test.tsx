@@ -381,6 +381,26 @@ describe("NumberField 查看态", () => {
   });
 });
 
+function EditablePriceHarness() {
+  const form = useAppForm({ defaultValues: { price: 19.9 } });
+  return (
+    <form.AppField name="price">{(f) => <f.NumberField label="Price" digits={2} />}</form.AppField>
+  );
+}
+
+describe("NumberField 编辑态", () => {
+  it("失焦时按 digits 补齐小数位，与表格和查看态一致；输入时不补，免得和正在敲的内容打架", async () => {
+    renderWithProviders(<EditablePriceHarness />, { messages });
+    const input = (await screen.findByLabelText("Price")) as HTMLInputElement;
+    expect(input.value).toBe("19.90");
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "8.5" } });
+    expect(input.value).toBe("8.5");
+    fireEvent.blur(input);
+    expect(input.value).toBe("8.50");
+  });
+});
+
 function EmptyOptionHarness() {
   const form = useAppForm({ defaultValues: { status: "" } });
   return (
