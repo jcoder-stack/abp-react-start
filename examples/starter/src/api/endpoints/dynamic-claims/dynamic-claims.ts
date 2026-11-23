@@ -9,7 +9,6 @@ import {
 } from '@tanstack/react-query';
 import type {
   MutationFunction,
-  QueryClient,
   UseMutationOptions,
   UseMutationResult
 } from '@tanstack/react-query';
@@ -89,11 +88,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePostApiAccountDynamicClaimsRefresh = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof postApiAccountDynamicClaimsRefresh>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostApiAccountDynamicClaimsRefreshMutationOptions(options), queryClient);
+      return useMutation(getPostApiAccountDynamicClaimsRefreshMutationOptions(options));
     }

@@ -6,6 +6,6 @@
  */
 
 export type GetApiAbpApiDefinitionParams = {
-IncludeTypes?: boolean;
-IncludeDescriptions?: boolean;
+  IncludeTypes?: boolean;
+  IncludeDescriptions?: boolean;
 };

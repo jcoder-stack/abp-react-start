@@ -6,5 +6,5 @@
  */
 
 export type GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams = {
-resourceName?: string;
+  resourceName?: string;
 };

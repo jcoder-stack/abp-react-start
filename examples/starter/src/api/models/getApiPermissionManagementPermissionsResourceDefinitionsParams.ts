@@ -6,5 +6,5 @@
  */
 
 export type GetApiPermissionManagementPermissionsResourceDefinitionsParams = {
-resourceName?: string;
+  resourceName?: string;
 };

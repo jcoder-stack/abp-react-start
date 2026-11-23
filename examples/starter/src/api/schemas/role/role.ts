@@ -23,6 +23,7 @@ export const GetApiIdentityRolesAllResponse = zod.object({
 export const getApiIdentityRolesQuerySkipCountMin = 0;
 export const getApiIdentityRolesQuerySkipCountMax = 2147483647;
 
+export const getApiIdentityRolesQueryMaxResultCountMin = 1;
 export const getApiIdentityRolesQueryMaxResultCountMax = 2147483647;
 
 
@@ -31,7 +32,7 @@ export const GetApiIdentityRolesQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
   "SkipCount": zod.int().min(getApiIdentityRolesQuerySkipCountMin).max(getApiIdentityRolesQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(1).max(getApiIdentityRolesQueryMaxResultCountMax).optional(),
+  "MaxResultCount": zod.int().min(getApiIdentityRolesQueryMaxResultCountMin).max(getApiIdentityRolesQueryMaxResultCountMax).optional(),
   "ExtraProperties": zod.record(zod.string(), zod.unknown()).optional()
 })
 

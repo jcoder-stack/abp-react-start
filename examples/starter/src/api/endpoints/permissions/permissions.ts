@@ -9,14 +9,9 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
   MutationFunction,
-  QueryClient,
   QueryFunction,
   QueryKey,
-  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -55,6 +50,26 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | number | boolean | bigint | readonly string[] | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | number | boolean | bigint | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, typeof value === 'object' ? value : String(value)]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
 
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
@@ -109,7 +124,7 @@ export const getGetApiPermissionManagementPermissionsQueryKey = (params?: GetApi
     }
 
 
-export const getGetApiPermissionManagementPermissionsQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -124,7 +139,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>>
@@ -132,38 +147,13 @@ export type GetApiPermissionManagementPermissionsQueryError = ErrorType<VoloAbpH
 
 
 export function useGetApiPermissionManagementPermissions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissions>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -191,25 +181,11 @@ export const getPutApiPermissionManagementPermissionsUrl = (params?: PutApiPermi
 export const putApiPermissionManagementPermissions = async (voloAbpPermissionManagementUpdatePermissionsDto?: VoloAbpPermissionManagementUpdatePermissionsDto,
     params?: PutApiPermissionManagementPermissionsParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPutApiPermissionManagementPermissionsUrl(params),
+  return abpMutator<void>(getPutApiPermissionManagementPermissionsUrl(params),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpPermissionManagementUpdatePermissionsDto)
   }
 );}
@@ -254,13 +230,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePutApiPermissionManagementPermissions = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiPermissionManagementPermissions>>, TError,PutApiPermissionManagementPermissionsMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof putApiPermissionManagementPermissions>>,
         TError,
         PutApiPermissionManagementPermissionsMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiPermissionManagementPermissionsMutationOptions(options), queryClient);
+      return useMutation(getPutApiPermissionManagementPermissionsMutationOptions(options));
     }
     export const getGetApiPermissionManagementPermissionsByGroupUrl = (params?: GetApiPermissionManagementPermissionsByGroupParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -299,7 +275,7 @@ export const getGetApiPermissionManagementPermissionsByGroupQueryKey = (params?:
     }
 
 
-export const getGetApiPermissionManagementPermissionsByGroupQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsByGroupParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsByGroupQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsByGroupParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -314,7 +290,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsByGroupQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>>
@@ -322,38 +298,13 @@ export type GetApiPermissionManagementPermissionsByGroupQueryError = ErrorType<V
 
 
 export function useGetApiPermissionManagementPermissionsByGroup<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsByGroupParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsByGroup<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsByGroupParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsByGroup<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsByGroupParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsByGroupParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissionsByGroup<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsByGroupParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsByGroup>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsByGroupQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -400,7 +351,7 @@ export const getGetApiPermissionManagementPermissionsResourceProviderKeyLookupSe
     }
 
 
-export const getGetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -415,7 +366,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>>
@@ -423,38 +374,13 @@ export type GetApiPermissionManagementPermissionsResourceProviderKeyLookupServic
 
 
 export function useGetApiPermissionManagementPermissionsResourceProviderKeyLookupServices<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResourceProviderKeyLookupServices<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResourceProviderKeyLookupServices<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissionsResourceProviderKeyLookupServices<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceProviderKeyLookupServices>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsResourceProviderKeyLookupServicesQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -501,7 +427,7 @@ export const getGetApiPermissionManagementPermissionsSearchResourceProviderKeysQ
     }
 
 
-export const getGetApiPermissionManagementPermissionsSearchResourceProviderKeysQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsSearchResourceProviderKeysQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -516,7 +442,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsSearchResourceProviderKeysQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>>
@@ -524,38 +450,13 @@ export type GetApiPermissionManagementPermissionsSearchResourceProviderKeysQuery
 
 
 export function useGetApiPermissionManagementPermissionsSearchResourceProviderKeys<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsSearchResourceProviderKeys<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsSearchResourceProviderKeys<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissionsSearchResourceProviderKeys<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsSearchResourceProviderKeys>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsSearchResourceProviderKeysQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -602,7 +503,7 @@ export const getGetApiPermissionManagementPermissionsResourceDefinitionsQueryKey
     }
 
 
-export const getGetApiPermissionManagementPermissionsResourceDefinitionsQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceDefinitionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsResourceDefinitionsQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceDefinitionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -617,7 +518,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsResourceDefinitionsQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>>
@@ -625,38 +526,13 @@ export type GetApiPermissionManagementPermissionsResourceDefinitionsQueryError =
 
 
 export function useGetApiPermissionManagementPermissionsResourceDefinitions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsResourceDefinitionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResourceDefinitions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceDefinitionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResourceDefinitions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceDefinitionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsResourceDefinitionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissionsResourceDefinitions<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceDefinitionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceDefinitions>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsResourceDefinitionsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -703,7 +579,7 @@ export const getGetApiPermissionManagementPermissionsResourceQueryKey = (params?
     }
 
 
-export const getGetApiPermissionManagementPermissionsResourceQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsResourceQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -718,7 +594,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsResourceQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>>
@@ -726,38 +602,13 @@ export type GetApiPermissionManagementPermissionsResourceQueryError = ErrorType<
 
 
 export function useGetApiPermissionManagementPermissionsResource<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsResourceParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResource<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResource<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsResourceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissionsResource<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResource>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsResourceQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -785,25 +636,11 @@ export const getPutApiPermissionManagementPermissionsResourceUrl = (params?: Put
 export const putApiPermissionManagementPermissionsResource = async (voloAbpPermissionManagementUpdateResourcePermissionsDto?: VoloAbpPermissionManagementUpdateResourcePermissionsDto,
     params?: PutApiPermissionManagementPermissionsResourceParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPutApiPermissionManagementPermissionsResourceUrl(params),
+  return abpMutator<void>(getPutApiPermissionManagementPermissionsResourceUrl(params),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpPermissionManagementUpdateResourcePermissionsDto)
   }
 );}
@@ -848,13 +685,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePutApiPermissionManagementPermissionsResource = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiPermissionManagementPermissionsResource>>, TError,PutApiPermissionManagementPermissionsResourceMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof putApiPermissionManagementPermissionsResource>>,
         TError,
         PutApiPermissionManagementPermissionsResourceMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiPermissionManagementPermissionsResourceMutationOptions(options), queryClient);
+      return useMutation(getPutApiPermissionManagementPermissionsResourceMutationOptions(options));
     }
     export const getDeleteApiPermissionManagementPermissionsResourceUrl = (params?: DeleteApiPermissionManagementPermissionsResourceParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -922,13 +759,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useDeleteApiPermissionManagementPermissionsResource = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiPermissionManagementPermissionsResource>>, TError,DeleteApiPermissionManagementPermissionsResourceMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof deleteApiPermissionManagementPermissionsResource>>,
         TError,
         DeleteApiPermissionManagementPermissionsResourceMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiPermissionManagementPermissionsResourceMutationOptions(options), queryClient);
+      return useMutation(getDeleteApiPermissionManagementPermissionsResourceMutationOptions(options));
     }
     export const getGetApiPermissionManagementPermissionsResourceByProviderUrl = (params?: GetApiPermissionManagementPermissionsResourceByProviderParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -967,7 +804,7 @@ export const getGetApiPermissionManagementPermissionsResourceByProviderQueryKey 
     }
 
 
-export const getGetApiPermissionManagementPermissionsResourceByProviderQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceByProviderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiPermissionManagementPermissionsResourceByProviderQueryOptions = <TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiPermissionManagementPermissionsResourceByProviderParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -982,7 +819,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiPermissionManagementPermissionsResourceByProviderQueryResult = NonNullable<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>>
@@ -990,38 +827,13 @@ export type GetApiPermissionManagementPermissionsResourceByProviderQueryError = 
 
 
 export function useGetApiPermissionManagementPermissionsResourceByProvider<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiPermissionManagementPermissionsResourceByProviderParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResourceByProvider<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceByProviderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>,
-          TError,
-          Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiPermissionManagementPermissionsResourceByProvider<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceByProviderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiPermissionManagementPermissionsResourceByProviderParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiPermissionManagementPermissionsResourceByProvider<TData = Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiPermissionManagementPermissionsResourceByProviderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiPermissionManagementPermissionsResourceByProvider>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiPermissionManagementPermissionsResourceByProviderQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

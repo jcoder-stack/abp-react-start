@@ -9,14 +9,9 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
   MutationFunction,
-  QueryClient,
   QueryFunction,
   QueryKey,
-  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -40,6 +35,26 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | number | boolean | bigint | readonly string[] | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | number | boolean | bigint | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, typeof value === 'object' ? value : String(value)]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
 
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
@@ -87,7 +102,7 @@ export const getGetApiSettingManagementEmailingQueryKey = () => {
     }
 
 
-export const getGetApiSettingManagementEmailingQueryOptions = <TData = Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiSettingManagementEmailingQueryOptions = <TData = Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -102,7 +117,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiSettingManagementEmailingQueryResult = NonNullable<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>>
@@ -110,38 +125,13 @@ export type GetApiSettingManagementEmailingQueryError = ErrorType<VoloAbpHttpRem
 
 
 export function useGetApiSettingManagementEmailing<TData = Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiSettingManagementEmailing>>,
-          TError,
-          Awaited<ReturnType<typeof getApiSettingManagementEmailing>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiSettingManagementEmailing<TData = Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiSettingManagementEmailing>>,
-          TError,
-          Awaited<ReturnType<typeof getApiSettingManagementEmailing>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiSettingManagementEmailing<TData = Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiSettingManagementEmailing<TData = Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementEmailing>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiSettingManagementEmailingQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -161,25 +151,11 @@ export const getPostApiSettingManagementEmailingUrl = () => {
 
 export const postApiSettingManagementEmailing = async (voloAbpSettingManagementUpdateEmailSettingsDto?: VoloAbpSettingManagementUpdateEmailSettingsDto, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPostApiSettingManagementEmailingUrl(),
+  return abpMutator<void>(getPostApiSettingManagementEmailingUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpSettingManagementUpdateEmailSettingsDto)
   }
 );}
@@ -224,13 +200,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePostApiSettingManagementEmailing = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiSettingManagementEmailing>>, TError,PostApiSettingManagementEmailingMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof postApiSettingManagementEmailing>>,
         TError,
         PostApiSettingManagementEmailingMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiSettingManagementEmailingMutationOptions(options), queryClient);
+      return useMutation(getPostApiSettingManagementEmailingMutationOptions(options));
     }
     export const getPostApiSettingManagementEmailingSendTestEmailUrl = () => {
 
@@ -242,25 +218,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 export const postApiSettingManagementEmailingSendTestEmail = async (voloAbpSettingManagementSendTestEmailInput?: VoloAbpSettingManagementSendTestEmailInput, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPostApiSettingManagementEmailingSendTestEmailUrl(),
+  return abpMutator<void>(getPostApiSettingManagementEmailingSendTestEmailUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpSettingManagementSendTestEmailInput)
   }
 );}
@@ -305,11 +267,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePostApiSettingManagementEmailingSendTestEmail = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiSettingManagementEmailingSendTestEmail>>, TError,PostApiSettingManagementEmailingSendTestEmailMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof postApiSettingManagementEmailingSendTestEmail>>,
         TError,
         PostApiSettingManagementEmailingSendTestEmailMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiSettingManagementEmailingSendTestEmailMutationOptions(options), queryClient);
+      return useMutation(getPostApiSettingManagementEmailingSendTestEmailMutationOptions(options));
     }

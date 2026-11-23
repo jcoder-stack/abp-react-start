@@ -6,8 +6,8 @@
  */
 
 export type GetApiPermissionManagementPermissionsSearchResourceProviderKeysParams = {
-resourceName?: string;
-serviceName?: string;
-filter?: string;
-page?: number;
+  resourceName?: string;
+  serviceName?: string;
+  filter?: string;
+  page?: number;
 };

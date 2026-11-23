@@ -6,6 +6,6 @@
  */
 
 export type DeleteApiFeatureManagementFeaturesParams = {
-providerName?: string;
-providerKey?: string;
+  providerName?: string;
+  providerKey?: string;
 };

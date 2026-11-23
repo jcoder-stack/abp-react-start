@@ -6,6 +6,6 @@
  */
 
 export type GetApiPermissionManagementPermissionsParams = {
-providerName?: string;
-providerKey?: string;
+  providerName?: string;
+  providerKey?: string;
 };

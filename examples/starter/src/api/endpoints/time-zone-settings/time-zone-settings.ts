@@ -9,14 +9,9 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
   MutationFunction,
-  QueryClient,
   QueryFunction,
   QueryKey,
-  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -86,7 +81,7 @@ export const getGetApiSettingManagementTimezoneQueryKey = () => {
     }
 
 
-export const getGetApiSettingManagementTimezoneQueryOptions = <TData = Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiSettingManagementTimezoneQueryOptions = <TData = Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -101,7 +96,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiSettingManagementTimezoneQueryResult = NonNullable<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>>
@@ -109,38 +104,13 @@ export type GetApiSettingManagementTimezoneQueryError = ErrorType<VoloAbpHttpRem
 
 
 export function useGetApiSettingManagementTimezone<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiSettingManagementTimezone>>,
-          TError,
-          Awaited<ReturnType<typeof getApiSettingManagementTimezone>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiSettingManagementTimezone<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiSettingManagementTimezone>>,
-          TError,
-          Awaited<ReturnType<typeof getApiSettingManagementTimezone>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiSettingManagementTimezone<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiSettingManagementTimezone<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezone>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiSettingManagementTimezoneQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -216,13 +186,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePostApiSettingManagementTimezone = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiSettingManagementTimezone>>, TError,PostApiSettingManagementTimezoneMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof postApiSettingManagementTimezone>>,
         TError,
         PostApiSettingManagementTimezoneMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiSettingManagementTimezoneMutationOptions(options), queryClient);
+      return useMutation(getPostApiSettingManagementTimezoneMutationOptions(options));
     }
     export const getGetApiSettingManagementTimezoneTimezonesUrl = () => {
 
@@ -254,7 +224,7 @@ export const getGetApiSettingManagementTimezoneTimezonesQueryKey = () => {
     }
 
 
-export const getGetApiSettingManagementTimezoneTimezonesQueryOptions = <TData = Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiSettingManagementTimezoneTimezonesQueryOptions = <TData = Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -269,7 +239,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiSettingManagementTimezoneTimezonesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>>
@@ -277,38 +247,13 @@ export type GetApiSettingManagementTimezoneTimezonesQueryError = ErrorType<VoloA
 
 
 export function useGetApiSettingManagementTimezoneTimezones<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>,
-          TError,
-          Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiSettingManagementTimezoneTimezones<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>,
-          TError,
-          Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiSettingManagementTimezoneTimezones<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiSettingManagementTimezoneTimezones<TData = Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiSettingManagementTimezoneTimezones>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiSettingManagementTimezoneTimezonesQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

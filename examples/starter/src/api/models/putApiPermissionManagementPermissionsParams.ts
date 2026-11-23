@@ -6,6 +6,6 @@
  */
 
 export type PutApiPermissionManagementPermissionsParams = {
-providerName?: string;
-providerKey?: string;
+  providerName?: string;
+  providerKey?: string;
 };

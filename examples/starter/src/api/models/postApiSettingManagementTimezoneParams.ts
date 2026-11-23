@@ -6,5 +6,5 @@
  */
 
 export type PostApiSettingManagementTimezoneParams = {
-timezone?: string;
+  timezone?: string;
 };

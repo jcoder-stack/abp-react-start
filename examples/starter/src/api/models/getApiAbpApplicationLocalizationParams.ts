@@ -6,6 +6,6 @@
  */
 
 export type GetApiAbpApplicationLocalizationParams = {
-CultureName: string;
-OnlyDynamics?: boolean;
+  CultureName: string;
+  OnlyDynamics?: boolean;
 };

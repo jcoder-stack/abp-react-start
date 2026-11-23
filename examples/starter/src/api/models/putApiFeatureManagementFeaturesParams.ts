@@ -6,6 +6,6 @@
  */
 
 export type PutApiFeatureManagementFeaturesParams = {
-providerName?: string;
-providerKey?: string;
+  providerName?: string;
+  providerKey?: string;
 };

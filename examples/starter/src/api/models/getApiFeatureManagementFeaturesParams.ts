@@ -6,6 +6,6 @@
  */
 
 export type GetApiFeatureManagementFeaturesParams = {
-providerName?: string;
-providerKey?: string;
+  providerName?: string;
+  providerKey?: string;
 };

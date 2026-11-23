@@ -16,6 +16,7 @@ export const postApiAccountRegisterBodyEmailAddressMax = 256;
 export const postApiAccountRegisterBodyPasswordMin = 0;
 export const postApiAccountRegisterBodyPasswordMax = 128;
 
+export const postApiAccountRegisterBodyAppNameMin = 1;
 
 
 
@@ -23,7 +24,7 @@ export const PostApiAccountRegisterBody = zod.object({
   "userName": zod.string().min(postApiAccountRegisterBodyUserNameMin).max(postApiAccountRegisterBodyUserNameMax),
   "emailAddress": zod.email().min(postApiAccountRegisterBodyEmailAddressMin).max(postApiAccountRegisterBodyEmailAddressMax),
   "password": zod.string().min(postApiAccountRegisterBodyPasswordMin).max(postApiAccountRegisterBodyPasswordMax),
-  "appName": zod.string().min(1)
+  "appName": zod.string().min(postApiAccountRegisterBodyAppNameMin)
 })
 
 export const PostApiAccountRegisterResponse = zod.object({
@@ -56,36 +57,40 @@ export const PostApiAccountRegisterResponse = zod.object({
 export const postApiAccountSendPasswordResetCodeBodyEmailMin = 0;
 export const postApiAccountSendPasswordResetCodeBodyEmailMax = 256;
 
+export const postApiAccountSendPasswordResetCodeBodyAppNameMin = 1;
 
 
 
 export const PostApiAccountSendPasswordResetCodeBody = zod.object({
   "email": zod.email().min(postApiAccountSendPasswordResetCodeBodyEmailMin).max(postApiAccountSendPasswordResetCodeBodyEmailMax),
-  "appName": zod.string().min(1),
+  "appName": zod.string().min(postApiAccountSendPasswordResetCodeBodyAppNameMin),
   "returnUrl": zod.string().nullish(),
   "returnUrlHash": zod.string().nullish()
 })
 
 export const PostApiAccountSendPasswordResetCodeResponse = zod.unknown()
 
+export const postApiAccountVerifyPasswordResetTokenBodyResetTokenMin = 1;
 
 
 
 export const PostApiAccountVerifyPasswordResetTokenBody = zod.object({
   "userId": zod.uuid().optional(),
-  "resetToken": zod.string().min(1)
+  "resetToken": zod.string().min(postApiAccountVerifyPasswordResetTokenBodyResetTokenMin)
 })
 
 export const PostApiAccountVerifyPasswordResetTokenResponse = zod.boolean()
 
+export const postApiAccountResetPasswordBodyResetTokenMin = 1;
 
+export const postApiAccountResetPasswordBodyPasswordMin = 1;
 
 
 
 export const PostApiAccountResetPasswordBody = zod.object({
   "userId": zod.uuid().optional(),
-  "resetToken": zod.string().min(1),
-  "password": zod.string().min(1)
+  "resetToken": zod.string().min(postApiAccountResetPasswordBodyResetTokenMin),
+  "password": zod.string().min(postApiAccountResetPasswordBodyPasswordMin)
 })
 
 export const PostApiAccountResetPasswordResponse = zod.unknown()

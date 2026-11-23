@@ -6,6 +6,6 @@
  */
 
 export type PutApiPermissionManagementPermissionsResourceParams = {
-resourceName?: string;
-resourceKey?: string;
+  resourceName?: string;
+  resourceKey?: string;
 };

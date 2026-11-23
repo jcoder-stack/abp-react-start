@@ -48,6 +48,7 @@ export const DeleteApiMultiTenancyTenantsIdResponse = zod.unknown()
 export const getApiMultiTenancyTenantsQuerySkipCountMin = 0;
 export const getApiMultiTenancyTenantsQuerySkipCountMax = 2147483647;
 
+export const getApiMultiTenancyTenantsQueryMaxResultCountMin = 1;
 export const getApiMultiTenancyTenantsQueryMaxResultCountMax = 2147483647;
 
 
@@ -56,7 +57,7 @@ export const GetApiMultiTenancyTenantsQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
   "SkipCount": zod.int().min(getApiMultiTenancyTenantsQuerySkipCountMin).max(getApiMultiTenancyTenantsQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(1).max(getApiMultiTenancyTenantsQueryMaxResultCountMax).optional()
+  "MaxResultCount": zod.int().min(getApiMultiTenancyTenantsQueryMaxResultCountMin).max(getApiMultiTenancyTenantsQueryMaxResultCountMax).optional()
 })
 
 export const GetApiMultiTenancyTenantsResponse = zod.object({
@@ -72,16 +73,18 @@ export const GetApiMultiTenancyTenantsResponse = zod.object({
 export const postApiMultiTenancyTenantsBodyNameMin = 0;
 export const postApiMultiTenancyTenantsBodyNameMax = 64;
 
+export const postApiMultiTenancyTenantsBodyAdminEmailAddressMin = 1;
 export const postApiMultiTenancyTenantsBodyAdminEmailAddressMax = 256;
 
+export const postApiMultiTenancyTenantsBodyAdminPasswordMin = 1;
 export const postApiMultiTenancyTenantsBodyAdminPasswordMax = 128;
 
 
 
 export const PostApiMultiTenancyTenantsBody = zod.object({
   "name": zod.string().min(postApiMultiTenancyTenantsBodyNameMin).max(postApiMultiTenancyTenantsBodyNameMax),
-  "adminEmailAddress": zod.email().min(1).max(postApiMultiTenancyTenantsBodyAdminEmailAddressMax),
-  "adminPassword": zod.string().min(1).max(postApiMultiTenancyTenantsBodyAdminPasswordMax)
+  "adminEmailAddress": zod.email().min(postApiMultiTenancyTenantsBodyAdminEmailAddressMin).max(postApiMultiTenancyTenantsBodyAdminEmailAddressMax),
+  "adminPassword": zod.string().min(postApiMultiTenancyTenantsBodyAdminPasswordMin).max(postApiMultiTenancyTenantsBodyAdminPasswordMax)
 })
 
 export const PostApiMultiTenancyTenantsResponse = zod.object({

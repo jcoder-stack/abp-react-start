@@ -111,6 +111,7 @@ export const DeleteApiIdentityUsersIdResponse = zod.unknown()
 export const getApiIdentityUsersQuerySkipCountMin = 0;
 export const getApiIdentityUsersQuerySkipCountMax = 2147483647;
 
+export const getApiIdentityUsersQueryMaxResultCountMin = 1;
 export const getApiIdentityUsersQueryMaxResultCountMax = 2147483647;
 
 
@@ -119,7 +120,7 @@ export const GetApiIdentityUsersQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
   "SkipCount": zod.int().min(getApiIdentityUsersQuerySkipCountMin).max(getApiIdentityUsersQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(1).max(getApiIdentityUsersQueryMaxResultCountMax).optional(),
+  "MaxResultCount": zod.int().min(getApiIdentityUsersQueryMaxResultCountMin).max(getApiIdentityUsersQueryMaxResultCountMax).optional(),
   "ExtraProperties": zod.record(zod.string(), zod.unknown()).optional()
 })
 

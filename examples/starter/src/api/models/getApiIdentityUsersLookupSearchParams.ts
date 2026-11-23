@@ -6,17 +6,17 @@
  */
 
 export type GetApiIdentityUsersLookupSearchParams = {
-Filter?: string;
-Sorting?: string;
-/**
- * @minimum 0
- * @maximum 2147483647
- */
-SkipCount?: number;
-/**
- * @minimum 1
- * @maximum 2147483647
- */
-MaxResultCount?: number;
-ExtraProperties?: {[key: string]: unknown};
+  Filter?: string;
+  Sorting?: string;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
+   */
+  SkipCount?: number;
+  /**
+   * @minimum 1
+   * @maximum 2147483647
+   */
+  MaxResultCount?: number;
+  ExtraProperties?: {[key: string]: unknown};
 };

@@ -46,6 +46,7 @@ export const GetApiIdentityUsersLookupByUsernameUserNameResponse = zod.object({
 export const getApiIdentityUsersLookupSearchQuerySkipCountMin = 0;
 export const getApiIdentityUsersLookupSearchQuerySkipCountMax = 2147483647;
 
+export const getApiIdentityUsersLookupSearchQueryMaxResultCountMin = 1;
 export const getApiIdentityUsersLookupSearchQueryMaxResultCountMax = 2147483647;
 
 
@@ -54,7 +55,7 @@ export const GetApiIdentityUsersLookupSearchQueryParams = zod.object({
   "Filter": zod.string().optional(),
   "Sorting": zod.string().optional(),
   "SkipCount": zod.int().min(getApiIdentityUsersLookupSearchQuerySkipCountMin).max(getApiIdentityUsersLookupSearchQuerySkipCountMax).optional(),
-  "MaxResultCount": zod.int().min(1).max(getApiIdentityUsersLookupSearchQueryMaxResultCountMax).optional(),
+  "MaxResultCount": zod.int().min(getApiIdentityUsersLookupSearchQueryMaxResultCountMin).max(getApiIdentityUsersLookupSearchQueryMaxResultCountMax).optional(),
   "ExtraProperties": zod.record(zod.string(), zod.unknown()).optional()
 })
 

@@ -6,5 +6,5 @@
  */
 
 export type GetApiIdentityUsersLookupCountParams = {
-Filter?: string;
+  Filter?: string;
 };

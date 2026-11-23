@@ -9,14 +9,9 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
   MutationFunction,
-  QueryClient,
   QueryFunction,
   QueryKey,
-  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -39,6 +34,26 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | number | boolean | bigint | readonly string[] | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | number | boolean | bigint | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, typeof value === 'object' ? value : String(value)]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
 
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
@@ -66,25 +81,11 @@ export const getPostApiAccountLoginUrl = () => {
 
 export const postApiAccountLogin = async (voloAbpAccountWebAreasAccountControllersModelsUserLoginInfo?: VoloAbpAccountWebAreasAccountControllersModelsUserLoginInfo, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpAccountWebAreasAccountControllersModelsAbpLoginResult> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<VoloAbpAccountWebAreasAccountControllersModelsAbpLoginResult>(getPostApiAccountLoginUrl(),
+  return abpMutator<VoloAbpAccountWebAreasAccountControllersModelsAbpLoginResult>(getPostApiAccountLoginUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpAccountWebAreasAccountControllersModelsUserLoginInfo)
   }
 );}
@@ -129,13 +130,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePostApiAccountLogin = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountLogin>>, TError,PostApiAccountLoginMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof postApiAccountLogin>>,
         TError,
         PostApiAccountLoginMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountLoginMutationOptions(options), queryClient);
+      return useMutation(getPostApiAccountLoginMutationOptions(options));
     }
     export const getGetApiAccountLogoutUrl = () => {
 
@@ -167,7 +168,7 @@ export const getGetApiAccountLogoutQueryKey = () => {
     }
 
 
-export const getGetApiAccountLogoutQueryOptions = <TData = Awaited<ReturnType<typeof getApiAccountLogout>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiAccountLogoutQueryOptions = <TData = Awaited<ReturnType<typeof getApiAccountLogout>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -182,7 +183,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiAccountLogoutQueryResult = NonNullable<Awaited<ReturnType<typeof getApiAccountLogout>>>
@@ -190,38 +191,13 @@ export type GetApiAccountLogoutQueryError = ErrorType<VoloAbpHttpRemoteServiceEr
 
 
 export function useGetApiAccountLogout<TData = Awaited<ReturnType<typeof getApiAccountLogout>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiAccountLogout>>,
-          TError,
-          Awaited<ReturnType<typeof getApiAccountLogout>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiAccountLogout<TData = Awaited<ReturnType<typeof getApiAccountLogout>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiAccountLogout>>,
-          TError,
-          Awaited<ReturnType<typeof getApiAccountLogout>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiAccountLogout<TData = Awaited<ReturnType<typeof getApiAccountLogout>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiAccountLogout<TData = Awaited<ReturnType<typeof getApiAccountLogout>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiAccountLogout>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiAccountLogoutQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -241,25 +217,11 @@ export const getPostApiAccountCheckPasswordUrl = () => {
 
 export const postApiAccountCheckPassword = async (voloAbpAccountWebAreasAccountControllersModelsUserLoginInfo?: VoloAbpAccountWebAreasAccountControllersModelsUserLoginInfo, options?: Parameters<typeof abpMutator>[1]): Promise<VoloAbpAccountWebAreasAccountControllersModelsAbpLoginResult> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<VoloAbpAccountWebAreasAccountControllersModelsAbpLoginResult>(getPostApiAccountCheckPasswordUrl(),
+  return abpMutator<VoloAbpAccountWebAreasAccountControllersModelsAbpLoginResult>(getPostApiAccountCheckPasswordUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpAccountWebAreasAccountControllersModelsUserLoginInfo)
   }
 );}
@@ -304,11 +266,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePostApiAccountCheckPassword = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiAccountCheckPassword>>, TError,PostApiAccountCheckPasswordMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof postApiAccountCheckPassword>>,
         TError,
         PostApiAccountCheckPasswordMutationVariables,
         TContext
       > => {
-      return useMutation(getPostApiAccountCheckPasswordMutationOptions(options), queryClient);
+      return useMutation(getPostApiAccountCheckPasswordMutationOptions(options));
     }

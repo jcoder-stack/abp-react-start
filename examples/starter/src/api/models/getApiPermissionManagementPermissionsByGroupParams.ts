@@ -6,7 +6,7 @@
  */
 
 export type GetApiPermissionManagementPermissionsByGroupParams = {
-groupName?: string;
-providerName?: string;
-providerKey?: string;
+  groupName?: string;
+  providerName?: string;
+  providerKey?: string;
 };

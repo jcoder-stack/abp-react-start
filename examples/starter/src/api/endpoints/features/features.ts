@@ -9,14 +9,9 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
   MutationFunction,
-  QueryClient,
   QueryFunction,
   QueryKey,
-  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -42,6 +37,26 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | number | boolean | bigint | readonly string[] | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | number | boolean | bigint | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, typeof value === 'object' ? value : String(value)]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
 
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
@@ -96,7 +111,7 @@ export const getGetApiFeatureManagementFeaturesQueryKey = (params?: GetApiFeatur
     }
 
 
-export const getGetApiFeatureManagementFeaturesQueryOptions = <TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiFeatureManagementFeaturesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
+export const getGetApiFeatureManagementFeaturesQueryOptions = <TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(params?: GetApiFeatureManagementFeaturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -111,7 +126,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetApiFeatureManagementFeaturesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>>
@@ -119,38 +134,13 @@ export type GetApiFeatureManagementFeaturesQueryError = ErrorType<VoloAbpHttpRem
 
 
 export function useGetApiFeatureManagementFeatures<TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params: undefined |  GetApiFeatureManagementFeaturesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>,
-          TError,
-          Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiFeatureManagementFeatures<TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiFeatureManagementFeaturesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>,
-          TError,
-          Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiFeatureManagementFeatures<TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiFeatureManagementFeaturesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetApiFeatureManagementFeaturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>, request?: SecondParameter<typeof abpMutator>}
 
-export function useGetApiFeatureManagementFeatures<TData = Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>>(
- params?: GetApiFeatureManagementFeaturesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiFeatureManagementFeatures>>, TError, TData>>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetApiFeatureManagementFeaturesQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -178,25 +168,11 @@ export const getPutApiFeatureManagementFeaturesUrl = (params?: PutApiFeatureMana
 export const putApiFeatureManagementFeatures = async (voloAbpFeatureManagementUpdateFeaturesDto?: VoloAbpFeatureManagementUpdateFeaturesDto,
     params?: PutApiFeatureManagementFeaturesParams, options?: Parameters<typeof abpMutator>[1]): Promise<void> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return abpMutator<void>(getPutApiFeatureManagementFeaturesUrl(params),
+  return abpMutator<void>(getPutApiFeatureManagementFeaturesUrl(params),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(voloAbpFeatureManagementUpdateFeaturesDto)
   }
 );}
@@ -241,13 +217,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const usePutApiFeatureManagementFeatures = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>, TError,PutApiFeatureManagementFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof putApiFeatureManagementFeatures>>,
         TError,
         PutApiFeatureManagementFeaturesMutationVariables,
         TContext
       > => {
-      return useMutation(getPutApiFeatureManagementFeaturesMutationOptions(options), queryClient);
+      return useMutation(getPutApiFeatureManagementFeaturesMutationOptions(options));
     }
     export const getDeleteApiFeatureManagementFeaturesUrl = (params?: DeleteApiFeatureManagementFeaturesParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -315,11 +291,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useDeleteApiFeatureManagementFeatures = <TError = ErrorType<VoloAbpHttpRemoteServiceErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>, TError,DeleteApiFeatureManagementFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof abpMutator>}
- , queryClient?: QueryClient): UseMutationResult<
+ ): UseMutationResult<
         Awaited<ReturnType<typeof deleteApiFeatureManagementFeatures>>,
         TError,
         DeleteApiFeatureManagementFeaturesMutationVariables,
         TContext
       > => {
-      return useMutation(getDeleteApiFeatureManagementFeaturesMutationOptions(options), queryClient);
+      return useMutation(getDeleteApiFeatureManagementFeaturesMutationOptions(options));
     }

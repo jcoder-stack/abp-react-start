@@ -6,5 +6,5 @@
  */
 
 export type PutApiMultiTenancyTenantsIdDefaultConnectionStringParams = {
-defaultConnectionString?: string;
+  defaultConnectionString?: string;
 };

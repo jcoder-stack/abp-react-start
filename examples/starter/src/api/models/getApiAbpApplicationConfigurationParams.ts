@@ -6,5 +6,5 @@
  */
 
 export type GetApiAbpApplicationConfigurationParams = {
-IncludeLocalizationResources?: boolean;
+  IncludeLocalizationResources?: boolean;
 };

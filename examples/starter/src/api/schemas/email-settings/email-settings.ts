@@ -21,6 +21,7 @@ export const GetApiSettingManagementEmailingResponse = zod.object({
 
 export const postApiSettingManagementEmailingBodySmtpHostMax = 256;
 
+export const postApiSettingManagementEmailingBodySmtpPortMin = 1;
 export const postApiSettingManagementEmailingBodySmtpPortMax = 65535;
 
 export const postApiSettingManagementEmailingBodySmtpUserNameMax = 1024;
@@ -29,35 +30,40 @@ export const postApiSettingManagementEmailingBodySmtpPasswordMax = 1024;
 
 export const postApiSettingManagementEmailingBodySmtpDomainMax = 1024;
 
+export const postApiSettingManagementEmailingBodyDefaultFromAddressMin = 1;
 export const postApiSettingManagementEmailingBodyDefaultFromAddressMax = 1024;
 
+export const postApiSettingManagementEmailingBodyDefaultFromDisplayNameMin = 1;
 export const postApiSettingManagementEmailingBodyDefaultFromDisplayNameMax = 1024;
 
 
 
 export const PostApiSettingManagementEmailingBody = zod.object({
   "smtpHost": zod.string().max(postApiSettingManagementEmailingBodySmtpHostMax).nullish(),
-  "smtpPort": zod.int().min(1).max(postApiSettingManagementEmailingBodySmtpPortMax).optional(),
+  "smtpPort": zod.int().min(postApiSettingManagementEmailingBodySmtpPortMin).max(postApiSettingManagementEmailingBodySmtpPortMax).optional(),
   "smtpUserName": zod.string().max(postApiSettingManagementEmailingBodySmtpUserNameMax).nullish(),
   "smtpPassword": zod.string().max(postApiSettingManagementEmailingBodySmtpPasswordMax).nullish(),
   "smtpDomain": zod.string().max(postApiSettingManagementEmailingBodySmtpDomainMax).nullish(),
   "smtpEnableSsl": zod.boolean().optional(),
   "smtpUseDefaultCredentials": zod.boolean().optional(),
-  "defaultFromAddress": zod.string().min(1).max(postApiSettingManagementEmailingBodyDefaultFromAddressMax),
-  "defaultFromDisplayName": zod.string().min(1).max(postApiSettingManagementEmailingBodyDefaultFromDisplayNameMax)
+  "defaultFromAddress": zod.string().min(postApiSettingManagementEmailingBodyDefaultFromAddressMin).max(postApiSettingManagementEmailingBodyDefaultFromAddressMax),
+  "defaultFromDisplayName": zod.string().min(postApiSettingManagementEmailingBodyDefaultFromDisplayNameMin).max(postApiSettingManagementEmailingBodyDefaultFromDisplayNameMax)
 })
 
 export const PostApiSettingManagementEmailingResponse = zod.unknown()
 
+export const postApiSettingManagementEmailingSendTestEmailBodySenderEmailAddressMin = 1;
 
+export const postApiSettingManagementEmailingSendTestEmailBodyTargetEmailAddressMin = 1;
 
+export const postApiSettingManagementEmailingSendTestEmailBodySubjectMin = 1;
 
 
 
 export const PostApiSettingManagementEmailingSendTestEmailBody = zod.object({
-  "senderEmailAddress": zod.string().min(1),
-  "targetEmailAddress": zod.string().min(1),
-  "subject": zod.string().min(1),
+  "senderEmailAddress": zod.string().min(postApiSettingManagementEmailingSendTestEmailBodySenderEmailAddressMin),
+  "targetEmailAddress": zod.string().min(postApiSettingManagementEmailingSendTestEmailBodyTargetEmailAddressMin),
+  "subject": zod.string().min(postApiSettingManagementEmailingSendTestEmailBodySubjectMin),
   "body": zod.string().nullish()
 })
 
