@@ -284,12 +284,16 @@ function BooksPage() {
     <section className="space-y-4">
       <h1 className="text-2xl font-normal">{L("App::Books")}</h1>
       <Tabs defaultValue="standard">
-        {/* 三个层级名都长，窄屏放不下：页签条自己横向滚，不撑出整页的横向滚动。 */}
-        <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
-          <TabsTrigger value="standard">{L("App::BooksTierStandard")}</TabsTrigger>
-          <TabsTrigger value="l1">{L("App::BooksTierL1")}</TabsTrigger>
-          <TabsTrigger value="l2">{L("App::BooksTierL2")}</TabsTrigger>
-        </TabsList>
+        {/* 三个层级名都长，窄屏放不下：外层自己横向滚，不撑出整页的横向滚动。滚动放在外层而不是
+            TabsList 上：line 变体的下划线比页签条低出 2px，条本身一设 overflow，纵向也跟着变成
+            可滚动，就多出一根竖滚动条；外层的 pb-1 把这 2px 收在内边距里。 */}
+        <div className="overflow-x-auto overflow-y-hidden pb-1">
+          <TabsList variant="line">
+            <TabsTrigger value="standard">{L("App::BooksTierStandard")}</TabsTrigger>
+            <TabsTrigger value="l1">{L("App::BooksTierL1")}</TabsTrigger>
+            <TabsTrigger value="l2">{L("App::BooksTierL2")}</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="standard" className="space-y-4">
           <BookScenarioBar onApply={(scenario) => void applyScenario(scenario)} />
           <t.Table stickyHeader>
