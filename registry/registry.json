@@ -340,6 +340,11 @@
           "target": "components/data-table/data-table-view-menu.tsx"
         },
         {
+          "path": "ui/blocks/data-table/data-table-filter.tsx",
+          "type": "registry:component",
+          "target": "components/data-table/data-table-filter.tsx"
+        },
+        {
           "path": "ui/blocks/data-table/data-table-sort-menu.tsx",
           "type": "registry:component",
           "target": "components/data-table/data-table-sort-menu.tsx"
@@ -664,7 +669,9 @@
         "button",
         "calendar",
         "popover",
-        "input"
+        "input",
+        "field",
+        "skeleton"
       ],
       "dependencies": [
         "date-fns",
@@ -692,6 +699,11 @@
           "path": "ui/blocks/date-picker/date-range-picker.tsx",
           "type": "registry:component",
           "target": "components/date-picker/date-range-picker.tsx"
+        },
+        {
+          "path": "ui/blocks/date-picker/query-date-range.tsx",
+          "type": "registry:component",
+          "target": "components/date-picker/query-date-range.tsx"
         },
         {
           "path": "ui/blocks/date-picker/date-time-picker.tsx",

@@ -1,15 +1,16 @@
 import { useLocalization } from "@jcoder-stack/abp-react/react";
-import { CircleAlert, Plus, X } from "lucide-react";
+import { CircleAlert, Plus } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import type { AbpTableSource } from "@/components/abp/crud/abp-table-source";
 import { AbpBulkBarView } from "@/components/abp/table/abp-bulk-bar";
-import {
-  AbpQueryPanelToggle,
-  AbpQueryPanelView,
-  flattenFields,
-} from "@/components/abp/table/abp-query-form";
+import { flattenFields } from "@/components/abp/table/abp-query-form";
 import type { AbpTableRowConfig, QuerySummaryItem } from "@/components/abp/table/use-abp-table";
 import { DataTable } from "@/components/data-table/data-table";
+import {
+  DataTableFilterChips,
+  DataTableFilterPanel,
+  DataTableFilterToggle,
+} from "@/components/data-table/data-table-filter";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DataTableViewMenu, isViewCustomized } from "@/components/data-table/data-table-view-menu";
 import type {
@@ -142,7 +143,7 @@ export function AbpTableView<
       attention={t.activeQueryCount > 0 || isViewCustomized(t)}
       utilityLeading={
         hasQuery ? (
-          <AbpQueryPanelToggle
+          <DataTableFilterToggle
             expanded={expanded}
             onToggle={() => {
               setSearchKept(t.state.params.filter !== "");
@@ -178,12 +179,13 @@ export function AbpTableView<
 
   const queryPanel =
     hasQuery && expanded ? (
-      <AbpQueryPanelView
-        fields={queryFields}
+      <DataTableFilterPanel
         onSubmit={() => void t.submitQuery()}
         onReset={() => t.resetQuery()}
         panelId={panelId}
-      />
+      >
+        {queryFields}
+      </DataTableFilterPanel>
     ) : null;
 
   const { isError, refetch } = t.source.listQuery;
@@ -261,45 +263,29 @@ export function AbpTableView<
   ) : null;
 
   const keyword = t.state.params.filter;
-  const summaryChip = (key: string, label: ReactNode, value: ReactNode, onRemove: () => void) => (
-    <span
-      key={key}
-      className="inline-flex h-6 items-center gap-1 rounded-md bg-muted pr-0.5 pl-2 text-foreground text-xs"
-    >
-      {label}
-      {L("Table:LabelSeparator")}
-      {value}
-      <button
-        type="button"
-        aria-label={L("Table:FilterRemove")}
-        className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onClick={onRemove}
-      >
-        <X className="size-3" />
-      </button>
-    </span>
-  );
   // 面板展开时字段本身就在眼前，摘要是重复信息；收起后它是唯一说明「筛了什么」的地方。
   // 有摘要行时把关键字也列进去，这样行尾的「全部清除」清掉的正是这一行列出来的全部。
   const summaryStrip =
     !expanded && t.querySummary.length > 0 ? (
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2 text-muted-foreground text-sm">
-        {L("Table:FilteredBy")}
-        {keyword !== "" &&
-          summaryChip("keyword", L("Table:FilterKeyword"), keyword, () => t.state.commitSearch(""))}
-        {t.querySummary.map((item) =>
-          summaryChip(item.key, item.label, item.value, () => t.resetQueryField(item.key)),
-        )}
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          className={linkButtonClass}
-          onClick={t.clearFilters}
-        >
-          {L("Table:ClearAll")}
-        </Button>
-      </div>
+      <DataTableFilterChips
+        chips={[
+          ...(keyword !== ""
+            ? [
+                {
+                  key: "keyword",
+                  label: L("Table:FilterKeyword"),
+                  value: keyword,
+                  onRemove: () => t.state.commitSearch(""),
+                },
+              ]
+            : []),
+          ...t.querySummary.map((item) => ({
+            ...item,
+            onRemove: () => t.resetQueryField(item.key),
+          })),
+        ]}
+        onClearAll={t.clearFilters}
+      />
     ) : null;
 
   const filtered = t.activeQueryCount > 0 || t.state.params.filter !== "";

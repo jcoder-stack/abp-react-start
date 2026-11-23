@@ -40,7 +40,7 @@ npx jc-abp gen
 import { createCrudService } from "@/components/abp/crud/crud-service"
 import { useAbpSheet } from "@/components/abp/sheet/use-abp-sheet"
 import { useAbpTable } from "@/components/abp/table/use-abp-table"
-import { QueryDateRange } from "@/components/abp/table/query-date-range"
+import { QueryDateRange } from "@/components/date-picker/query-date-range"
 import { createAbpColumns, columnHeader } from "@/components/abp/table/column-presets"
 import type { TableColumnDef } from "@/components/data-table/table-core"
 ```
@@ -856,7 +856,7 @@ const t = useAbpTable(bookService, {
 | 标准 ABP 后端 CRUD 页（含纯表格页、跳路由页） | `useAbpTable`（+ 需要新建/编辑时加 `useAbpSheet`） |
 | 数据源不走 `createCrudService`，但仍要 ABP 式装配（权限门控/行操作/错误态/分页钳制） | `useAbpTable` 传 `(params) => AbpTableSource` 回调，参考实现见 [`books/-tiers/books-l1-demo.tsx`](../../examples/starter/src/routes/_layout/_authed/books/-tiers/books-l1-demo.tsx) |
 | 非 ABP 的通用表（无分页协议假设） | L2 `useDataTableState` + `useDataTable` + `<DataTable table={dt}>`，参考实现见 [`books/-tiers/books-l2-demo.tsx`](../../examples/starter/src/routes/_layout/_authed/books/-tiers/books-l2-demo.tsx) |
-| 要改装配本身（重排「···」菜单外壳、批量条排布、工具条结构） | fork 对应的装配组件文件（`abp-table.tsx`/`abp-query-form.tsx`/`abp-bulk-bar.tsx`/`row-actions-menu.tsx`……），copy-in 分发下这本就是正当用法 |
+| 要改装配本身（重排「···」菜单外壳、批量条排布、工具条结构） | fork 对应的装配组件文件（`abp-table.tsx`/`data-table-filter.tsx`/`abp-bulk-bar.tsx`/`row-actions-menu.tsx`……），copy-in 分发下这本就是正当用法 |
 
 `useAbpPage`/`useAbpCrud`/`useCrud`/`QueryField`/`QueryRange`/`tableRef`/`render*` 系列回调已全部退役，不再出现在页面代码里。`books` 页把前三档摆在同一个页面里做成页签（`index.tsx` 的 `Tabs`），可以直接切换比对。
 
@@ -929,6 +929,38 @@ return (
 ```
 
 L2 层刻意维持「显式传实例」的社区惯用形态（`table={dt}`）而不是绑定成员——逃生层受众本来就要拿实例自己拼，`DataTableToolbar`/`DataTableViewMenu`/`DataTableSortMenu` 等散件各自显式收 `table` prop。
+
+L2 要高级筛选时，用 data-table 块的筛选外壳 `data-table-filter.tsx`：`DataTableFilterToggle`（开合钮，放进工具栏的 `utilityLeading`）、`DataTableFilterPanel`（字段网格 + 重置/查询）、`DataTableFilterChips`（面板收起后的已生效条件行）。它们只管排布和交互，字段怎么绑、值怎么变成请求参数由你决定——L0 的 `t.QueryForm` 就是把 ABP 的那一套接在这三件上：
+
+```tsx
+const [expanded, setExpanded] = useState(false);
+const panelId = useId();
+
+<DataTable table={dt}>
+  <DataTableToolbar
+    table={dt}
+    search={!expanded}
+    utilityLeading={
+      <DataTableFilterToggle
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        panelId={panelId}
+        activeCount={chips.length}
+      />
+    }
+  >
+    <DataTableViewMenu table={dt} />
+  </DataTableToolbar>
+  {!expanded && <DataTableFilterChips chips={chips} onClearAll={clearFilters} />}
+  {expanded && (
+    <DataTableFilterPanel panelId={panelId} onSubmit={applyFilters} onReset={resetFilters}>
+      {/* 带 label 的字段，一个字段一个子节点 */}
+    </DataTableFilterPanel>
+  )}
+</DataTable>
+```
+
+区间字段用 date-picker 块的 `QueryDateRange`。原来 abp-table 块里的 `AbpQueryPanelToggle`/`AbpQueryPanelView` 和 `@/components/abp/table/query-date-range` 仍可用，但已标 `@deprecated`，下一个大版本删除。
 
 ## 内建行为（不用你操心，但要知道存在）
 

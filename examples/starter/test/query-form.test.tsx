@@ -6,12 +6,16 @@ import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { AbpTableSource } from "@/components/abp/crud/abp-table-source";
 import { createCrudService } from "@/components/abp/crud/crud-service";
-import { AbpQueryPanelToggle, AbpQueryPanelView } from "@/components/abp/table/abp-query-form";
-import { QueryDateRange } from "@/components/abp/table/query-date-range";
 import { useAbpTable } from "@/components/abp/table/use-abp-table";
+import {
+  DataTableFilterChips,
+  DataTableFilterPanel,
+  DataTableFilterToggle,
+} from "@/components/data-table/data-table-filter";
 import type { TableColumnDef } from "@/components/data-table/table-core";
 import tableMessages from "@/components/data-table/table-messages.json";
 import datePickerMessages from "@/components/date-picker/date-picker-messages.json";
+import { QueryDateRange } from "@/components/date-picker/query-date-range";
 import { Label } from "@/components/ui/label";
 import { admin, renderWithProviders } from "./test-utils";
 
@@ -560,16 +564,13 @@ describe("t.QueryForm shell", () => {
   });
 });
 
-describe("query panel views", () => {
+describe("data-table filter shell", () => {
   it("submits on Enter inside a panel field without a native form", async () => {
     const onSubmit = vi.fn();
     renderWithProviders(
-      <AbpQueryPanelView
-        fields={[shellField("Field 0")]}
-        onSubmit={onSubmit}
-        onReset={vi.fn()}
-        panelId="qp"
-      />,
+      <DataTableFilterPanel onSubmit={onSubmit} onReset={vi.fn()} panelId="qp">
+        {shellField("Field 0")}
+      </DataTableFilterPanel>,
       { messages },
     );
     fireEvent.keyDown(await screen.findByLabelText("Field 0"), { key: "Enter" });
@@ -582,7 +583,7 @@ describe("query panel views", () => {
   it("wires the toggle with aria-expanded/aria-controls and fires onToggle", async () => {
     const onToggle = vi.fn();
     renderWithProviders(
-      <AbpQueryPanelToggle
+      <DataTableFilterToggle
         expanded={false}
         onToggle={onToggle}
         panelId="panel-x"
@@ -600,7 +601,12 @@ describe("query panel views", () => {
 
   it("points aria-controls at the panel id while expanded", async () => {
     renderWithProviders(
-      <AbpQueryPanelToggle expanded={true} onToggle={vi.fn()} panelId="panel-x" activeCount={0} />,
+      <DataTableFilterToggle
+        expanded={true}
+        onToggle={vi.fn()}
+        panelId="panel-x"
+        activeCount={0}
+      />,
       { messages },
     );
     const toggle = await screen.findByRole("button", { name: "Filters" });
@@ -611,20 +617,38 @@ describe("query panel views", () => {
   it("announces how many filters are applied while the panel is closed", async () => {
     // 面板一收，界面上唯一的"还筛着"信号是那个圆点，它是纯视觉的，读屏得有等价文本。
     renderWithProviders(
-      <AbpQueryPanelToggle expanded={false} onToggle={vi.fn()} panelId="panel-x" activeCount={2} />,
+      <DataTableFilterToggle
+        expanded={false}
+        onToggle={vi.fn()}
+        panelId="panel-x"
+        activeCount={2}
+      />,
       { messages },
     );
     expect(await screen.findByText("2 filters applied")).not.toBeNull();
   });
 
+  it("removes one filter chip and clears all", async () => {
+    const onRemove = vi.fn();
+    const onClearAll = vi.fn();
+    renderWithProviders(
+      <DataTableFilterChips
+        chips={[{ key: "type", label: "Type", value: "Novel", onRemove }]}
+        onClearAll={onClearAll}
+      />,
+      { messages },
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Remove filter" }));
+    expect(onRemove).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(onClearAll).toHaveBeenCalledTimes(1);
+  });
+
   it("renders panel fields under the given panel id", async () => {
     renderWithProviders(
-      <AbpQueryPanelView
-        fields={[shellField("Field 9")]}
-        onSubmit={vi.fn()}
-        onReset={vi.fn()}
-        panelId="panel-y"
-      />,
+      <DataTableFilterPanel onSubmit={vi.fn()} onReset={vi.fn()} panelId="panel-y">
+        {shellField("Field 9")}
+      </DataTableFilterPanel>,
       { messages },
     );
     expect(await screen.findByLabelText("Field 9")).toBeDefined();
