@@ -35,6 +35,21 @@ export interface AbpSwaggerBooksBookDto {
   type?: AbpSwaggerBooksBookType;
   publishDate?: string;
   price?: number;
+  // 以下字段 ABP BookStore 教程里没有，是为了让列预设、筛选和表单字段都有真实数据可演示才加的。
+  inStock?: boolean;
+  /** @nullable */
+  stock?: number | null;
+  /** @nullable */
+  description?: string | null;
+  tags?: string[];
+  /** 上架时间，本地时刻 `yyyy-MM-ddTHH:mm`（不带时区）。 @nullable */
+  saleStartsAt?: string | null;
+  /** @nullable */
+  promoStartDate?: string | null;
+  /** @nullable */
+  promoEndDate?: string | null;
+  /** @nullable */
+  lastModificationTime?: string | null;
 }
 
 export interface AbpSwaggerBooksCreateUpdateBookDto {
@@ -43,6 +58,18 @@ export interface AbpSwaggerBooksCreateUpdateBookDto {
   type: AbpSwaggerBooksBookType;
   publishDate: string;
   price: number;
+  inStock?: boolean;
+  /** @nullable */
+  stock?: number | null;
+  /** @nullable */
+  description?: string | null;
+  tags?: string[];
+  /** @nullable */
+  saleStartsAt?: string | null;
+  /** @nullable */
+  promoStartDate?: string | null;
+  /** @nullable */
+  promoEndDate?: string | null;
 }
 
 export interface AbpSwaggerAuthorsAuthorDto {
@@ -56,7 +83,10 @@ export interface AbpSwaggerAuthorsAuthorDto {
 
 export type GetApiAppBookParams = {
   Name?: string;
+  Type?: AbpSwaggerBooksBookType;
   MinPublishDate?: string;
+  MaxPublishDate?: string;
+  InStock?: boolean;
   Sorting?: string;
   SkipCount?: number;
   MaxResultCount?: number;
@@ -87,4 +117,11 @@ export const postApiAppBookBody = z.object({
   ]),
   publishDate: z.string(),
   price: z.number(),
+  inStock: z.boolean().optional(),
+  stock: z.number().nullish(),
+  description: z.string().max(1000).nullish(),
+  tags: z.array(z.string()).optional(),
+  saleStartsAt: z.string().nullish(),
+  promoStartDate: z.string().nullish(),
+  promoEndDate: z.string().nullish(),
 });
